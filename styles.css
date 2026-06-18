@@ -386,6 +386,33 @@ button {
   margin-top: 16px;
 }
 
+.cashflow-panel {
+  margin-top: 0;
+}
+
+.inline-form {
+  display: grid;
+  grid-template-columns: 160px 150px minmax(140px, 1fr) minmax(160px, 1.4fr) auto auto;
+  gap: 10px;
+}
+
+.cashflow-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.cashflow-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
 .investor-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -396,6 +423,13 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.investor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
@@ -433,6 +467,58 @@ button {
 .investor-chip.active span {
   background: rgba(255, 255, 255, 0.22);
   color: white;
+}
+
+.add-investor-form {
+  display: flex;
+  gap: 8px;
+  min-width: min(320px, 100%);
+}
+
+.add-investor-form input {
+  border-style: dashed;
+}
+
+.investor-actions {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
+.danger-button {
+  min-height: 36px;
+  border: 1px solid rgba(246, 70, 93, 0.34);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: rgba(246, 70, 93, 0.1);
+  color: var(--up);
+  font-weight: 800;
+}
+
+.delete-confirm {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.delete-confirm.show {
+  display: flex;
+}
+
+.delete-confirm button {
+  min-height: 28px;
+  padding: 0 9px;
+  background: var(--surface-3);
+  color: var(--ink);
+  font-weight: 800;
 }
 
 .panel {
@@ -533,6 +619,15 @@ tbody tr:hover {
 
 .asset-name small {
   color: var(--muted);
+}
+
+.subtext {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-family: Pretendard, Inter, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .pill {
@@ -742,6 +837,17 @@ select:focus {
   gap: 12px;
 }
 
+.trade-preview {
+  border: 1px solid rgba(157, 123, 255, 0.28);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(124, 92, 252, 0.1);
+  color: var(--violet-3);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
 menu {
   justify-content: flex-end;
   margin: 4px 0 0;
@@ -773,6 +879,15 @@ menu {
 
   .mini-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .investor-toolbar {
+    display: grid;
+    align-items: stretch;
+  }
+
+  .inline-form {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -813,5 +928,10 @@ menu {
   .hero-card {
     min-height: auto;
     padding: 20px;
+  }
+
+  .delete-confirm {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

@@ -6,7 +6,7 @@
     <title>AssetPilot | 공동 자산관리</title>
     <meta
       name="description"
-      content="투자자별 보유종목과 거래를 합산해 통합 대시보드와 개인 투자자 시트를 제공하는 원화 자산관리 화면"
+      content="입출금과 매수매도 원장을 기반으로 투자자별 예수금, 평가금액, 주가손익, 환차손익을 계산하는 원화 자산관리 화면"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -27,7 +27,7 @@
           <div class="brand-mark">AP</div>
           <div>
             <strong>AssetPilot</strong>
-            <span>Pooled KRW Portfolio</span>
+            <span>Ledger Portfolio</span>
           </div>
         </div>
 
@@ -35,13 +35,13 @@
           <button type="button" class="nav-item active" data-view="dashboard">통합 대시보드</button>
           <button type="button" class="nav-item" data-view="investor">투자자별 시트</button>
           <a href="#holdings">보유 종목</a>
-          <a href="#transactions">거래 내역</a>
+          <a href="#transactions">원장 내역</a>
         </nav>
 
         <div class="currency-card">
-          <span>BASE CURRENCY</span>
+          <span>CORE FORMULA</span>
           <strong>KRW</strong>
-          <small>보유 종목과 거래는 투자자에게 귀속되고, 통합 화면은 합산 정보만 보여줍니다.</small>
+          <small>투자원금=입금-출금, 예수금=순입금-매수+매도, 평가금액=보유평가+예수금</small>
         </div>
       </aside>
 
@@ -89,12 +89,12 @@
               <article class="metric-card">
                 <span>투자원금</span>
                 <strong id="totalPrincipal">0원</strong>
-                <small>매수원가 합계, 예수금 제외</small>
+                <small>입금 - 출금</small>
               </article>
               <article class="metric-card">
-                <span>현금</span>
+                <span>예수금</span>
                 <strong id="cashAmount">0원</strong>
-                <small id="cashRatio">총액 대비 0%</small>
+                <small id="cashRatio">평가금액 포함</small>
               </article>
             </div>
           </section>
@@ -136,7 +136,14 @@
         </section>
 
         <section id="investorView" class="view-panel">
-          <div class="investor-tabs" id="investorTabs" aria-label="투자자 선택"></div>
+          <div class="investor-toolbar">
+            <div class="investor-tabs" id="investorTabs" aria-label="투자자 선택"></div>
+            <form id="addInvestorForm" class="add-investor-form">
+              <input name="investorName" placeholder="투자자 추가" autocomplete="off" />
+              <button type="submit" class="icon-button" title="투자자 추가">+</button>
+            </form>
+          </div>
+
           <section class="investor-hero">
             <article class="hero-card compact-hero">
               <div class="hero-copy">
@@ -148,13 +155,39 @@
                   <span id="investorHoldingsCount">0개 종목</span>
                 </div>
               </div>
+              <div class="investor-actions">
+                <button type="button" id="deleteInvestorButton" class="danger-button">삭제</button>
+                <div id="deleteConfirm" class="delete-confirm">
+                  <span>정말 삭제할까요?</span>
+                  <button type="button" id="confirmDeleteInvestor">확인</button>
+                  <button type="button" id="cancelDeleteInvestor">취소</button>
+                </div>
+              </div>
             </article>
 
             <div class="mini-metrics">
-              <article class="metric-card"><span>투자원금</span><strong id="investorPrincipal">0원</strong><small>매수원가 합계</small></article>
+              <article class="metric-card"><span>투자원금</span><strong id="investorPrincipal">0원</strong><small>입금 - 출금</small></article>
               <article class="metric-card"><span>세금</span><strong id="investorTax">0원</strong><small>배당세 15%</small></article>
               <article class="metric-card"><span>배당</span><strong id="investorDividend">0원</strong><small id="investorDividendAfterTax">세후 0원</small></article>
-              <article class="metric-card"><span>예수금</span><strong id="investorCash">0원</strong><small>현금 별도 표시</small></article>
+              <article class="metric-card"><span>예수금</span><strong id="investorCash">0원</strong><small>매수 가능 현금</small></article>
+            </div>
+
+            <div class="panel cashflow-panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Cash Flow</p>
+                  <h2>입·출금 입력</h2>
+                </div>
+              </div>
+              <form id="cashflowForm" class="inline-form">
+                <select name="ownerId" id="cashflowOwnerSelect"></select>
+                <input name="date" type="date" required />
+                <input name="amount" type="number" min="0" step="1" placeholder="금액" required />
+                <input name="memo" placeholder="메모" />
+                <button type="submit" class="primary-button" data-cashflow-type="deposit">입금</button>
+                <button type="submit" class="ghost-button" data-cashflow-type="withdraw">출금</button>
+              </form>
+              <div class="cashflow-list" id="cashflowList"></div>
             </div>
           </section>
         </section>
@@ -166,7 +199,7 @@
                 <p class="eyebrow" id="holdingsScope">All Investors</p>
                 <h2>보유 종목</h2>
               </div>
-              <button type="button" id="openHoldingForm" class="icon-button" title="종목 추가">+</button>
+              <button type="button" id="openTradeForm" class="primary-button" title="매수·매도 입력">거래 입력</button>
             </div>
             <div class="table-wrap">
               <table>
@@ -176,11 +209,10 @@
                     <th>투자자</th>
                     <th>분류</th>
                     <th>수량</th>
-                    <th>평단</th>
-                    <th>현재가</th>
+                    <th>평단/평균환율</th>
+                    <th>현재가/환율</th>
                     <th>평가금액</th>
-                    <th>손익</th>
-                    <th></th>
+                    <th>손익 분해</th>
                   </tr>
                 </thead>
                 <tbody id="holdingsTable"></tbody>
@@ -192,9 +224,8 @@
             <div class="panel-header">
               <div>
                 <p class="eyebrow" id="transactionsScope">All Investors</p>
-                <h2>최근 거래</h2>
+                <h2>원장 내역</h2>
               </div>
-              <button type="button" id="openTradeForm" class="icon-button" title="거래 추가">+</button>
             </div>
             <div class="table-wrap compact">
               <table>
@@ -203,7 +234,7 @@
                     <th>일자</th>
                     <th>투자자</th>
                     <th>구분</th>
-                    <th>종목</th>
+                    <th>항목</th>
                     <th>금액</th>
                   </tr>
                 </thead>
@@ -215,62 +246,50 @@
       </main>
     </div>
 
-    <dialog id="holdingDialog">
-      <form method="dialog" id="holdingForm" class="dialog-form">
+    <dialog id="tradeDialog">
+      <form method="dialog" id="tradeForm" class="dialog-form">
         <div class="dialog-head">
-          <h2>종목 추가</h2>
+          <h2>매수·매도 입력</h2>
           <button type="button" class="icon-button" data-close-dialog title="닫기">x</button>
         </div>
-        <label>투자자 <select name="ownerId" id="holdingOwnerSelect"></select></label>
+        <div class="form-grid">
+          <label>투자자 <select name="ownerId" id="tradeOwnerSelect"></select></label>
+          <label>일자 <input name="date" type="date" required /></label>
+          <label>구분
+            <select name="side">
+              <option value="buy">매수</option>
+              <option value="sell">매도</option>
+            </select>
+          </label>
+          <label>통화
+            <select name="currency">
+              <option value="USD">USD</option>
+              <option value="KRW">KRW</option>
+            </select>
+          </label>
+        </div>
+        <label>티커 <input name="ticker" required placeholder="예: SCHD" autocomplete="off" /></label>
         <label>종목명 <input name="name" required placeholder="예: SCHD" /></label>
-        <label>티커 <input name="ticker" required placeholder="예: SCHD" /></label>
         <label>분류
           <select name="type">
             <option>주식</option>
             <option>코인</option>
             <option>ETF</option>
             <option>채권</option>
-            <option>현금</option>
           </select>
         </label>
         <div class="form-grid">
-          <label>수량 <input name="quantity" type="number" min="0" step="0.0001" required /></label>
-          <label>평단 <input name="avgPrice" type="number" min="0" step="1" required /></label>
-          <label>현재가 <input name="price" type="number" min="0" step="1" required /></label>
-          <label>예상 배당 <input name="annualDividend" type="number" min="0" step="1" value="0" /></label>
+          <label>수량 <input name="quantity" type="number" min="0" step="0.000001" required /></label>
+          <label>체결가 <input name="price" type="number" min="0" step="0.0001" required /></label>
+          <label>매입 환율 <input name="fx" type="number" min="0" step="0.01" required /></label>
+          <label>현재 환율 <input name="currentFx" type="number" min="0" step="0.01" required /></label>
+          <label>현재가 <input name="currentPrice" type="number" min="0" step="0.0001" required /></label>
         </div>
+        <label>메모 <input name="memo" placeholder="예: 추가 매수" /></label>
+        <div class="trade-preview" id="tradePreview">종목, 수량, 체결가를 입력하면 물타기 결과가 표시됩니다.</div>
         <menu>
           <button type="button" class="ghost-button" data-close-dialog>취소</button>
-          <button type="submit" class="primary-button">저장</button>
-        </menu>
-      </form>
-    </dialog>
-
-    <dialog id="tradeDialog">
-      <form method="dialog" id="tradeForm" class="dialog-form">
-        <div class="dialog-head">
-          <h2>거래 추가</h2>
-          <button type="button" class="icon-button" data-close-dialog title="닫기">x</button>
-        </div>
-        <label>투자자 <select name="ownerId" id="tradeOwnerSelect"></select></label>
-        <label>일자 <input name="date" type="date" required /></label>
-        <label>구분
-          <select name="side">
-            <option>매수</option>
-            <option>매도</option>
-            <option>배당</option>
-            <option>입금</option>
-          </select>
-        </label>
-        <label>종목 <input name="asset" required placeholder="예: BTC" /></label>
-        <div class="form-grid">
-          <label>수량 <input name="quantity" type="number" min="0" step="0.0001" required /></label>
-          <label>단가 <input name="price" type="number" min="0" step="1" required /></label>
-        </div>
-        <label>메모 <input name="memo" placeholder="예: 월 적립식 매수" /></label>
-        <menu>
-          <button type="button" class="ghost-button" data-close-dialog>취소</button>
-          <button type="submit" class="primary-button">저장</button>
+          <button type="submit" class="primary-button">반영</button>
         </menu>
       </form>
     </dialog>
