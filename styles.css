@@ -105,7 +105,8 @@ td:nth-child(n + 3) {
   gap: 7px;
 }
 
-.nav-list a {
+.nav-list a,
+.nav-item {
   position: relative;
   border-radius: 8px;
   color: var(--muted);
@@ -114,7 +115,14 @@ td:nth-child(n + 3) {
   transition: background 180ms ease, color 180ms ease;
 }
 
-.nav-list a::before {
+.nav-item {
+  width: 100%;
+  background: transparent;
+  text-align: left;
+}
+
+.nav-list a::before,
+.nav-item::before {
   content: "";
   position: absolute;
   left: 0;
@@ -126,13 +134,17 @@ td:nth-child(n + 3) {
 }
 
 .nav-list a.active,
-.nav-list a:hover {
+.nav-list a:hover,
+.nav-item.active,
+.nav-item:hover {
   background: rgba(124, 92, 252, 0.12);
   color: var(--ink);
 }
 
 .nav-list a.active::before,
-.nav-list a:hover::before {
+.nav-list a:hover::before,
+.nav-item.active::before,
+.nav-item:hover::before {
   background: linear-gradient(180deg, var(--violet-2), var(--violet));
 }
 
@@ -243,6 +255,14 @@ button {
   font-weight: 900;
 }
 
+.view-panel {
+  display: none;
+}
+
+.active-view {
+  display: block;
+}
+
 .hero-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -271,6 +291,10 @@ button {
     radial-gradient(120% 120% at 0% 0%, rgba(124, 92, 252, 0.28), rgba(124, 92, 252, 0.04) 48%, transparent 72%),
     linear-gradient(145deg, #181821, #111117);
   box-shadow: var(--shadow), var(--glow);
+}
+
+.compact-hero {
+  min-height: 208px;
 }
 
 .hero-card::after {
@@ -328,6 +352,12 @@ button {
   gap: 16px;
 }
 
+.mini-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .metric-card {
   padding: 18px;
   background: linear-gradient(180deg, rgba(28, 28, 37, 0.78), var(--surface));
@@ -352,6 +382,59 @@ button {
   gap: 16px;
 }
 
+.lower-workspace {
+  margin-top: 16px;
+}
+
+.investor-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.investor-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.investor-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 14px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.investor-chip span,
+.avatar {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 6px;
+  background: rgba(124, 92, 252, 0.16);
+  color: var(--violet-3);
+  font-size: 12px;
+}
+
+.investor-chip.active {
+  border-color: rgba(157, 123, 255, 0.44);
+  background: linear-gradient(135deg, var(--violet-2), var(--violet));
+  color: white;
+}
+
+.investor-chip.active span {
+  background: rgba(255, 255, 255, 0.22);
+  color: white;
+}
+
 .panel {
   min-width: 0;
   padding: 18px;
@@ -373,12 +456,20 @@ button {
   grid-column: span 8;
 }
 
+.span-3 {
+  grid-column: span 3;
+}
+
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
+}
+
+.compact-head {
+  margin-bottom: 12px;
 }
 
 .table-wrap {
@@ -388,11 +479,11 @@ button {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 760px;
+  min-width: 880px;
 }
 
 .compact table {
-  min-width: 620px;
+  min-width: 560px;
 }
 
 th,
@@ -408,7 +499,9 @@ td:first-child,
 th:nth-child(2),
 td:nth-child(2),
 th:nth-child(3),
-td:nth-child(3) {
+td:nth-child(3),
+.compact th:nth-child(4),
+.compact td:nth-child(4) {
   text-align: left;
 }
 
@@ -455,6 +548,11 @@ tbody tr:hover {
   font-weight: 800;
 }
 
+.owner-label {
+  color: var(--ink);
+  font-weight: 700;
+}
+
 .positive {
   color: var(--up) !important;
 }
@@ -498,14 +596,18 @@ tbody tr:hover {
 
 .legend,
 .rebalance-list,
-.account-list {
+.account-list,
+.market-list,
+.investor-comparison {
   display: grid;
   gap: 10px;
 }
 
 .legend-row,
 .rebalance-item,
-.account-card {
+.account-card,
+.market-card,
+.investor-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -543,7 +645,9 @@ tbody tr:hover {
 }
 
 .rebalance-item,
-.account-card {
+.account-card,
+.market-card,
+.investor-card {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px;
@@ -551,13 +655,33 @@ tbody tr:hover {
 }
 
 .rebalance-item strong,
-.account-card strong {
+.account-card strong,
+.market-card strong,
+.investor-card strong {
   display: block;
 }
 
 .rebalance-item small,
-.account-card small {
+.account-card small,
+.market-card small,
+.investor-card small {
   color: var(--muted);
+}
+
+.market-card {
+  align-items: flex-start;
+}
+
+.market-card span,
+.investor-card span {
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.investor-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
 dialog {
@@ -641,9 +765,14 @@ menu {
 
   .span-4,
   .span-5,
+  .span-3,
   .span-7,
   .span-8 {
     grid-column: 1 / -1;
+  }
+
+  .mini-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -672,6 +801,7 @@ menu {
   }
 
   .metric-stack,
+  .mini-metrics,
   .form-grid {
     grid-template-columns: 1fr;
   }

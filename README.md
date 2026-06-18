@@ -12,6 +12,15 @@
 - 브라우저 `localStorage` 저장 및 JSON 내보내기
 - GitHub Pages public preview 배포 워크플로우
 
+## 데이터 구조 메모
+
+- `investors`: 투자자 목록
+- `holdings.ownerId`: 보유 종목의 투자자 귀속
+- `transactions.ownerId`: 거래의 투자자 귀속
+- 통합 대시보드는 투자자별 데이터를 단순 합산
+- 투자원금은 현금을 제외한 매수원가 합계
+- 예수금은 현금 항목으로 별도 표시
+
 ## 로컬 실행
 
 별도 빌드 과정 없이 `index.html`을 브라우저에서 열면 됩니다.

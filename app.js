@@ -1,20 +1,33 @@
-const STORAGE_KEY = "assetpilot-state-v2";
+const STORAGE_KEY = "assetpilot-pooled-state-v1";
+const DIVIDEND_TAX_RATE = 0.15;
 const colors = ["#7c5cfc", "#8d6dff", "#9d7bff", "#ae91ff", "#bfa8ff", "#d1c2ff"];
 
 const seedState = {
+  selectedView: "dashboard",
+  selectedInvestorId: "kim",
+  investors: [
+    { id: "kim", name: "김지훈", initials: "김" },
+    { id: "lee", name: "이서연", initials: "이" }
+  ],
+  marketIndicators: [
+    { symbol: "BTC", domestic: 52000000, globalKrw: 50420000 },
+    { symbol: "ETH", domestic: 3300000, globalKrw: 3244000 }
+  ],
   holdings: [
-    { id: crypto.randomUUID(), name: "삼성전자", ticker: "005930", type: "국내주식", account: "연금저축", quantity: 120, avgPrice: 70800, price: 76400, target: 24 },
-    { id: crypto.randomUUID(), name: "TIGER 미국S&P500", ticker: "360750", type: "ETF", account: "ISA", quantity: 88, avgPrice: 17250, price: 19640, target: 28 },
-    { id: crypto.randomUUID(), name: "Apple", ticker: "AAPL", type: "해외주식", account: "해외주식", quantity: 18, avgPrice: 181000, price: 207000, target: 18 },
-    { id: crypto.randomUUID(), name: "국고채 3년", ticker: "KR3Y", type: "채권", account: "위탁", quantity: 40, avgPrice: 101000, price: 100400, target: 15 },
-    { id: crypto.randomUUID(), name: "예수금", ticker: "CASH", type: "현금", account: "CMA", quantity: 1, avgPrice: 3800000, price: 3800000, target: 10 },
-    { id: crypto.randomUUID(), name: "금 현물", ticker: "GOLD", type: "대체자산", account: "위탁", quantity: 8, avgPrice: 133000, price: 146000, target: 5 }
+    { id: crypto.randomUUID(), ownerId: "kim", name: "SCHD", ticker: "SCHD", type: "주식", quantity: 20, avgPrice: 25000, price: 29500, annualDividend: 9881 },
+    { id: crypto.randomUUID(), ownerId: "kim", name: "Realty Income", ticker: "O", type: "주식", quantity: 15, avgPrice: 54000, price: 80040, annualDividend: 8200 },
+    { id: crypto.randomUUID(), ownerId: "kim", name: "Bitcoin", ticker: "BTC", type: "코인", quantity: 0.005, avgPrice: 40000000, price: 52000000, annualDividend: 0 },
+    { id: crypto.randomUUID(), ownerId: "kim", name: "예수금", ticker: "CASH", type: "현금", quantity: 1, avgPrice: 350000, price: 350000, annualDividend: 0 },
+    { id: crypto.randomUUID(), ownerId: "lee", name: "TIGER 미국S&P500", ticker: "360750", type: "ETF", quantity: 58, avgPrice: 17250, price: 19640, annualDividend: 4600 },
+    { id: crypto.randomUUID(), ownerId: "lee", name: "Ethereum", ticker: "ETH", type: "코인", quantity: 0.42, avgPrice: 2890000, price: 3300000, annualDividend: 0 },
+    { id: crypto.randomUUID(), ownerId: "lee", name: "국고채 3년", ticker: "KR3Y", type: "채권", quantity: 12, avgPrice: 101000, price: 100400, annualDividend: 36000 },
+    { id: crypto.randomUUID(), ownerId: "lee", name: "예수금", ticker: "CASH", type: "현금", quantity: 1, avgPrice: 720000, price: 720000, annualDividend: 0 }
   ],
   transactions: [
-    { id: crypto.randomUUID(), date: "2026-06-17", side: "매수", asset: "TIGER 미국S&P500", quantity: 8, price: 19640, memo: "월 적립식" },
-    { id: crypto.randomUUID(), date: "2026-06-12", side: "배당", asset: "Apple", quantity: 18, price: 360, memo: "분기 배당" },
-    { id: crypto.randomUUID(), date: "2026-06-05", side: "매수", asset: "국고채 3년", quantity: 5, price: 100400, memo: "변동성 완충" },
-    { id: crypto.randomUUID(), date: "2026-06-01", side: "입금", asset: "예수금", quantity: 1, price: 600000, memo: "정기 입금" }
+    { id: crypto.randomUUID(), ownerId: "kim", date: "2026-06-17", side: "매수", asset: "SCHD", quantity: 5, price: 29500, memo: "배당주 추가" },
+    { id: crypto.randomUUID(), ownerId: "kim", date: "2026-06-12", side: "배당", asset: "SCHD", quantity: 1, price: 9881, memo: "예상 배당 반영" },
+    { id: crypto.randomUUID(), ownerId: "lee", date: "2026-06-10", side: "매수", asset: "ETH", quantity: 0.08, price: 3300000, memo: "코인 비중 확대" },
+    { id: crypto.randomUUID(), ownerId: "lee", date: "2026-06-01", side: "입금", asset: "예수금", quantity: 1, price: 500000, memo: "정기 입금" }
   ]
 };
 
@@ -34,7 +47,11 @@ function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return structuredClone(seedState);
   try {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.investors) || !parsed.holdings?.every((item) => item.ownerId)) {
+      return structuredClone(seedState);
+    }
+    return parsed;
   } catch {
     return structuredClone(seedState);
   }
@@ -45,11 +62,19 @@ function saveState() {
 }
 
 function money(value) {
-  return formatter.format(Math.round(value));
+  return formatter.format(Math.round(value || 0));
 }
 
 function pct(value) {
-  return `${numberFormatter.format(value)}%`;
+  return `${numberFormatter.format(value || 0)}%`;
+}
+
+function signedMoney(value) {
+  return `${value >= 0 ? "+" : ""}${money(value)}`;
+}
+
+function investorById(id) {
+  return state.investors.find((investor) => investor.id === id) || state.investors[0];
 }
 
 function holdingValue(item) {
@@ -57,33 +82,47 @@ function holdingValue(item) {
 }
 
 function holdingCost(item) {
-  return item.quantity * item.avgPrice;
+  return item.type === "현금" ? 0 : item.quantity * item.avgPrice;
 }
 
-function totals() {
-  const totalValue = state.holdings.reduce((sum, item) => sum + holdingValue(item), 0);
-  const totalCost = state.holdings.reduce((sum, item) => sum + holdingCost(item), 0);
-  const cashValue = state.holdings
-    .filter((item) => item.type === "현금")
-    .reduce((sum, item) => sum + holdingValue(item), 0);
+function filteredHoldings(ownerId) {
+  return ownerId ? state.holdings.filter((item) => item.ownerId === ownerId) : state.holdings;
+}
 
+function filteredTransactions(ownerId) {
+  return ownerId ? state.transactions.filter((item) => item.ownerId === ownerId) : state.transactions;
+}
+
+function summarize(ownerId) {
+  const holdings = filteredHoldings(ownerId);
+  const principal = holdings.reduce((sum, item) => sum + holdingCost(item), 0);
+  const totalValue = holdings.reduce((sum, item) => sum + holdingValue(item), 0);
+  const cashValue = holdings.filter((item) => item.type === "현금").reduce((sum, item) => sum + holdingValue(item), 0);
+  const investedValue = totalValue - cashValue;
+  const profit = investedValue - principal;
+  const dividend = holdings.reduce((sum, item) => sum + (Number(item.annualDividend) || 0), 0);
+  const tax = dividend * DIVIDEND_TAX_RATE;
   return {
+    holdings,
+    principal,
     totalValue,
-    totalCost,
-    totalProfit: totalValue - totalCost,
-    profitRate: totalCost ? ((totalValue - totalCost) / totalCost) * 100 : 0,
     cashValue,
-    cashRatio: totalValue ? (cashValue / totalValue) * 100 : 0
+    investedValue,
+    profit,
+    returnRate: principal ? (profit / principal) * 100 : 0,
+    dividend,
+    tax,
+    dividendAfterTax: dividend - tax
   };
 }
 
-function groupedByType() {
-  const total = totals().totalValue || 1;
+function groupedByType(ownerId) {
+  const summary = summarize(ownerId);
+  const total = summary.totalValue || 1;
   const map = new Map();
-  for (const item of state.holdings) {
-    const current = map.get(item.type) || { type: item.type, value: 0, target: 0 };
+  for (const item of summary.holdings) {
+    const current = map.get(item.type) || { type: item.type, value: 0 };
     current.value += holdingValue(item);
-    current.target += Number(item.target) || 0;
     map.set(item.type, current);
   }
   return Array.from(map.values()).map((item) => ({
@@ -92,46 +131,32 @@ function groupedByType() {
   }));
 }
 
-function renderMetrics() {
-  const summary = totals();
-  const rebalances = groupedByType().filter((item) => Math.abs(item.actual - item.target) >= 5);
-  const totalProfit = document.querySelector("#totalProfit");
-
-  document.querySelector("#totalValue").textContent = money(summary.totalValue);
-  document.querySelector("#dailyChange").textContent = `평가 기준 ${new Date().toLocaleDateString("ko-KR")}`;
-  totalProfit.textContent = `${summary.totalProfit >= 0 ? "+" : ""}${money(summary.totalProfit)}`;
-  totalProfit.className = summary.totalProfit >= 0 ? "positive" : "negative";
-  document.querySelector("#profitRate").textContent = `수익률 ${summary.profitRate >= 0 ? "+" : ""}${pct(summary.profitRate)}`;
-  document.querySelector("#cashRatio").textContent = pct(summary.cashRatio);
-  document.querySelector("#cashAmount").textContent = money(summary.cashValue);
-  document.querySelector("#rebalanceCount").textContent = `${rebalances.length}건`;
+function renderView() {
+  document.querySelectorAll(".view-panel").forEach((panel) => panel.classList.remove("active-view"));
+  document.querySelector(`#${state.selectedView}View`).classList.add("active-view");
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.view === state.selectedView);
+  });
+  document.querySelector("#holdingsScope").textContent = state.selectedView === "investor" ? investorById(state.selectedInvestorId).name : "All Investors";
+  document.querySelector("#transactionsScope").textContent = state.selectedView === "investor" ? investorById(state.selectedInvestorId).name : "All Investors";
 }
 
-function renderHoldings() {
-  const body = document.querySelector("#holdingsTable");
-  body.innerHTML = "";
-
-  for (const item of state.holdings) {
-    const value = holdingValue(item);
-    const profit = value - holdingCost(item);
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td><span class="asset-name"><strong>${item.name}</strong><small>${item.ticker} · ${item.account}</small></span></td>
-      <td><span class="pill">${item.type}</span></td>
-      <td>${numberFormatter.format(item.quantity)}</td>
-      <td>${money(item.avgPrice)}</td>
-      <td>${money(item.price)}</td>
-      <td>${money(value)}</td>
-      <td class="${profit >= 0 ? "positive" : "negative"}">${profit >= 0 ? "+" : ""}${money(profit)}</td>
-      <td><button type="button" class="icon-button" title="삭제" data-delete-holding="${item.id}">x</button></td>
-    `;
-    body.appendChild(row);
-  }
+function renderDashboard() {
+  const summary = summarize();
+  const totalProfit = document.querySelector("#totalProfit");
+  document.querySelector("#totalValue").textContent = money(summary.totalValue);
+  document.querySelector("#totalPrincipal").textContent = money(summary.principal);
+  totalProfit.textContent = signedMoney(summary.profit);
+  totalProfit.className = summary.profit >= 0 ? "positive" : "negative";
+  document.querySelector("#profitRate").textContent = `수익률 ${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}`;
+  document.querySelector("#totalDividend").textContent = `총배당 ${money(summary.dividend)}`;
+  document.querySelector("#cashAmount").textContent = money(summary.cashValue);
+  document.querySelector("#cashRatio").textContent = `총액 대비 ${pct(summary.totalValue ? (summary.cashValue / summary.totalValue) * 100 : 0)}`;
 }
 
 function renderAllocation() {
   const groups = groupedByType();
-  const total = totals().totalValue || 1;
+  const total = summarize().totalValue || 1;
   let cursor = 0;
   const segments = groups.map((group, index) => {
     const start = cursor;
@@ -139,7 +164,6 @@ function renderAllocation() {
     cursor = end;
     return `${colors[index % colors.length]} ${start}% ${end}%`;
   });
-
   document.querySelector("#allocationDonut").style.background = `conic-gradient(${segments.join(", ")})`;
 
   const legend = document.querySelector("#allocationLegend");
@@ -153,79 +177,174 @@ function renderAllocation() {
     `;
     legend.appendChild(row);
   });
+}
 
-  const rebalanceList = document.querySelector("#rebalanceList");
-  rebalanceList.innerHTML = "";
-  const rebalances = groups
-    .map((group) => ({ ...group, gap: group.actual - group.target }))
-    .filter((group) => Math.abs(group.gap) >= 5);
-
-  if (!rebalances.length) {
-    rebalanceList.innerHTML = `<div class="rebalance-item"><div><strong>균형 유지</strong><small>목표비중과 큰 차이가 없습니다.</small></div></div>`;
-    return;
-  }
-
-  rebalances.forEach((group) => {
-    const action = group.gap > 0 ? "축소" : "확대";
+function renderMarket() {
+  const list = document.querySelector("#marketList");
+  list.innerHTML = "";
+  state.marketIndicators.forEach((item) => {
+    const premium = item.globalKrw ? ((item.domestic / item.globalKrw) - 1) * 100 : 0;
     const row = document.createElement("div");
-    row.className = "rebalance-item";
+    row.className = "market-card";
     row.innerHTML = `
-      <div><strong>${group.type} ${action}</strong><small>현재 ${pct(group.actual)} · 목표 ${pct(group.target)}</small></div>
-      <span class="${group.gap > 0 ? "negative" : "positive"}">${pct(Math.abs(group.gap))}p</span>
+      <div><strong>${item.symbol}</strong><small>국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)}</small></div>
+      <span class="${premium >= 0 ? "positive" : "negative"}">${premium >= 0 ? "+" : ""}${pct(premium)}</span>
     `;
-    rebalanceList.appendChild(row);
+    list.appendChild(row);
   });
 }
 
-function renderAccounts() {
-  const accounts = new Map();
-  for (const item of state.holdings) {
-    accounts.set(item.account, (accounts.get(item.account) || 0) + holdingValue(item));
-  }
-  const list = document.querySelector("#accountList");
+function renderInvestorComparison() {
+  const list = document.querySelector("#investorComparison");
   list.innerHTML = "";
-  for (const [name, value] of accounts) {
+  const total = summarize().totalValue || 1;
+  state.investors.forEach((investor) => {
+    const summary = summarize(investor.id);
+    const share = (summary.totalValue / total) * 100;
     const row = document.createElement("div");
-    row.className = "account-card";
-    row.innerHTML = `<div><strong>${name}</strong><small>${state.holdings.filter((item) => item.account === name).length}개 자산</small></div><span>${money(value)}</span>`;
+    row.className = "investor-card";
+    row.innerHTML = `
+      <div class="avatar">${investor.initials}</div>
+      <div><strong>${investor.name}</strong><small>지분 ${pct(share)} · ${summary.holdings.filter((item) => item.type !== "현금").length}개 종목</small></div>
+      <span class="${summary.profit >= 0 ? "positive" : "negative"}">${signedMoney(summary.profit)}</span>
+    `;
     list.appendChild(row);
+  });
+}
+
+function renderInvestorTabs() {
+  const tabs = document.querySelector("#investorTabs");
+  tabs.innerHTML = "";
+  state.investors.forEach((investor) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `investor-chip ${investor.id === state.selectedInvestorId ? "active" : ""}`;
+    button.dataset.investorId = investor.id;
+    button.innerHTML = `<span>${investor.initials}</span>${investor.name}`;
+    tabs.appendChild(button);
+  });
+}
+
+function renderInvestorSheet() {
+  const investor = investorById(state.selectedInvestorId);
+  const summary = summarize(investor.id);
+  const investedHoldings = summary.holdings.filter((item) => item.type !== "현금");
+  document.querySelector("#selectedInvestorLabel").textContent = `${investor.name}님의 평가금액`;
+  document.querySelector("#investorValue").textContent = money(summary.totalValue);
+  document.querySelector("#investorProfit").textContent = signedMoney(summary.profit);
+  document.querySelector("#investorProfit").className = summary.profit >= 0 ? "positive" : "negative";
+  document.querySelector("#investorReturn").textContent = `수익률 ${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}`;
+  document.querySelector("#investorHoldingsCount").textContent = `${investedHoldings.length}개 종목`;
+  document.querySelector("#investorPrincipal").textContent = money(summary.principal);
+  document.querySelector("#investorTax").textContent = money(summary.tax);
+  document.querySelector("#investorDividend").textContent = money(summary.dividend);
+  document.querySelector("#investorDividendAfterTax").textContent = `세후 ${money(summary.dividendAfterTax)}`;
+  document.querySelector("#investorCash").textContent = money(summary.cashValue);
+}
+
+function holdingsForCurrentView() {
+  return state.selectedView === "investor" ? filteredHoldings(state.selectedInvestorId) : state.holdings;
+}
+
+function transactionsForCurrentView() {
+  return state.selectedView === "investor" ? filteredTransactions(state.selectedInvestorId) : state.transactions;
+}
+
+function renderHoldings() {
+  const body = document.querySelector("#holdingsTable");
+  body.innerHTML = "";
+  for (const item of holdingsForCurrentView()) {
+    const value = holdingValue(item);
+    const cost = holdingCost(item);
+    const profit = item.type === "현금" ? 0 : value - cost;
+    const owner = investorById(item.ownerId);
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><span class="asset-name"><strong>${item.ticker}</strong><small>${item.name}</small></span></td>
+      <td><span class="owner-label">${owner.name}</span></td>
+      <td><span class="pill">${item.type}</span></td>
+      <td>${numberFormatter.format(item.quantity)}</td>
+      <td>${item.type === "현금" ? "-" : money(item.avgPrice)}</td>
+      <td>${money(item.price)}</td>
+      <td>${money(value)}</td>
+      <td class="${profit >= 0 ? "positive" : "negative"}">${item.type === "현금" ? "-" : signedMoney(profit)}</td>
+      <td><button type="button" class="icon-button" title="삭제" data-delete-holding="${item.id}">x</button></td>
+    `;
+    body.appendChild(row);
   }
 }
 
 function renderTransactions() {
   const body = document.querySelector("#transactionsTable");
   body.innerHTML = "";
-  state.transactions
+  transactionsForCurrentView()
     .slice()
     .sort((a, b) => b.date.localeCompare(a.date))
     .forEach((trade) => {
+      const owner = investorById(trade.ownerId);
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${trade.date}</td>
+        <td>${owner.name}</td>
         <td><span class="pill">${trade.side}</span></td>
         <td>${trade.asset}</td>
-        <td>${numberFormatter.format(trade.quantity)}</td>
-        <td>${money(trade.price)}</td>
-        <td>${trade.memo || "-"}</td>
+        <td>${money(trade.quantity * trade.price)}</td>
       `;
       body.appendChild(row);
     });
 }
 
+function populateOwnerSelects() {
+  for (const id of ["holdingOwnerSelect", "tradeOwnerSelect"]) {
+    const select = document.querySelector(`#${id}`);
+    select.innerHTML = "";
+    state.investors.forEach((investor) => {
+      const option = document.createElement("option");
+      option.value = investor.id;
+      option.textContent = investor.name;
+      select.appendChild(option);
+    });
+    select.value = state.selectedInvestorId;
+  }
+}
+
 function render() {
-  renderMetrics();
-  renderHoldings();
+  renderView();
+  renderDashboard();
   renderAllocation();
-  renderAccounts();
+  renderMarket();
+  renderInvestorComparison();
+  renderInvestorTabs();
+  renderInvestorSheet();
+  renderHoldings();
   renderTransactions();
+  populateOwnerSelects();
 }
 
 function openDialog(dialog) {
   if (typeof dialog.showModal === "function") dialog.showModal();
 }
 
+document.querySelectorAll("[data-view]").forEach((button) => {
+  button.addEventListener("click", () => {
+    state.selectedView = button.dataset.view;
+    saveState();
+    render();
+  });
+});
+
+document.querySelector("#investorTabs").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-investor-id]");
+  if (!button) return;
+  state.selectedInvestorId = button.dataset.investorId;
+  state.selectedView = "investor";
+  saveState();
+  render();
+});
+
 document.querySelector("#openHoldingForm").addEventListener("click", () => {
   document.querySelector("#holdingForm").reset();
+  populateOwnerSelects();
   openDialog(document.querySelector("#holdingDialog"));
 });
 
@@ -233,6 +352,7 @@ document.querySelector("#openTradeForm").addEventListener("click", () => {
   const form = document.querySelector("#tradeForm");
   form.reset();
   form.elements.date.valueAsDate = new Date();
+  populateOwnerSelects();
   openDialog(document.querySelector("#tradeDialog"));
 });
 
@@ -246,14 +366,14 @@ document.querySelector("#holdingForm").addEventListener("submit", (event) => {
   const data = new FormData(form);
   state.holdings.push({
     id: crypto.randomUUID(),
+    ownerId: data.get("ownerId"),
     name: data.get("name").trim(),
     ticker: data.get("ticker").trim(),
     type: data.get("type"),
-    account: data.get("account").trim(),
     quantity: Number(data.get("quantity")),
     avgPrice: Number(data.get("avgPrice")),
     price: Number(data.get("price")),
-    target: Number(data.get("target"))
+    annualDividend: Number(data.get("annualDividend")) || 0
   });
   saveState();
   render();
@@ -266,6 +386,7 @@ document.querySelector("#tradeForm").addEventListener("submit", (event) => {
   const data = new FormData(form);
   state.transactions.push({
     id: crypto.randomUUID(),
+    ownerId: data.get("ownerId"),
     date: data.get("date"),
     side: data.get("side"),
     asset: data.get("asset").trim(),
