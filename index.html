@@ -34,14 +34,21 @@
         <nav class="nav-list">
           <button type="button" class="nav-item active" data-view="dashboard">통합 대시보드</button>
           <button type="button" class="nav-item" data-view="investor">투자자별 시트</button>
+          <button type="button" class="nav-item" data-view="dividend">배당 시뮬레이션</button>
+          <button type="button" class="nav-item" data-view="calendar">배당 캘린더</button>
           <a href="#holdings">보유 종목</a>
           <a href="#transactions">원장 내역</a>
         </nav>
 
         <div class="currency-card">
-          <span>CORE FORMULA</span>
-          <strong>KRW</strong>
-          <small>투자원금=입금-출금, 예수금=순입금-매수+매도, 평가금액=보유평가+예수금</small>
+          <span>USD/KRW</span>
+          <strong id="fxRateLabel">1,380</strong>
+          <small id="fxSourceLabel">수동 기준</small>
+          <label class="mini-toggle">
+            <input type="checkbox" id="manualFxToggle" />
+            <span>수동 환율</span>
+          </label>
+          <input id="manualFxInput" class="compact-input" type="number" min="1" step="0.01" placeholder="USD/KRW" />
         </div>
       </aside>
 
@@ -52,8 +59,12 @@
             <h1>공동운용 자산관리</h1>
           </div>
           <div class="top-actions">
+            <span id="marketStatus" class="status-pill">마지막 갱신: 대기 중</span>
             <button type="button" id="seedButton" class="ghost-button" title="데모 데이터 복원">초기화</button>
+            <button type="button" id="undoImportButton" class="ghost-button hidden" title="가져오기 전 상태로 되돌리기">되돌리기</button>
+            <button type="button" id="importButton" class="ghost-button" title="JSON 백업 불러오기">가져오기</button>
             <button type="button" id="exportButton" class="primary-button" title="JSON 백업 다운로드">내보내기</button>
+            <input id="importFileInput" type="file" accept="application/json" hidden />
           </div>
         </header>
 
@@ -132,6 +143,16 @@
               </div>
               <div class="investor-comparison" id="investorComparison"></div>
             </div>
+
+            <div class="panel span-12">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">History</p>
+                  <h2>총자산 추이</h2>
+                </div>
+              </div>
+              <div class="trend-area" id="trendArea"></div>
+            </div>
           </section>
         </section>
 
@@ -189,6 +210,55 @@
               </form>
               <div class="cashflow-list" id="cashflowList"></div>
             </div>
+          </section>
+        </section>
+
+        <section id="dividendView" class="view-panel">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Dividend</p>
+                <h2>배당 시뮬레이션</h2>
+              </div>
+            </div>
+            <form id="dividendSimForm" class="sim-controls">
+              <label>대상 <select name="target" id="dividendTargetSelect"></select></label>
+              <label>향후 연수 <input name="years" type="number" min="1" max="30" step="1" value="10" /></label>
+              <label>연간 배당성장률(%) <input name="growth" type="number" min="-20" max="50" step="0.1" value="5" /></label>
+              <label class="check-control"><input name="drip" type="checkbox" /> DRIP 재투자</label>
+            </form>
+            <div class="dividend-layout">
+              <div class="chart-box" id="dividendChart"></div>
+              <div class="investor-distribution" id="dividendDistribution"></div>
+            </div>
+            <p class="panel-note">투자자별 분배는 현재 보유 비율이 유지된다는 단순 가정으로 계산됩니다.</p>
+            <div class="table-wrap compact">
+              <table>
+                <thead>
+                  <tr>
+                    <th>연도</th>
+                    <th>세전 배당</th>
+                    <th>세후 배당</th>
+                    <th>누적 세후</th>
+                    <th>DRIP 추가수량</th>
+                  </tr>
+                </thead>
+                <tbody id="dividendTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="calendarView" class="view-panel">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Calendar</p>
+                <h2>배당 캘린더</h2>
+              </div>
+              <select id="calendarTargetSelect" class="small-select"></select>
+            </div>
+            <div class="calendar-grid" id="dividendCalendar"></div>
           </section>
         </section>
 
@@ -293,6 +363,22 @@
         </menu>
       </form>
     </dialog>
+
+    <dialog id="confirmImportDialog">
+      <form method="dialog" class="dialog-form">
+        <div class="dialog-head">
+          <h2>백업 가져오기</h2>
+          <button type="button" class="icon-button" data-close-dialog title="닫기">x</button>
+        </div>
+        <p class="dialog-copy">현재 데이터를 덮어씁니다. 계속하시겠습니까?</p>
+        <menu>
+          <button type="button" class="ghost-button" data-close-dialog>취소</button>
+          <button type="button" id="confirmImportButton" class="primary-button">가져오기</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="./app.js"></script>
   </body>

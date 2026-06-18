@@ -12,7 +12,13 @@
 - 물타기 미리보기: 기존 보유 종목 추가 매수 시 새 평단, 평균환율, 예상손익 표시
 - 보유 종목 원장 재생: 매수/매도 거래를 재생해 수량, 평단, 평균환율 자동 산출
 - 손익 분해: 주가손익과 환차손익을 원화로 분리 표시
-- 브라우저 `localStorage` 저장 및 JSON 내보내기
+- 브라우저 `localStorage` 저장 및 JSON 내보내기/가져오기
+- 가져오기 검증: 투자자/입출금/거래 배열과 필수 필드 타입 확인, 가져오기 1회 되돌리기 지원
+- 총자산 추이: 거래/입출금/시세 갱신 시 일별 스냅샷 저장
+- 코인 시세 자동 갱신: 빗썸 KRW + CoinGecko USD 기준 김프 재계산
+- 미국주식/환율 프록시 골격: `/proxy` Cloudflare Workers 프로젝트 포함
+- 배당 시뮬레이션: 성장률, 연수, DRIP 가정에 따른 세전/세후/누적 배당 계산
+- 배당 캘린더: 보유 종목의 지급월 기준 12개월 예상 배당 표시
 - GitHub Pages public preview 배포 워크플로우
 
 ## 핵심 계산식
@@ -32,10 +38,24 @@
 - `trades`: 매수/매도 거래 원장
 - `assetCatalog`: 현재가, 현재환율, 자산 분류, 예상 배당 메타데이터
 - `ownerId`: 입출금과 거래가 귀속되는 투자자 ID
+- `snapshots`: 일별 총자산 스냅샷
+- `fx`: USD/KRW 자동/수동 환율 상태
+- `market`: 시세 갱신 성공/실패 메타데이터
 
 ## 로컬 실행
 
 별도 빌드 과정 없이 `index.html`을 브라우저에서 열면 됩니다.
+
+## 백업
+
+상단 `내보내기`는 `schemaVersion`이 포함된 JSON을 다운로드합니다. `가져오기`는 스키마를 검증한 뒤 현재 데이터를 덮어쓰며, 덮어쓰기 직전 상태로 1회 되돌릴 수 있습니다.
+
+## 시세/환율 연동
+
+- 코인: 브라우저에서 빗썸 공개 API와 CoinGecko 공개 API를 직접 호출합니다.
+- 미국주식/환율: API 키 노출과 서버 측 HTML 파싱 문제 때문에 `/proxy`의 Cloudflare Workers 프록시를 사용합니다.
+- Worker 배포 후 `app.js`의 `PROXY_BASE_URL`에 Worker URL을 입력하면 미국주식 `/quote`, 환율 `/fxrate` 호출이 활성화됩니다.
+- Finnhub API key는 프론트 코드에 넣지 말고 `wrangler secret put FINNHUB_API_KEY`로 등록하세요.
 
 ## GitHub Pages
 

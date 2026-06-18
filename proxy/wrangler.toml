@@ -1,0 +1,6 @@
+name = "assetpilot-proxy"
+main = "src/index.js"
+compatibility_date = "2026-06-19"
+
+[vars]
+# FINNHUB_API_KEY는 wrangler secret으로 등록하세요.
