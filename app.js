@@ -74,11 +74,16 @@ const seedState = {
 };
 
 let state = loadState();
+const requestedView = new URLSearchParams(window.location.search).get("view");
+if (["dashboard", "investor", "dividend", "calendar"].includes(requestedView)) {
+  state.selectedView = requestedView;
+}
 let pendingImportState = null;
 let importRollbackState = null;
 let toastTimer = null;
 let pollingTimer = null;
 let fxTimer = null;
+let dividendDetailOpen = false;
 
 const formatter = new Intl.NumberFormat("ko-KR", {
   style: "currency",
@@ -649,9 +654,8 @@ function populateOwnerSelects() {
     select.value = state.selectedInvestorId;
   }
 
-  const dividendSelect = document.querySelector("#dividendTargetSelect");
   const calendarSelect = document.querySelector("#calendarTargetSelect");
-  for (const select of [dividendSelect, calendarSelect]) {
+  for (const select of [calendarSelect]) {
     const current = select.value;
     select.innerHTML = `<option value="">통합</option>`;
     state.investors.forEach((investor) => {
@@ -724,39 +728,77 @@ function canWithdraw(ownerId, amount) {
   return cashBalance(ownerId) >= amount;
 }
 
-function dividendRows(ownerId, years, growthRate, drip) {
-  const holdings = replayHoldings(ownerId).map((holding) => ({ ...holding }));
+function dividendScenario() {
+  const form = document.querySelector("#dividendSimForm");
+  const ticker = form.elements.ticker.value.trim().toUpperCase() || "CUSTOM";
+  const quantity = Number(form.elements.quantity.value) || 0;
+  const price = Number(form.elements.price.value) || 0;
+  const currency = form.elements.currency.value;
+  const fx = currency === "KRW" ? 1 : Number(form.elements.fx.value) || currentUsdKrw();
+  const annualYield = (Number(form.elements.yield.value) || 0) / 100;
+  const frequency = Number(form.elements.frequency.value) || 12;
+  const years = Math.min(30, Math.max(1, Number(form.elements.years.value) || 10));
+  const growthRate = (Number(form.elements.growth.value) || 0) / 100;
+  const drip = form.elements.drip.checked;
+  const priceKrw = price * fx;
+  const principal = quantity * priceKrw;
+  const annualBeforeTax = principal * annualYield;
+
+  return {
+    ticker,
+    quantity,
+    price,
+    currency,
+    fx,
+    annualYield,
+    frequency,
+    years,
+    growthRate,
+    drip,
+    priceKrw,
+    principal,
+    annualBeforeTax
+  };
+}
+
+function dividendRows(scenario) {
+  let quantity = scenario.quantity;
   const rows = [];
   let cumulativeAfterTax = 0;
-  for (let year = 1; year <= years; year += 1) {
-    let beforeTax = 0;
-    let addedQuantity = 0;
-    for (const holding of holdings) {
-      const annualDividend = (holding.annualDividend || 0) * Math.pow(1 + growthRate, year - 1);
-      const perShareDividend = holding.quantity ? annualDividend / holding.quantity : 0;
-      const itemBeforeTax = holding.quantity * perShareDividend;
-      beforeTax += itemBeforeTax;
-      if (drip && holding.currentPrice > 0) {
-        const itemAfterTax = itemBeforeTax * (1 - DIVIDEND_TAX_RATE);
-        const extra = itemAfterTax / (holding.currentPrice * holding.currentFx);
-        holding.quantity += extra;
-        addedQuantity += extra;
-      }
-    }
+  for (let year = 1; year <= scenario.years; year += 1) {
+    const valueKrw = quantity * scenario.priceKrw;
+    const beforeTax = valueKrw * scenario.annualYield * Math.pow(1 + scenario.growthRate, year - 1);
     const afterTax = beforeTax * (1 - DIVIDEND_TAX_RATE);
+    const addedQuantity = scenario.drip && scenario.priceKrw > 0 ? afterTax / scenario.priceKrw : 0;
+    if (scenario.drip) {
+      quantity += addedQuantity;
+    }
     cumulativeAfterTax += afterTax;
-    rows.push({ year, beforeTax, afterTax, cumulativeAfterTax, addedQuantity });
+    rows.push({ year, valueKrw, beforeTax, afterTax, cumulativeAfterTax, addedQuantity, endingQuantity: quantity });
   }
   return rows;
 }
 
 function renderDividendSimulation() {
   const form = document.querySelector("#dividendSimForm");
-  const ownerId = form.elements.target.value || null;
-  const years = Math.min(30, Math.max(1, Number(form.elements.years.value) || 10));
-  const growthRate = (Number(form.elements.growth.value) || 0) / 100;
-  const drip = form.elements.drip.checked;
-  const rows = dividendRows(ownerId, years, growthRate, drip);
+  if (!form) return;
+  if (!form.elements.fx.dataset.touched) {
+    form.elements.fx.value = numberFormatter.format(currentUsdKrw()).replace(/,/g, "");
+  }
+  const scenario = dividendScenario();
+  const rows = dividendRows(scenario);
+  const first = rows[0] || { beforeTax: 0, afterTax: 0, cumulativeAfterTax: 0, addedQuantity: 0, endingQuantity: scenario.quantity };
+  const last = rows.at(-1) || first;
+  const periodAfterTax = first.afterTax / scenario.frequency;
+  const totalReturnOnCost = scenario.principal ? (last.cumulativeAfterTax / scenario.principal) * 100 : 0;
+
+  document.querySelector("#dividendSummaryCards").innerHTML = `
+    <article class="sim-summary-card"><span>투입 원금</span><strong>${money(scenario.principal)}</strong></article>
+    <article class="sim-summary-card"><span>예상 연 세후 배당</span><strong>${money(first.afterTax)}</strong></article>
+    <article class="sim-summary-card"><span>${scenario.frequency === 12 ? "월" : scenario.frequency === 4 ? "분기" : "연"} 예상 세후 분배금</span><strong>${money(periodAfterTax)}</strong></article>
+    <article class="sim-summary-card"><span>${scenario.years}년 누적 세후</span><strong>${money(last.cumulativeAfterTax)}</strong></article>
+  `;
+
   const max = Math.max(...rows.map((row) => row.cumulativeAfterTax), 1);
   const width = 760;
   const height = 240;
@@ -781,27 +823,26 @@ function renderDividendSimulation() {
     </svg>
   `;
 
-  const table = document.querySelector("#dividendTable");
-  table.innerHTML = rows.map((row) => `
+  document.querySelector("#dividendScenarioPanel").innerHTML = `
+    <div class="scenario-block"><span>시뮬레이션 종목</span><strong>${scenario.ticker}</strong></div>
+    <div class="scenario-block"><span>보유 수량</span><strong>${qty(scenario.quantity)}주</strong></div>
+    <div class="scenario-block"><span>세후 배당수익률</span><strong>${pct(scenario.annualYield * (1 - DIVIDEND_TAX_RATE) * 100)}</strong></div>
+    <div class="scenario-block"><span>누적 배당 / 원금</span><strong>${pct(totalReturnOnCost)}</strong></div>
+    <div class="scenario-block"><span>DRIP 후 예상 수량</span><strong>${qty(last.endingQuantity)}주</strong></div>
+  `;
+
+  document.querySelector("#dividendDetailTableWrap").classList.toggle("hidden", !dividendDetailOpen);
+  document.querySelector("#toggleDividendDetail").textContent = dividendDetailOpen ? "연도별 데이터 숨기기" : "연도별 데이터 조회";
+  document.querySelector("#dividendTable").innerHTML = rows.map((row) => `
     <tr>
       <td>${row.year}년차</td>
+      <td>${money(row.valueKrw)}</td>
       <td>${money(row.beforeTax)}</td>
       <td>${money(row.afterTax)}</td>
       <td>${money(row.cumulativeAfterTax)}</td>
       <td>${qty(row.addedQuantity)}</td>
     </tr>
   `).join("");
-
-  const distribution = document.querySelector("#dividendDistribution");
-  distribution.innerHTML = "";
-  const total = expectedDividend() || 1;
-  state.investors.forEach((investor) => {
-    const dividend = expectedDividend(investor.id);
-    const row = document.createElement("div");
-    row.className = "distribution-row";
-    row.innerHTML = `<strong>${investor.name}</strong><span>현재 비율 ${pct((dividend / total) * 100)} · 예상 세후 ${money(dividend * (1 - DIVIDEND_TAX_RATE))}</span>`;
-    distribution.appendChild(row);
-  });
 }
 
 function renderDividendCalendar() {
@@ -1201,7 +1242,17 @@ document.querySelector("#manualFxInput").addEventListener("change", (event) => {
   render();
 });
 
-document.querySelector("#dividendSimForm").addEventListener("input", renderDividendSimulation);
+document.querySelector("#dividendSimForm").addEventListener("input", (event) => {
+  if (event.target.name === "fx") event.target.dataset.touched = "true";
+  if (event.target.name === "currency" && event.target.value === "KRW") {
+    event.currentTarget.elements.fx.value = 1;
+  }
+  renderDividendSimulation();
+});
+document.querySelector("#toggleDividendDetail").addEventListener("click", () => {
+  dividendDetailOpen = !dividendDetailOpen;
+  renderDividendSimulation();
+});
 document.querySelector("#calendarTargetSelect").addEventListener("change", renderDividendCalendar);
 
 document.querySelector("#cashflowForm").elements.date.valueAsDate = new Date();
