@@ -1,5 +1,5 @@
-const STORAGE_KEY = "assetpilot-state-v1";
-const colors = ["#16735f", "#2463a6", "#b88118", "#7d5a9f", "#bb3b42", "#3b7f8e"];
+const STORAGE_KEY = "assetpilot-state-v2";
+const colors = ["#7c5cfc", "#8d6dff", "#9d7bff", "#ae91ff", "#bfa8ff", "#d1c2ff"];
 
 const seedState = {
   holdings: [
@@ -95,11 +95,13 @@ function groupedByType() {
 function renderMetrics() {
   const summary = totals();
   const rebalances = groupedByType().filter((item) => Math.abs(item.actual - item.target) >= 5);
+  const totalProfit = document.querySelector("#totalProfit");
+
   document.querySelector("#totalValue").textContent = money(summary.totalValue);
   document.querySelector("#dailyChange").textContent = `평가 기준 ${new Date().toLocaleDateString("ko-KR")}`;
-  document.querySelector("#totalProfit").textContent = money(summary.totalProfit);
-  document.querySelector("#totalProfit").className = summary.totalProfit >= 0 ? "positive" : "negative";
-  document.querySelector("#profitRate").textContent = `수익률 ${pct(summary.profitRate)}`;
+  totalProfit.textContent = `${summary.totalProfit >= 0 ? "+" : ""}${money(summary.totalProfit)}`;
+  totalProfit.className = summary.totalProfit >= 0 ? "positive" : "negative";
+  document.querySelector("#profitRate").textContent = `수익률 ${summary.profitRate >= 0 ? "+" : ""}${pct(summary.profitRate)}`;
   document.querySelector("#cashRatio").textContent = pct(summary.cashRatio);
   document.querySelector("#cashAmount").textContent = money(summary.cashValue);
   document.querySelector("#rebalanceCount").textContent = `${rebalances.length}건`;
@@ -120,7 +122,7 @@ function renderHoldings() {
       <td>${money(item.avgPrice)}</td>
       <td>${money(item.price)}</td>
       <td>${money(value)}</td>
-      <td class="${profit >= 0 ? "positive" : "negative"}">${money(profit)}</td>
+      <td class="${profit >= 0 ? "positive" : "negative"}">${profit >= 0 ? "+" : ""}${money(profit)}</td>
       <td><button type="button" class="icon-button" title="삭제" data-delete-holding="${item.id}">x</button></td>
     `;
     body.appendChild(row);
