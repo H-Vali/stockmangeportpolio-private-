@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AssetPilot | 자산관리 포트폴리오</title>
+    <meta
+      name="description"
+      content="계좌, 보유자산, 거래내역, 목표비중, 리밸런싱을 한 화면에서 관리하는 자산관리 웹 페이지"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="주요 메뉴">
+        <div class="brand">
+          <div class="brand-mark">A</div>
+          <div>
+            <strong>AssetPilot</strong>
+            <span>Portfolio Console</span>
+          </div>
+        </div>
+        <nav class="nav-list">
+          <a href="#overview" class="active">대시보드</a>
+          <a href="#holdings">보유자산</a>
+          <a href="#allocation">목표비중</a>
+          <a href="#transactions">거래내역</a>
+        </nav>
+        <div class="sidebar-panel">
+          <span>Preview</span>
+          <strong>Public page ready</strong>
+          <p>GitHub Pages 배포 후 링크에서 작업 현황을 바로 확인할 수 있습니다.</p>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">개인 자산관리</p>
+            <h1>통합 포트폴리오 관리</h1>
+          </div>
+          <div class="top-actions">
+            <button type="button" id="seedButton" class="ghost-button" title="데모 데이터 복원">초기화</button>
+            <button type="button" id="exportButton" class="primary-button" title="JSON 백업 다운로드">내보내기</button>
+          </div>
+        </header>
+
+        <section id="overview" class="metrics-grid" aria-label="포트폴리오 요약">
+          <article class="metric-card">
+            <span>총 평가금액</span>
+            <strong id="totalValue">0원</strong>
+            <small id="dailyChange">오늘 변동 0원</small>
+          </article>
+          <article class="metric-card">
+            <span>총 손익</span>
+            <strong id="totalProfit">0원</strong>
+            <small id="profitRate">수익률 0%</small>
+          </article>
+          <article class="metric-card">
+            <span>현금 비중</span>
+            <strong id="cashRatio">0%</strong>
+            <small id="cashAmount">0원</small>
+          </article>
+          <article class="metric-card">
+            <span>리밸런싱 필요</span>
+            <strong id="rebalanceCount">0건</strong>
+            <small>목표비중 대비 ±5%p 기준</small>
+          </article>
+        </section>
+
+        <section class="workspace">
+          <div class="panel span-7" id="holdings">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Holdings</p>
+                <h2>보유자산</h2>
+              </div>
+              <button type="button" id="openHoldingForm" class="icon-button" title="자산 추가">+</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>자산</th>
+                    <th>분류</th>
+                    <th>수량</th>
+                    <th>평단</th>
+                    <th>현재가</th>
+                    <th>평가금액</th>
+                    <th>손익</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="holdingsTable"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel span-5" id="allocation">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Allocation</p>
+                <h2>자산 배분</h2>
+              </div>
+            </div>
+            <div class="donut-area">
+              <div class="donut" id="allocationDonut" aria-label="자산 배분 차트"></div>
+              <div class="legend" id="allocationLegend"></div>
+            </div>
+            <div class="divider"></div>
+            <h3>리밸런싱 가이드</h3>
+            <div class="rebalance-list" id="rebalanceList"></div>
+          </div>
+
+          <div class="panel span-4">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Accounts</p>
+                <h2>계좌</h2>
+              </div>
+            </div>
+            <div class="account-list" id="accountList"></div>
+          </div>
+
+          <div class="panel span-8" id="transactions">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Transactions</p>
+                <h2>최근 거래</h2>
+              </div>
+              <button type="button" id="openTradeForm" class="icon-button" title="거래 추가">+</button>
+            </div>
+            <div class="table-wrap compact">
+              <table>
+                <thead>
+                  <tr>
+                    <th>일자</th>
+                    <th>구분</th>
+                    <th>자산</th>
+                    <th>수량</th>
+                    <th>단가</th>
+                    <th>메모</th>
+                  </tr>
+                </thead>
+                <tbody id="transactionsTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="holdingDialog">
+      <form method="dialog" id="holdingForm" class="dialog-form">
+        <div class="dialog-head">
+          <h2>자산 추가</h2>
+          <button type="button" class="icon-button" data-close-dialog title="닫기">x</button>
+        </div>
+        <label>자산명 <input name="name" required placeholder="예: 삼성전자" /></label>
+        <label>티커 <input name="ticker" required placeholder="예: 005930" /></label>
+        <label>분류
+          <select name="type">
+            <option>국내주식</option>
+            <option>해외주식</option>
+            <option>ETF</option>
+            <option>채권</option>
+            <option>현금</option>
+            <option>대체자산</option>
+          </select>
+        </label>
+        <label>계좌 <input name="account" required placeholder="예: ISA" /></label>
+        <div class="form-grid">
+          <label>수량 <input name="quantity" type="number" min="0" step="0.0001" required /></label>
+          <label>평단 <input name="avgPrice" type="number" min="0" step="1" required /></label>
+          <label>현재가 <input name="price" type="number" min="0" step="1" required /></label>
+          <label>목표비중(%) <input name="target" type="number" min="0" max="100" step="1" required /></label>
+        </div>
+        <menu>
+          <button type="button" class="ghost-button" data-close-dialog>취소</button>
+          <button type="submit" class="primary-button">저장</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <dialog id="tradeDialog">
+      <form method="dialog" id="tradeForm" class="dialog-form">
+        <div class="dialog-head">
+          <h2>거래 추가</h2>
+          <button type="button" class="icon-button" data-close-dialog title="닫기">x</button>
+        </div>
+        <label>일자 <input name="date" type="date" required /></label>
+        <label>구분
+          <select name="side">
+            <option>매수</option>
+            <option>매도</option>
+            <option>배당</option>
+            <option>입금</option>
+          </select>
+        </label>
+        <label>자산 <input name="asset" required placeholder="예: TIGER 미국S&P500" /></label>
+        <div class="form-grid">
+          <label>수량 <input name="quantity" type="number" min="0" step="0.0001" required /></label>
+          <label>단가 <input name="price" type="number" min="0" step="1" required /></label>
+        </div>
+        <label>메모 <input name="memo" placeholder="예: 월 적립식 매수" /></label>
+        <menu>
+          <button type="button" class="ghost-button" data-close-dialog>취소</button>
+          <button type="submit" class="primary-button">저장</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
