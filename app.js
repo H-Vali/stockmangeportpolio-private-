@@ -414,6 +414,7 @@ function renderView() {
   const scope = view === "investor" ? investorById(state.selectedInvestorId).name : "All Investors";
   document.querySelector("#holdingsScope").textContent = scope;
   document.querySelector("#transactionsScope").textContent = scope;
+  document.querySelector("#ledgerWorkspace").classList.toggle("hidden", !["dashboard", "investor"].includes(view));
 }
 
 function renderDashboard() {
