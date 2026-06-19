@@ -767,15 +767,38 @@ tbody tr:hover {
 }
 
 .index-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
   gap: 12px;
+  margin: 0 -4px;
+  padding: 2px 4px 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 4px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(157, 123, 255, 0.44) transparent;
+}
+
+.index-grid::-webkit-scrollbar {
+  height: 6px;
+}
+
+.index-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.index-grid::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(157, 123, 255, 0.44);
 }
 
 .index-card {
   position: relative;
+  flex: 0 0 clamp(220px, 24vw, 300px);
+  min-height: 92px;
   overflow: hidden;
   border-color: rgba(124, 92, 252, 0.26);
+  scroll-snap-align: start;
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
@@ -1478,12 +1501,13 @@ menu {
 
 @media (max-width: 760px) {
   .index-grid {
-    grid-template-columns: repeat(2, 1fr);
+    margin-right: -18px;
+    padding-right: 18px;
   }
 }
 
 @media (max-width: 520px) {
-  .index-grid {
-    grid-template-columns: 1fr;
+  .index-card {
+    flex-basis: min(82vw, 300px);
   }
 }
