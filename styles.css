@@ -449,19 +449,10 @@ a.ghost-button {
 .spark-last-dot {
   fill: #f3f3f7;
   stroke: #9d7bff;
-  stroke-width: 3;
-  cursor: pointer;
-  pointer-events: all;
-  filter: drop-shadow(0 0 9px rgba(157, 123, 255, 0.58));
-  animation: sparkPointGlow 2.2s ease-in-out infinite;
-  transition: filter 160ms ease, r 160ms ease, stroke-width 160ms ease;
-}
-
-.spark-last-dot:hover {
-  r: 7;
   stroke-width: 4;
-  filter: drop-shadow(0 0 12px rgba(157, 123, 255, 0.82));
-  animation: sparkPointBlink 850ms ease-in-out infinite;
+  pointer-events: none;
+  filter: drop-shadow(0 0 16px rgba(157, 123, 255, 0.92));
+  animation: sparkPointGlow 2.2s ease-in-out infinite;
 }
 
 .spark-value-label,
@@ -476,9 +467,9 @@ a.ghost-button {
 }
 
 .spark-summary rect {
-  fill: rgba(21, 21, 28, 0.78);
+  fill: rgba(21, 21, 28, 0.86);
   stroke: rgba(157, 123, 255, 0.28);
-  filter: drop-shadow(0 0 18px rgba(124, 92, 252, 0.18));
+  filter: drop-shadow(0 0 22px rgba(124, 92, 252, 0.2));
 }
 
 .spark-summary-rate {

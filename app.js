@@ -9,6 +9,7 @@ const ALLOCATION_RATIOS_KEY = "assetpilot-allocation-ratios-v1";
 const COINGECKO_IDS = {
   BTC: "bitcoin",
   ETH: "ethereum",
+  BNB: "binancecoin",
   SOL: "solana",
   XRP: "ripple",
   ADA: "cardano",
@@ -46,6 +47,8 @@ const fallbackColors = ["#7c5cfc", "#b69cff", "#3bb5a6", "#e8b339", "#5a5a68"];
 const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 let previousAllocationRatios = loadAllocationRatios();
 let dashboardDemoTimer = null;
+let realtimeDemoInterval = null;
+const ENABLE_AUTO_REALTIME_DEMO = true;
 let previousRealtimeValues = {
   market: {},
   investors: {},
@@ -98,7 +101,9 @@ const seedState = {
   indexQuotes: {},
   marketIndicators: [
     { symbol: "BTC", domestic: 52000000, globalKrw: 50420000, updatedAt: null },
-    { symbol: "ETH", domestic: 3300000, globalKrw: 3244000, updatedAt: null }
+    { symbol: "ETH", domestic: 3300000, globalKrw: 3244000, updatedAt: null },
+    { symbol: "SOL", domestic: 224000, globalKrw: 216800, updatedAt: null },
+    { symbol: "BNB", domestic: 978000, globalKrw: 951000, updatedAt: null }
   ],
   cashflows: [
     { id: crypto.randomUUID(), ownerId: "kim", date: "2026-06-01", type: "deposit", amount: 3000000, memo: "초기 입금" },
@@ -316,7 +321,8 @@ function signedPercentChange(value) {
   return `${value >= 0 ? "+" : ""}${pct(value)}`;
 }
 
-function triggerDashboardChangeDemo() {
+function triggerDashboardChangeDemo(options = {}) {
+  const silent = Boolean(options.silent);
   clearTimeout(dashboardDemoTimer);
   document.querySelectorAll("#marketList .market-card").forEach((card, index) => {
     const diff = index % 2 === 0 ? 0.216 : -0.142;
@@ -345,10 +351,18 @@ function triggerDashboardChangeDemo() {
     }
     markRealtimeChange(card, diff, (amount) => `${amount >= 0 ? "+" : ""}${amount.toFixed(2)}%`);
   });
-  showToast("실시간 변동 효과 테스트 중입니다. 실제 데이터는 저장되지 않습니다.");
+  if (!silent) showToast("실시간 변동 효과 테스트 중입니다. 실제 데이터는 저장되지 않습니다.");
   dashboardDemoTimer = setTimeout(() => {
     render();
   }, 1900);
+}
+
+function startRealtimeDemoLoop() {
+  if (!ENABLE_AUTO_REALTIME_DEMO) return;
+  clearInterval(realtimeDemoInterval);
+  realtimeDemoInterval = setInterval(() => {
+    if (state.selectedView === "dashboard") triggerDashboardChangeDemo({ silent: true });
+  }, 3000);
 }
 
 function currentUsdKrw() {
@@ -933,7 +947,7 @@ function renderHeroSparkline() {
   const summary = summarize();
   const summaryClass = summary.profit >= 0 ? "positive-spark" : "negative-spark";
   const summaryBadge = `
-    <g class="spark-summary ${summaryClass}" transform="translate(126 58)">
+    <g class="spark-summary ${summaryClass}" transform="translate(108 36)">
       <rect x="-82" y="-25" width="164" height="50" rx="12"></rect>
       <text class="spark-summary-rate" x="0" y="-5" text-anchor="middle">${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}</text>
       <text class="spark-summary-profit" x="0" y="15" text-anchor="middle">${signedMoney(summary.profit)} · ${signedUsd(summary.profit / currentUsdKrw())}</text>
@@ -947,7 +961,7 @@ function renderHeroSparkline() {
     plot.innerHTML = `
       <path d="M${pad} 78 L${width - pad} 78" fill="none" stroke="url(#spark)" stroke-width="4" stroke-linecap="round" opacity=".7" />
       ${wavePaths}
-      <circle class="spark-last-dot" cx="${width - pad}" cy="78" r="5"></circle>
+      <circle class="spark-last-dot" cx="${width - pad}" cy="78" r="7"></circle>
       ${summaryBadge}
     `;
     return;
@@ -962,7 +976,7 @@ function renderHeroSparkline() {
     ${wavePaths}
     <polyline points="${line}" fill="none" stroke="url(#spark)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
     <circle class="spark-last-halo" cx="${lastPoint.x}" cy="${lastPoint.y}" r="11"></circle>
-    <circle class="spark-last-dot" cx="${lastPoint.x}" cy="${lastPoint.y}" r="5"></circle>
+    <circle class="spark-last-dot" cx="${lastPoint.x}" cy="${lastPoint.y}" r="7"></circle>
     ${summaryBadge}
   `;
 }
@@ -1725,3 +1739,4 @@ document.querySelector("#cashflowForm").elements.date.valueAsDate = new Date();
 recordSnapshot();
 render();
 startPolling();
+startRealtimeDemoLoop();
