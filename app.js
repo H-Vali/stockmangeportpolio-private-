@@ -850,14 +850,6 @@ function renderDividendSimulation() {
     </svg>
   `;
 
-  document.querySelector("#dividendScenarioPanel").innerHTML = `
-    <div class="scenario-block"><span>시뮬레이션 종목</span><strong>${scenario.ticker}</strong></div>
-    <div class="scenario-block"><span>보유 수량</span><strong>${qty(scenario.quantity)}주</strong></div>
-    <div class="scenario-block"><span>세후 배당수익률</span><strong>${pct(scenario.annualYield * (1 - DIVIDEND_TAX_RATE) * 100)}</strong></div>
-    <div class="scenario-block"><span>누적 배당 / 원금</span><strong>${pct(totalReturnOnCost)}</strong></div>
-    <div class="scenario-block"><span>DRIP 후 예상 수량</span><strong>${qty(last.endingQuantity)}주</strong></div>
-  `;
-
   document.querySelector("#dividendDetailTableWrap").classList.toggle("hidden", !dividendDetailOpen);
   document.querySelector("#toggleDividendDetail").textContent = dividendDetailOpen ? "표 숨기기" : "표로 보기";
   document.querySelector("#dividendTable").innerHTML = rows.map((row) => `
@@ -885,6 +877,7 @@ function renderTargetDividend(scenario) {
   const requiredPrincipal = requiredAnnualAfterTax / effectiveYield;
   const requiredQuantity = requiredPrincipal / scenario.priceKrw;
   const additionalQuantity = requiredQuantity - scenario.quantity;
+  const basis = `현재 종목 단가(${scenario.currency === "USD" ? "$" : "₩"}${numberFormatter.format(scenario.price)})·환율(${numberFormatter.format(scenario.fx)})·배당수익률(${pct(scenario.annualYield * 100)}) 기준`;
   const message = additionalQuantity > 0
     ? `현재 보유수량 대비 추가 매수 ${qty(additionalQuantity)}주 필요`
     : "이미 목표 초과 달성";
@@ -897,7 +890,7 @@ function renderTargetDividend(scenario) {
       <span>필요 보유수량</span>
       <strong>${qty(requiredQuantity)}주</strong>
     </div>
-    <div class="target-message">${message}</div>
+    <div class="target-message">${basis} · ${message}</div>
   `;
 }
 

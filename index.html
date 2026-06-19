@@ -226,10 +226,12 @@
               <div>
                 <p class="eyebrow">Target Income</p>
                 <h3>목표 배당 역산</h3>
+                <small class="target-caption">원하는 배당금을 입력하면 필요한 투자금액과 보유수량을 거꾸로 계산합니다.</small>
               </div>
               <label>목표 월 배당금(세후, KRW)
-                <input name="targetMonthlyDividend" id="targetMonthlyDividend" type="number" min="0" step="10000" value="1000000" />
+                <input name="targetMonthlyDividend" id="targetMonthlyDividend" type="number" min="0" step="10000" value="500000" />
               </label>
+              <div class="target-arrow">→</div>
               <div class="target-results" id="targetDividendResults"></div>
             </div>
             <form id="dividendSimForm" class="sim-control-groups">
@@ -265,7 +267,7 @@
                 <legend><span>●</span> 시뮬레이션 변수</legend>
                 <div class="sim-field-grid">
                   <label>향후 연수 <input name="years" type="number" min="1" max="30" step="1" value="10" /></label>
-                  <label>연간 배당성장률(%) <input name="growth" type="number" min="-20" max="50" step="0.1" value="0" /></label>
+                  <label>연간 배당성장률(%) <input name="growth" type="number" min="-20" max="50" step="0.1" value="5" /></label>
                   <label class="switch-row">
                     <span>DRIP 재투자</span>
                     <input name="drip" type="checkbox" class="switch-input" />
@@ -274,12 +276,9 @@
                 </div>
               </fieldset>
             </form>
-            <div class="dividend-layout">
-              <div class="chart-box">
-                <div class="chart-title" id="dividendChartTitle">연도별 예상 배당 · 세후</div>
-                <div id="dividendChart"></div>
-              </div>
-              <div class="sim-side-panel" id="dividendScenarioPanel"></div>
+            <div class="dividend-chart-block">
+              <div class="chart-title" id="dividendChartTitle">연도별 예상 배당 · 세후</div>
+              <div id="dividendChart"></div>
             </div>
             <div class="panel-note-row">
               <p class="panel-note">입력한 수량·현재가·배당수익률 기준의 단순 시뮬레이션입니다. 실제 분배금, 옵션 프리미엄, NAV 변화, 세금은 종목별로 달라질 수 있습니다.</p>
