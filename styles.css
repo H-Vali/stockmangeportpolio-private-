@@ -1288,7 +1288,11 @@ tbody tr:hover {
 #allocation .donut-area {
   grid-template-columns: minmax(174px, 184px) minmax(0, 1fr);
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto;
+  gap: 16px;
 }
 
 #allocation .donut {
@@ -1296,9 +1300,9 @@ tbody tr:hover {
 }
 
 #allocation .legend {
-  width: 100%;
+  width: 174px;
   min-width: 0;
-  justify-self: stretch;
+  justify-self: start;
 }
 
 #allocation .legend-row {
