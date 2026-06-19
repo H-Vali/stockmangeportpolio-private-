@@ -24,10 +24,10 @@ const DIVIDEND_MONTHS = {
   KR3Y: [3, 6, 9, 12]
 };
 const INDEX_MONITOR_LIST = [
-  { ticker: "QQQ", label: "나스닥", group: "ETF" },
-  { ticker: "SPY", label: "S&P500", group: "ETF" },
-  { ticker: "IWM", label: "러셀2000", group: "ETF" },
-  { ticker: "SOXX", label: "필라델피아 반도체", group: "ETF" },
+  { ticker: "QQQ", label: "나스닥", group: "ETF", logoText: "Q" },
+  { ticker: "SPY", label: "S&P500", group: "ETF", logoText: "S&P" },
+  { ticker: "IWM", label: "러셀2000", group: "ETF", logoText: "R2K" },
+  { ticker: "SOXX", label: "필라델피아 반도체", group: "ETF", logoText: "SOX" },
   { ticker: "AAPL", label: "Apple", group: "M7", logo: "https://cdn.simpleicons.org/apple/f3f3f7" },
   { ticker: "MSFT", label: "Microsoft", group: "M7", logo: "https://cdn.simpleicons.org/microsoft/f3f3f7" },
   { ticker: "GOOGL", label: "Alphabet", group: "M7", logo: "https://cdn.simpleicons.org/google/f3f3f7" },
@@ -46,7 +46,6 @@ const allocationColors = {
 const fallbackColors = ["#7c5cfc", "#b69cff", "#3bb5a6", "#e8b339", "#5a5a68"];
 const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 let previousAllocationRatios = loadAllocationRatios();
-let dashboardDemoTimer = null;
 let realtimeDemoInterval = null;
 const ENABLE_AUTO_REALTIME_DEMO = true;
 let previousRealtimeValues = {
@@ -86,17 +85,17 @@ const seedState = {
     ETH: { ticker: "ETH", name: "Ethereum", type: "코인", currency: "USD", currentPrice: 2391, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
     "360750": { ticker: "360750", name: "TIGER 미국S&P500", type: "ETF", currency: "KRW", currentPrice: 19640, currentFx: 1, annualDividend: 4600 },
     KR3Y: { ticker: "KR3Y", name: "국고채 3년", type: "채권", currency: "KRW", currentPrice: 100400, currentFx: 1, annualDividend: 36000 },
-    QQQ: { ticker: "QQQ", name: "Invesco QQQ Trust", type: "주식", currency: "USD", currentPrice: 512.34, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    SPY: { ticker: "SPY", name: "SPDR S&P 500 ETF", type: "주식", currency: "USD", currentPrice: 612.1, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    IWM: { ticker: "IWM", name: "iShares Russell 2000 ETF", type: "주식", currency: "USD", currentPrice: 224.55, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    SOXX: { ticker: "SOXX", name: "iShares Semiconductor ETF", type: "주식", currency: "USD", currentPrice: 268.9, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    AAPL: { ticker: "AAPL", name: "Apple", type: "주식", currency: "USD", currentPrice: 212.3, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    MSFT: { ticker: "MSFT", name: "Microsoft", type: "주식", currency: "USD", currentPrice: 478.9, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    GOOGL: { ticker: "GOOGL", name: "Alphabet", type: "주식", currency: "USD", currentPrice: 176.2, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    AMZN: { ticker: "AMZN", name: "Amazon", type: "주식", currency: "USD", currentPrice: 183.4, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    NVDA: { ticker: "NVDA", name: "NVIDIA", type: "주식", currency: "USD", currentPrice: 145.8, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    META: { ticker: "META", name: "Meta", type: "주식", currency: "USD", currentPrice: 682.4, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    TSLA: { ticker: "TSLA", name: "Tesla", type: "주식", currency: "USD", currentPrice: 322.1, currentFx: DEFAULT_USDKRW, annualDividend: 0 }
+    QQQ: { ticker: "QQQ", name: "Invesco QQQ Trust", type: "주식", currency: "USD", currentPrice: 740.62, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    SPY: { ticker: "SPY", name: "SPDR S&P 500 ETF", type: "주식", currency: "USD", currentPrice: 746.74, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    IWM: { ticker: "IWM", name: "iShares Russell 2000 ETF", type: "주식", currency: "USD", currentPrice: 295.59, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    SOXX: { ticker: "SOXX", name: "iShares Semiconductor ETF", type: "주식", currency: "USD", currentPrice: 639.45, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    AAPL: { ticker: "AAPL", name: "Apple", type: "주식", currency: "USD", currentPrice: 298.01, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    MSFT: { ticker: "MSFT", name: "Microsoft", type: "주식", currency: "USD", currentPrice: 379.4, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    GOOGL: { ticker: "GOOGL", name: "Alphabet", type: "주식", currency: "USD", currentPrice: 368.03, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    AMZN: { ticker: "AMZN", name: "Amazon", type: "주식", currency: "USD", currentPrice: 244.39, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    NVDA: { ticker: "NVDA", name: "NVIDIA", type: "주식", currency: "USD", currentPrice: 210.69, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    META: { ticker: "META", name: "Meta", type: "주식", currency: "USD", currentPrice: 577.22, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    TSLA: { ticker: "TSLA", name: "Tesla", type: "주식", currency: "USD", currentPrice: 400.49, currentFx: DEFAULT_USDKRW, annualDividend: 0 }
   },
   indexQuotes: {},
   marketIndicators: [
@@ -168,6 +167,13 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   day: "2-digit"
 });
 
+function mergeMarketIndicators(input, defaults) {
+  const map = new Map();
+  defaults.forEach((item) => map.set(item.symbol, item));
+  if (Array.isArray(input)) input.forEach((item) => map.set(item.symbol, item));
+  return Array.from(map.values());
+}
+
 function normalizeState(input) {
   const base = structuredClone(seedState);
   const parsed = input && typeof input === "object" ? input : {};
@@ -181,7 +187,7 @@ function normalizeState(input) {
     indexQuotes: parsed.indexQuotes || {},
     investors: parsed.investors,
     assetCatalog: { ...base.assetCatalog, ...(parsed.assetCatalog || {}) },
-    marketIndicators: Array.isArray(parsed.marketIndicators) ? parsed.marketIndicators : base.marketIndicators,
+    marketIndicators: mergeMarketIndicators(parsed.marketIndicators, base.marketIndicators),
     cashflows: parsed.cashflows,
     trades: parsed.trades
   };
@@ -302,59 +308,74 @@ function markRealtimeChange(card, diff, formatter = signedMoney) {
   const badge = document.createElement("b");
   badge.className = `metric-change-badge ${direction === "up" ? "positive" : "negative"}`;
   badge.textContent = `${formatter(diff)} ${direction === "up" ? "▲" : "▼"}`;
-  card.appendChild(badge);
+  const title = card.querySelector("strong");
+  if (title) title.appendChild(badge);
+  else card.appendChild(badge);
   setTimeout(() => {
     badge.remove();
     card.classList.remove("realtime-flash-up", "realtime-flash-down");
   }, 1800);
 }
 
-function markMetricChange(selector, nextValue, previousValue) {
-  const valueNode = document.querySelector(selector);
-  if (!valueNode || typeof previousValue !== "number" || nextValue === previousValue) return;
-  const card = valueNode.closest(".metric-card");
-  if (!card) return;
-  markRealtimeChange(card, nextValue - previousValue);
-}
-
 function signedPercentChange(value) {
   return `${value >= 0 ? "+" : ""}${pct(value)}`;
 }
 
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function nudgeValue(value, percent, minimum = 0) {
+  return Math.max(minimum, value * (1 + percent / 100));
+}
+
 function triggerDashboardChangeDemo(options = {}) {
   const silent = Boolean(options.silent);
-  clearTimeout(dashboardDemoTimer);
-  document.querySelectorAll("#marketList .market-card").forEach((card, index) => {
-    const diff = index % 2 === 0 ? 0.216 : -0.142;
-    const value = card.querySelector("span");
-    if (value) {
-      value.textContent = `${diff >= 0 ? "+" : ""}${pct(9.5 + diff)}`;
-      value.className = diff >= 0 ? "positive value-demo-pulse-up" : "negative value-demo-pulse-down";
-    }
-    markRealtimeChange(card, diff, signedPercentChange);
+  const now = new Date().toISOString();
+  state.marketIndicators = mergeMarketIndicators(state.marketIndicators, seedState.marketIndicators).map((item) => {
+    const domesticMove = randomBetween(-0.42, 0.58);
+    const globalMove = randomBetween(-0.34, 0.46);
+    return {
+      ...item,
+      domestic: Math.round(nudgeValue(item.domestic, domesticMove, 1)),
+      globalKrw: Math.round(nudgeValue(item.globalKrw, globalMove, 1)),
+      updatedAt: now
+    };
   });
-  document.querySelectorAll("#investorComparison .investor-card").forEach((card, index) => {
-    const diff = index % 2 === 0 ? 96000 : -52000;
-    const value = card.querySelector(":scope > span");
-    if (value) {
-      value.textContent = signedMoney((index % 2 === 0 ? 460000 : -94000) + diff);
-      value.className = diff >= 0 ? "positive value-demo-pulse-up" : "negative value-demo-pulse-down";
+
+  replayHoldings().forEach((holding) => {
+    const asset = state.assetCatalog[holding.ticker];
+    if (asset?.currentPrice) {
+      asset.currentPrice = Number(nudgeValue(asset.currentPrice, randomBetween(-0.36, 0.44), 0.0001).toFixed(asset.currency === "KRW" ? 0 : 2));
     }
-    markRealtimeChange(card, diff);
   });
-  document.querySelectorAll("#indexMonitorList .index-card").forEach((card, index) => {
-    const diff = [0.38, -0.21, 0.16, -0.09][index % 4];
-    const value = card.querySelector(":scope > span");
-    if (value) {
-      value.textContent = `${diff >= 0 ? "+" : ""}${diff.toFixed(2)}%`;
-      value.className = diff >= 0 ? "positive value-demo-pulse-up" : "negative value-demo-pulse-down";
+
+  state.indexQuotes = state.indexQuotes || {};
+  INDEX_MONITOR_LIST.forEach((idx) => {
+    const asset = state.assetCatalog[idx.ticker];
+    if (!asset) return;
+    const existing = state.indexQuotes[idx.ticker];
+    const move = randomBetween(-0.58, 0.72);
+    const basePrice = Number(existing?.price || asset.currentPrice || 1);
+    const nextPrice = Number(nudgeValue(basePrice, move, 0.0001).toFixed(2));
+    asset.currentPrice = nextPrice;
+    state.indexQuotes[idx.ticker] = {
+      price: nextPrice,
+      changePercent: Math.max(-7.5, Math.min(7.5, Number(((existing?.changePercent || 0) + move).toFixed(2)))),
+      updatedAt: now
+    };
+  });
+
+  state.marketIndicators.forEach((item) => {
+    const asset = state.assetCatalog[item.symbol];
+    if (asset && item.globalKrw) {
+      asset.currentPrice = Number((item.globalKrw / currentUsdKrw()).toFixed(2));
+      asset.currentFx = currentUsdKrw();
     }
-    markRealtimeChange(card, diff, (amount) => `${amount >= 0 ? "+" : ""}${amount.toFixed(2)}%`);
   });
+
+  render();
   if (!silent) showToast("실시간 변동 효과 테스트 중입니다. 실제 데이터는 저장되지 않습니다.");
-  dashboardDemoTimer = setTimeout(() => {
-    render();
-  }, 1900);
 }
 
 function startRealtimeDemoLoop() {
@@ -720,11 +741,12 @@ function renderIndexMonitor() {
     const changeClass = change > 0 ? "positive" : change < 0 ? "negative" : "neutral-text";
     const status = quote ? `실시간 · ${formatClock(quote.updatedAt)}` : (connected ? "갱신 대기" : "프록시 연결 대기");
     const changeLabel = hasQuote ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "—";
+    const logoText = idx.logoText || idx.ticker.slice(0, 2);
     const logo = idx.logo
-      ? `<i class="stock-logo-frame"><img src="${idx.logo}" alt="" loading="lazy" onerror="this.remove()" /><b>${idx.ticker.slice(0, 2)}</b></i>`
-      : "";
+      ? `<i class="stock-logo-frame"><img src="${idx.logo}" alt="" loading="lazy" onerror="this.remove()" /><b>${logoText}</b></i>`
+      : `<i class="stock-logo-frame stock-logo-text"><b>${logoText}</b></i>`;
     return `
-      <div class="market-card index-card ${idx.group === "M7" ? "stock-index-card" : ""} ${glow}">
+      <div class="market-card index-card stock-index-card ${idx.group === "M7" ? "m7-index-card" : "etf-index-card"} ${glow}">
         ${logo}
         <div><strong>${idx.label}</strong><small>${idx.group} · ${idx.ticker} · $${numberFormatter.format(price)} · ${status}</small></div>
         <span class="${changeClass}">${changeLabel}</span>
@@ -947,8 +969,8 @@ function renderHeroSparkline() {
   const summary = summarize();
   const summaryClass = summary.profit >= 0 ? "positive-spark" : "negative-spark";
   const summaryBadge = `
-    <g class="spark-summary ${summaryClass}" transform="translate(108 36)">
-      <rect x="-82" y="-25" width="164" height="50" rx="12"></rect>
+    <g class="spark-summary ${summaryClass}" transform="translate(90 34)">
+      <rect x="-76" y="-24" width="152" height="48" rx="12"></rect>
       <text class="spark-summary-rate" x="0" y="-5" text-anchor="middle">${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}</text>
       <text class="spark-summary-profit" x="0" y="15" text-anchor="middle">${signedMoney(summary.profit)} · ${signedUsd(summary.profit / currentUsdKrw())}</text>
     </g>
