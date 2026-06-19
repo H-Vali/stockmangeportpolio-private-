@@ -271,9 +271,13 @@ button {
 
 .primary-button,
 .ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 40px;
   padding: 0 15px;
   font-weight: 800;
+  text-decoration: none;
 }
 
 .primary-button {
@@ -285,6 +289,10 @@ button {
 .ghost-button {
   border: 1px solid var(--line);
   background: rgba(28, 28, 37, 0.8);
+  color: var(--ink);
+}
+
+a.ghost-button {
   color: var(--ink);
 }
 
@@ -440,6 +448,35 @@ button {
 
 .lower-workspace {
   margin-top: 16px;
+}
+
+.ledger-collapse-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(28, 28, 37, 0.72);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ledger-collapse-bar > div {
+  display: flex;
+  gap: 8px;
+}
+
+.ledger-collapse-bar .ghost-button {
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.collapsed-ledger {
+  display: none;
 }
 
 .cashflow-panel {

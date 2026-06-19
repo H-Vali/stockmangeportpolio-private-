@@ -107,6 +107,7 @@ let toastTimer = null;
 let pollingTimer = null;
 let fxTimer = null;
 let dividendDetailOpen = false;
+let ledgerExpanded = false;
 
 const formatter = new Intl.NumberFormat("ko-KR", {
   style: "currency",
@@ -465,7 +466,9 @@ function renderView() {
   const scope = view === "investor" ? investorById(state.selectedInvestorId).name : "All Investors";
   document.querySelector("#holdingsScope").textContent = scope;
   document.querySelector("#transactionsScope").textContent = scope;
-  document.querySelector("#ledgerWorkspace").classList.toggle("hidden", !["dashboard", "investor"].includes(view));
+  const ledgerWorkspace = document.querySelector("#ledgerWorkspace");
+  ledgerWorkspace.classList.toggle("hidden", !["dashboard", "investor"].includes(view));
+  ledgerWorkspace.classList.toggle("collapsed-ledger", !ledgerExpanded);
 }
 
 function renderDashboard() {
@@ -533,15 +536,17 @@ function renderIndexMonitor() {
     const asset = state.assetCatalog[idx.ticker];
     const quote = (state.indexQuotes || {})[idx.ticker];
     const price = quote ? quote.price : (asset ? asset.currentPrice : 0);
-    const change = quote ? quote.changePercent : 0;
+    const hasQuote = Boolean(quote);
+    const change = hasQuote ? quote.changePercent : 0;
     const glow = change > 0 ? "positive-glow" : change < 0 ? "negative-glow" : "neutral-glow";
     const changeClass = change > 0 ? "positive" : change < 0 ? "negative" : "neutral-text";
     const status = quote ? `실시간 · ${formatClock(quote.updatedAt)}` : (connected ? "갱신 대기" : "프록시 연결 대기");
+    const changeLabel = hasQuote ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "—";
     const row = document.createElement("div");
     row.className = `market-card index-card ${glow}`;
     row.innerHTML = `
       <div><strong>${idx.label}</strong><small>${idx.ticker} · $${numberFormatter.format(price)} · ${status}</small></div>
-      <span class="${changeClass}">${change > 0 ? "+" : ""}${change.toFixed(2)}%</span>
+      <span class="${changeClass}">${changeLabel}</span>
     `;
     list.appendChild(row);
   });
@@ -720,9 +725,13 @@ function totalValueHistory() {
 
 function chartPoints(history, width, height, pad) {
   const values = history.map((item) => item.totalValue);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = Math.max(max - min, 1);
+  const rawMin = Math.min(...values);
+  const rawMax = Math.max(...values);
+  const center = (rawMin + rawMax) / 2;
+  const rawSpan = Math.max(rawMax - rawMin, 1);
+  const minVisualSpan = Math.max(center * 0.01, rawSpan * 5, 1);
+  const span = Math.max(rawSpan * 1.4, minVisualSpan);
+  const min = center - span / 2;
   return history.map((item, index) => {
     const x = pad + (index / Math.max(history.length - 1, 1)) * (width - pad * 2);
     const y = height - pad - ((item.totalValue - min) / span) * (height - pad * 2);
@@ -1236,6 +1245,18 @@ document.querySelectorAll("[data-view]").forEach((button) => {
     saveState({ snapshot: false });
     render();
   });
+});
+
+document.querySelectorAll("[data-expand-ledger]").forEach((link) => {
+  link.addEventListener("click", () => {
+    ledgerExpanded = true;
+    renderView();
+  });
+});
+
+document.querySelector("#collapseLedgerButton").addEventListener("click", () => {
+  ledgerExpanded = false;
+  renderView();
 });
 
 document.querySelector("#investorTabs").addEventListener("click", (event) => {

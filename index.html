@@ -170,7 +170,7 @@
                   <p class="eyebrow">All Investors</p>
                   <h2>보유 종목</h2>
                 </div>
-                <a href="#holdings" class="ghost-button">전체보기 →</a>
+                <a href="#holdings" class="ghost-button" data-expand-ledger>전체보기 →</a>
               </div>
               <div class="market-list" id="holdingsPreview"></div>
             </div>
@@ -181,7 +181,7 @@
                   <p class="eyebrow">All Investors</p>
                   <h2>원장 내역</h2>
                 </div>
-                <a href="#transactions" class="ghost-button">전체보기 →</a>
+                <a href="#transactions" class="ghost-button" data-expand-ledger>전체보기 →</a>
               </div>
               <div class="market-list" id="ledgerPreview"></div>
             </div>
@@ -347,7 +347,14 @@
           </section>
         </section>
 
-        <section class="workspace lower-workspace" id="ledgerWorkspace">
+        <section class="workspace lower-workspace collapsed-ledger" id="ledgerWorkspace">
+          <div class="ledger-collapse-bar">
+            <span>전체 보유 종목과 원장 내역</span>
+            <div>
+              <a href="#overview" class="ghost-button">맨 위로 ↑</a>
+              <button type="button" id="collapseLedgerButton" class="ghost-button">접기</button>
+            </div>
+          </div>
           <div class="panel span-7" id="holdings">
             <div class="panel-header">
               <div>
