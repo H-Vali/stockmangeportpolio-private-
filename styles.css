@@ -590,6 +590,10 @@ button {
   grid-column: span 5;
 }
 
+.span-6 {
+  grid-column: span 6;
+}
+
 .span-7 {
   grid-column: span 7;
 }
@@ -756,6 +760,18 @@ tbody tr:hover {
 .investor-comparison {
   display: grid;
   gap: 10px;
+}
+
+.index-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.empty-hint {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 12px 0;
 }
 
 .legend-row,
@@ -1319,6 +1335,7 @@ menu {
 
   .span-4,
   .span-5,
+  .span-6,
   .span-3,
   .span-7,
   .span-8 {
@@ -1406,5 +1423,11 @@ menu {
   .delete-confirm {
     align-items: stretch;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 760px) {
+  .index-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
