@@ -1158,7 +1158,7 @@ tbody tr:hover {
   display: flex;
   width: max-content;
   gap: 12px;
-  animation: indexMarquee 28s linear infinite;
+  animation: indexMarquee 54s linear infinite;
 }
 
 .index-grid:hover .index-track {
@@ -1177,6 +1177,55 @@ tbody tr:hover {
   border-color: rgba(124, 92, 252, 0.26);
   scroll-snap-align: start;
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.stock-index-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.stock-logo-frame {
+  position: relative;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(157, 123, 255, 0.44);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.18), transparent 34%),
+    linear-gradient(135deg, rgba(124, 92, 252, 0.34), rgba(28, 28, 37, 0.92));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 18px rgba(124, 92, 252, 0.18);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.stock-logo-frame img {
+  position: relative;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.stock-logo-frame b {
+  position: absolute;
+  color: var(--violet-3);
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.stock-logo-frame img:not([src]),
+.stock-logo-frame img[src=""] {
+  display: none;
+}
+
+.stock-logo-frame img:not([src]) + b,
+.stock-logo-frame img[src=""] + b {
+  position: relative;
 }
 
 @keyframes indexMarquee {

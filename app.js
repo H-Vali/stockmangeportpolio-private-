@@ -23,10 +23,17 @@ const DIVIDEND_MONTHS = {
   KR3Y: [3, 6, 9, 12]
 };
 const INDEX_MONITOR_LIST = [
-  { ticker: "QQQ", label: "나스닥" },
-  { ticker: "SPY", label: "S&P500" },
-  { ticker: "IWM", label: "러셀2000" },
-  { ticker: "SOXX", label: "필라델피아 반도체" }
+  { ticker: "QQQ", label: "나스닥", group: "ETF" },
+  { ticker: "SPY", label: "S&P500", group: "ETF" },
+  { ticker: "IWM", label: "러셀2000", group: "ETF" },
+  { ticker: "SOXX", label: "필라델피아 반도체", group: "ETF" },
+  { ticker: "AAPL", label: "Apple", group: "M7", logo: "https://cdn.simpleicons.org/apple/f3f3f7" },
+  { ticker: "MSFT", label: "Microsoft", group: "M7", logo: "https://cdn.simpleicons.org/microsoft/f3f3f7" },
+  { ticker: "GOOGL", label: "Alphabet", group: "M7", logo: "https://cdn.simpleicons.org/google/f3f3f7" },
+  { ticker: "AMZN", label: "Amazon", group: "M7", logo: "https://cdn.simpleicons.org/amazon/f3f3f7" },
+  { ticker: "NVDA", label: "NVIDIA", group: "M7", logo: "https://cdn.simpleicons.org/nvidia/f3f3f7" },
+  { ticker: "META", label: "Meta", group: "M7", logo: "https://cdn.simpleicons.org/meta/f3f3f7" },
+  { ticker: "TSLA", label: "Tesla", group: "M7", logo: "https://cdn.simpleicons.org/tesla/f3f3f7" }
 ];
 const allocationColors = {
   코인: "#7C5CFC",
@@ -79,7 +86,14 @@ const seedState = {
     QQQ: { ticker: "QQQ", name: "Invesco QQQ Trust", type: "주식", currency: "USD", currentPrice: 512.34, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
     SPY: { ticker: "SPY", name: "SPDR S&P 500 ETF", type: "주식", currency: "USD", currentPrice: 612.1, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
     IWM: { ticker: "IWM", name: "iShares Russell 2000 ETF", type: "주식", currency: "USD", currentPrice: 224.55, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    SOXX: { ticker: "SOXX", name: "iShares Semiconductor ETF", type: "주식", currency: "USD", currentPrice: 268.9, currentFx: DEFAULT_USDKRW, annualDividend: 0 }
+    SOXX: { ticker: "SOXX", name: "iShares Semiconductor ETF", type: "주식", currency: "USD", currentPrice: 268.9, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    AAPL: { ticker: "AAPL", name: "Apple", type: "주식", currency: "USD", currentPrice: 212.3, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    MSFT: { ticker: "MSFT", name: "Microsoft", type: "주식", currency: "USD", currentPrice: 478.9, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    GOOGL: { ticker: "GOOGL", name: "Alphabet", type: "주식", currency: "USD", currentPrice: 176.2, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    AMZN: { ticker: "AMZN", name: "Amazon", type: "주식", currency: "USD", currentPrice: 183.4, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    NVDA: { ticker: "NVDA", name: "NVIDIA", type: "주식", currency: "USD", currentPrice: 145.8, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    META: { ticker: "META", name: "Meta", type: "주식", currency: "USD", currentPrice: 682.4, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    TSLA: { ticker: "TSLA", name: "Tesla", type: "주식", currency: "USD", currentPrice: 322.1, currentFx: DEFAULT_USDKRW, annualDividend: 0 }
   },
   indexQuotes: {},
   marketIndicators: [
@@ -692,10 +706,14 @@ function renderIndexMonitor() {
     const changeClass = change > 0 ? "positive" : change < 0 ? "negative" : "neutral-text";
     const status = quote ? `실시간 · ${formatClock(quote.updatedAt)}` : (connected ? "갱신 대기" : "프록시 연결 대기");
     const changeLabel = hasQuote ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "—";
+    const logo = idx.logo
+      ? `<i class="stock-logo-frame"><img src="${idx.logo}" alt="" loading="lazy" onerror="this.remove()" /><b>${idx.ticker.slice(0, 2)}</b></i>`
+      : "";
     return `
-      <div class="market-card index-card ${glow}">
-      <div><strong>${idx.label}</strong><small>${idx.ticker} · $${numberFormatter.format(price)} · ${status}</small></div>
-      <span class="${changeClass}">${changeLabel}</span>
+      <div class="market-card index-card ${idx.group === "M7" ? "stock-index-card" : ""} ${glow}">
+        ${logo}
+        <div><strong>${idx.label}</strong><small>${idx.group} · ${idx.ticker} · $${numberFormatter.format(price)} · ${status}</small></div>
+        <span class="${changeClass}">${changeLabel}</span>
       </div>
     `;
   });
