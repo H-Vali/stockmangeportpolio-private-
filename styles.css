@@ -1292,11 +1292,13 @@ tbody tr:hover {
 }
 
 #allocation .legend {
-  width: 100%;
+  width: min(100%, 330px);
+  justify-self: center;
 }
 
 #allocation .legend-row {
   min-height: 26px;
+  gap: 14px;
 }
 
 .allocation-trend {
