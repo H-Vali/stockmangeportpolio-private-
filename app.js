@@ -605,6 +605,25 @@ function renderHoldings() {
   }
 }
 
+function renderHoldingsPreview() {
+  const list = document.querySelector("#holdingsPreview");
+  if (!list) return;
+  const top = replayHoldings(visibleOwnerId()).slice().sort((a, b) => b.valueKrw - a.valueKrw).slice(0, 3);
+  if (!top.length) {
+    list.innerHTML = `<p class="empty-hint">보유 종목이 없습니다.</p>`;
+    return;
+  }
+  list.innerHTML = top.map((item) => {
+    const owner = investorById(item.ownerId);
+    return `
+      <div class="market-card">
+        <div><strong>${item.ticker}</strong><small>${owner.name} · ${money(item.valueKrw)}</small></div>
+        <span class="${item.profit >= 0 ? "positive" : "negative"}">${signedMoney(item.profit)}</span>
+      </div>
+    `;
+  }).join("");
+}
+
 function visibleTransactions() {
   const ownerId = visibleOwnerId();
   return [
@@ -634,6 +653,29 @@ function renderTransactions() {
     `;
     body.appendChild(row);
   });
+}
+
+function renderLedgerPreview() {
+  const list = document.querySelector("#ledgerPreview");
+  if (!list) return;
+  const top = visibleTransactions().slice(0, 3);
+  if (!top.length) {
+    list.innerHTML = `<p class="empty-hint">거래 내역이 없습니다.</p>`;
+    return;
+  }
+  list.innerHTML = top.map((item) => {
+    const owner = investorById(item.ownerId);
+    const isCashflow = item.kind === "cashflow";
+    const label = isCashflow ? (item.type === "deposit" ? "입금" : "출금") : (item.side === "buy" ? "매수" : "매도");
+    const asset = isCashflow ? "예수금" : item.ticker;
+    const amount = isCashflow ? item.amount : tradeAmountKrw(item);
+    return `
+      <div class="market-card">
+        <div><strong>${item.date}</strong><small>${owner.name} · ${label} · ${asset}</small></div>
+        <span>${money(amount)}</span>
+      </div>
+    `;
+  }).join("");
 }
 
 function renderCashflows() {
@@ -1029,7 +1071,9 @@ function render() {
   renderInvestorTabs();
   renderInvestorSheet();
   renderHoldings();
+  renderHoldingsPreview();
   renderTransactions();
+  renderLedgerPreview();
   renderTrend();
   renderFx();
   renderMarketStatus();
