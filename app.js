@@ -515,6 +515,25 @@ function renderMarket() {
   });
 }
 
+function renderIndexMonitor() {
+  const list = document.querySelector("#indexMonitorList");
+  if (!list) return;
+  list.innerHTML = "";
+  INDEX_MONITOR_LIST.forEach((idx) => {
+    const asset = state.assetCatalog[idx.ticker];
+    const quote = (state.indexQuotes || {})[idx.ticker];
+    const price = quote ? quote.price : (asset ? asset.currentPrice : 0);
+    const change = quote ? quote.changePercent : 0;
+    const row = document.createElement("div");
+    row.className = "market-card";
+    row.innerHTML = `
+      <div><strong>${idx.label}</strong><small>${idx.ticker} · $${numberFormatter.format(price)}</small></div>
+      <span class="${change >= 0 ? "positive" : "negative"}">${change >= 0 ? "+" : ""}${change.toFixed(2)}%</span>
+    `;
+    list.appendChild(row);
+  });
+}
+
 function renderInvestorComparison() {
   const list = document.querySelector("#investorComparison");
   list.innerHTML = "";
@@ -1005,6 +1024,7 @@ function render() {
   renderDashboard();
   renderAllocation();
   renderMarket();
+  renderIndexMonitor();
   renderInvestorComparison();
   renderInvestorTabs();
   renderInvestorSheet();
