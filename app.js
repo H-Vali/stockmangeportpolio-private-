@@ -5,6 +5,7 @@ const DIVIDEND_TAX_RATE = 0.15;
 const DEFAULT_USDKRW = 1380;
 const DEFAULT_PROXY_BASE_URL = "";
 const PROXY_STORAGE_KEY = "assetpilot-proxy-base-url";
+const ALLOCATION_RATIOS_KEY = "assetpilot-allocation-ratios-v1";
 const COINGECKO_IDS = {
   BTC: "bitcoin",
   ETH: "ethereum",
@@ -36,6 +37,7 @@ const allocationColors = {
 };
 const fallbackColors = ["#7c5cfc", "#b69cff", "#3bb5a6", "#e8b339", "#5a5a68"];
 const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
+let previousAllocationRatios = loadAllocationRatios();
 
 const seedState = {
   schemaVersion: SCHEMA_VERSION,
@@ -216,6 +218,14 @@ function saveState(options = {}) {
   state.schemaVersion = SCHEMA_VERSION;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   if (options.snapshot !== false) recordSnapshot();
+}
+
+function loadAllocationRatios() {
+  try {
+    return JSON.parse(localStorage.getItem(ALLOCATION_RATIOS_KEY) || "{}") || {};
+  } catch (error) {
+    return {};
+  }
 }
 
 function money(value) {
@@ -486,30 +496,92 @@ function renderDashboard() {
 
 function renderAllocation() {
   const groups = groupedByType();
+  const donut = document.querySelector("#allocationDonut");
   const total = Math.max(summarize().totalValue, 1);
   let cursor = 0;
-  const segments = groups.map((group, index) => {
-    const value = Math.max(group.value, 0);
-    const start = cursor;
-    const end = cursor + (value / total) * 100;
-    cursor = end;
-    const color = allocationColors[group.type] || fallbackColors[index % fallbackColors.length];
-    return `${color} ${start}% ${end}%`;
+  const segments = groups
+    .map((group, index) => {
+      const value = Math.max(group.value, 0);
+      const size = (value / total) * 100;
+      const color = allocationColors[group.type] || fallbackColors[index % fallbackColors.length];
+      const segment = { ...group, color, size, offset: cursor };
+      cursor += size;
+      return segment;
+    })
+    .filter((group) => group.size > 0);
+
+  donut.classList.toggle("is-empty", !segments.length);
+  donut.innerHTML = `
+    <svg class="allocation-svg" viewBox="0 0 220 220" role="img" aria-label="자산 배분 원형 그래프">
+      <circle class="allocation-track" cx="110" cy="110" r="78"></circle>
+      ${segments.map((segment) => `
+        <circle
+          class="allocation-segment"
+          cx="110"
+          cy="110"
+          r="78"
+          pathLength="100"
+          stroke="${segment.color}"
+          stroke-dasharray="${segment.size} ${Math.max(0, 100 - segment.size)}"
+          stroke-dashoffset="${-segment.offset}"
+          data-label="${segment.type}"
+          data-percent="${pct(segment.actual)}"
+        ></circle>
+      `).join("")}
+    </svg>
+    <div class="donut-center" aria-hidden="true">
+      <span id="allocationCenterLabel">Allocation</span>
+      <strong id="allocationCenterValue">${segments.length ? pct(Math.max(...segments.map((segment) => segment.actual))) : "0.000%"}</strong>
+    </div>
+    <div class="donut-tooltip" aria-hidden="true">
+      <span id="allocationTooltipLabel">자산 배분</span>
+      <strong id="allocationTooltipValue">0.000%</strong>
+    </div>
+  `;
+
+  donut.querySelectorAll(".allocation-segment").forEach((segment) => {
+    segment.addEventListener("mouseenter", () => {
+      donut.classList.add("show-tooltip");
+      donut.querySelector("#allocationTooltipLabel").textContent = segment.dataset.label;
+      donut.querySelector("#allocationTooltipValue").textContent = segment.dataset.percent;
+      donut.querySelector("#allocationCenterLabel").textContent = segment.dataset.label;
+      donut.querySelector("#allocationCenterValue").textContent = segment.dataset.percent;
+    });
+    segment.addEventListener("mouseleave", () => {
+      donut.classList.remove("show-tooltip");
+      donut.querySelector("#allocationCenterLabel").textContent = "Allocation";
+      donut.querySelector("#allocationCenterValue").textContent = segments.length ? pct(Math.max(...segments.map((item) => item.actual))) : "0.000%";
+    });
   });
-  document.querySelector("#allocationDonut").style.background = `conic-gradient(${segments.join(", ") || `${fallbackColors[0]} 0 100%`})`;
+
+  const currentRatios = {};
+  groups.forEach((group) => {
+    currentRatios[group.type] = group.actual;
+  });
 
   const legend = document.querySelector("#allocationLegend");
   legend.innerHTML = "";
   groups.forEach((group, index) => {
     const color = allocationColors[group.type] || fallbackColors[index % fallbackColors.length];
+    const previous = previousAllocationRatios[group.type];
+    const diff = typeof previous === "number" ? group.actual - previous : 0;
+    const trendClass = diff > 0.001 ? "positive" : diff < -0.001 ? "negative" : "neutral-text";
+    const trendLabel = diff > 0.001 ? "상승" : diff < -0.001 ? "하락" : "변동 없음";
+    const trendMark = diff > 0.001 ? "▲" : diff < -0.001 ? "▼" : "—";
     const row = document.createElement("div");
     row.className = "legend-row";
     row.innerHTML = `
       <span><i class="swatch" style="background:${color}"></i>${group.type}</span>
-      <strong class="${group.value < 0 ? "negative" : ""}">${pct(group.actual)}</strong>
+      <strong class="allocation-ratio ${group.value < 0 ? "negative" : ""}">
+        <span>${pct(group.actual)}</span>
+        <em class="allocation-trend ${trendClass}" title="이전 비율 대비 ${trendLabel}">${trendMark}</em>
+      </strong>
     `;
     legend.appendChild(row);
   });
+
+  previousAllocationRatios = currentRatios;
+  localStorage.setItem(ALLOCATION_RATIOS_KEY, JSON.stringify(currentRatios));
 }
 
 function renderMarket() {

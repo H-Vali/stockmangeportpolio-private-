@@ -763,35 +763,128 @@ tbody tr:hover {
 
 .donut-area {
   display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
+  grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
   align-items: center;
-  gap: 18px;
+  gap: clamp(18px, 4vw, 34px);
 }
 
 .donut {
   position: relative;
-  width: 160px;
+  width: clamp(150px, 18vw, 220px);
+  max-width: 100%;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: conic-gradient(var(--violet) 0 40%, var(--violet-2) 40% 72%, var(--violet-3) 72% 100%);
-  box-shadow: 0 0 28px rgba(124, 92, 252, 0.22);
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  isolation: isolate;
+  box-shadow: 0 0 34px rgba(124, 92, 252, 0.2);
 }
 
 .donut::before {
   content: "";
   position: absolute;
-  inset: -1px;
+  inset: 10%;
   border-radius: inherit;
-  background: radial-gradient(circle, transparent 55%, rgba(255, 255, 255, 0.12) 56%, transparent 58%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  z-index: 2;
 }
 
-.donut::after {
-  content: "";
+.allocation-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: rotate(-90deg);
+}
+
+.allocation-track,
+.allocation-segment {
+  fill: none;
+}
+
+.allocation-track {
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 34;
+}
+
+.allocation-segment {
+  stroke-width: 34;
+  stroke-linecap: butt;
+  cursor: pointer;
+  transition:
+    opacity 180ms ease,
+    stroke-width 180ms ease,
+    filter 180ms ease;
+}
+
+.donut:hover .allocation-segment {
+  opacity: 0.42;
+}
+
+.donut .allocation-segment:hover {
+  opacity: 1;
+  stroke-width: 40;
+  filter: drop-shadow(0 0 12px rgba(157, 123, 255, 0.36));
+}
+
+.donut-center {
   position: absolute;
-  inset: 39px;
-  border-radius: 50%;
-  background: var(--surface);
+  inset: 27%;
+  z-index: 3;
+  display: grid;
+  place-content: center;
+  gap: 3px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(157, 123, 255, 0.11), transparent 58%),
+    var(--surface);
   border: 1px solid var(--line);
+  text-align: center;
+  pointer-events: none;
+}
+
+.donut-center span,
+.donut-tooltip span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.donut-center strong,
+.donut-tooltip strong {
+  color: var(--ink);
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: clamp(13px, 1.3vw, 18px);
+}
+
+.donut-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: 3%;
+  z-index: 4;
+  min-width: 112px;
+  padding: 8px 10px;
+  border: 1px solid rgba(157, 123, 255, 0.38);
+  border-radius: 8px;
+  background: rgba(21, 21, 28, 0.94);
+  box-shadow: 0 0 22px rgba(124, 92, 252, 0.18);
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition: opacity 160ms ease, transform 160ms ease;
+  text-align: center;
+  pointer-events: none;
+}
+
+.donut.show-tooltip .donut-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.donut.is-empty .allocation-track {
+  stroke: rgba(124, 92, 252, 0.24);
 }
 
 .legend,
@@ -910,6 +1003,37 @@ tbody tr:hover {
 .legend-row strong {
   color: var(--ink);
   font-family: "Space Grotesk", Pretendard, sans-serif;
+}
+
+.allocation-ratio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  min-width: 88px;
+  font-variant-numeric: tabular-nums;
+}
+
+.allocation-trend {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 10px;
+  font-style: normal;
+  line-height: 1;
+}
+
+.allocation-trend.positive {
+  background: rgba(246, 70, 93, 0.1);
+  box-shadow: 0 0 12px rgba(246, 70, 93, 0.1);
+}
+
+.allocation-trend.negative {
+  background: rgba(70, 145, 255, 0.1);
+  box-shadow: 0 0 12px rgba(70, 145, 255, 0.1);
 }
 
 .swatch {
@@ -1496,6 +1620,10 @@ menu {
   .donut-area {
     align-items: stretch;
     grid-template-columns: 1fr;
+  }
+
+  .donut {
+    width: min(220px, 72vw);
   }
 
   .topbar {
