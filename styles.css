@@ -318,6 +318,7 @@ a.ghost-button {
 .hero-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
   gap: 16px;
   margin-bottom: 16px;
 }
@@ -334,13 +335,13 @@ a.ghost-button {
 .hero-card {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 34%);
-  align-items: end;
-  min-height: 244px;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 40%);
+  align-items: center;
+  min-height: 178px;
   overflow: hidden;
-  padding: 24px;
+  padding: 22px 24px;
   background:
-    radial-gradient(120% 120% at 0% 0%, rgba(124, 92, 252, 0.28), rgba(124, 92, 252, 0.04) 48%, transparent 72%),
+    radial-gradient(92% 130% at 0% 0%, rgba(124, 92, 252, 0.26), rgba(124, 92, 252, 0.04) 44%, transparent 70%),
     linear-gradient(145deg, #181821, #111117);
   box-shadow: var(--shadow), var(--glow);
 }
@@ -364,12 +365,13 @@ a.ghost-button {
 .hero-copy {
   position: relative;
   z-index: 1;
+  align-self: start;
 }
 
 .hero-value {
   display: block;
-  margin: 8px 0 12px;
-  font-size: clamp(38px, 5vw, 64px);
+  margin: 8px 0 10px;
+  font-size: clamp(38px, 4.5vw, 58px);
   font-weight: 700;
   line-height: 0.98;
   text-decoration: none;
@@ -408,7 +410,30 @@ a.ghost-button {
   position: relative;
   z-index: 1;
   width: 100%;
-  min-height: 132px;
+  min-height: 112px;
+  filter: drop-shadow(0 0 12px rgba(124, 92, 252, 0.18));
+}
+
+.spark-last-halo {
+  fill: rgba(157, 123, 255, 0.2);
+  stroke: rgba(157, 123, 255, 0.28);
+}
+
+.spark-last-dot {
+  fill: #f3f3f7;
+  stroke: #9d7bff;
+  stroke-width: 3;
+}
+
+.spark-value-label,
+.spark-rate-badge text {
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.spark-value-label {
+  fill: var(--ink);
 }
 
 .metric-stack {
@@ -423,8 +448,11 @@ a.ghost-button {
 }
 
 .metric-card {
+  position: relative;
+  overflow: hidden;
   padding: 18px;
   background: linear-gradient(180deg, rgba(28, 28, 37, 0.78), var(--surface));
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
 .metric-card span,
@@ -438,6 +466,83 @@ a.ghost-button {
   margin: 8px 0 7px;
   font-size: 30px;
   line-height: 1.05;
+}
+
+.hero-grid .metric-stack {
+  gap: 12px;
+}
+
+.hero-grid .metric-card {
+  min-height: 83px;
+  padding: 13px 16px;
+}
+
+.hero-grid .metric-card strong {
+  margin: 5px 0 5px;
+  font-size: 28px;
+}
+
+.metric-change-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(28, 28, 37, 0.9);
+  border: 1px solid currentColor;
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  animation: metricBadgeOut 1.8s ease forwards;
+}
+
+.metric-flash-up {
+  animation: metricFlashUp 1.8s ease;
+}
+
+.metric-flash-down {
+  animation: metricFlashDown 1.8s ease;
+}
+
+@keyframes metricFlashUp {
+  0% {
+    border-color: rgba(246, 70, 93, 0.62);
+    box-shadow: 0 0 0 rgba(246, 70, 93, 0), 0 0 28px rgba(246, 70, 93, 0.24);
+    background: linear-gradient(180deg, rgba(246, 70, 93, 0.12), rgba(28, 28, 37, 0.78));
+  }
+  100% {
+    border-color: var(--line);
+    box-shadow: var(--shadow);
+  }
+}
+
+@keyframes metricFlashDown {
+  0% {
+    border-color: rgba(70, 145, 255, 0.62);
+    box-shadow: 0 0 0 rgba(70, 145, 255, 0), 0 0 28px rgba(70, 145, 255, 0.22);
+    background: linear-gradient(180deg, rgba(70, 145, 255, 0.12), rgba(28, 28, 37, 0.78));
+  }
+  100% {
+    border-color: var(--line);
+    box-shadow: var(--shadow);
+  }
+}
+
+@keyframes metricBadgeOut {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  18%,
+  72% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
 }
 
 .workspace {
@@ -844,8 +949,7 @@ tbody tr:hover {
   pointer-events: none;
 }
 
-.donut-center span,
-.donut-tooltip span {
+.donut-center span {
   color: var(--muted);
   font-size: 10px;
   font-weight: 800;
@@ -853,34 +957,10 @@ tbody tr:hover {
   text-transform: uppercase;
 }
 
-.donut-center strong,
-.donut-tooltip strong {
+.donut-center strong {
   color: var(--ink);
   font-family: "Space Grotesk", Pretendard, sans-serif;
   font-size: clamp(13px, 1.3vw, 18px);
-}
-
-.donut-tooltip {
-  position: absolute;
-  left: 50%;
-  bottom: 3%;
-  z-index: 4;
-  min-width: 112px;
-  padding: 8px 10px;
-  border: 1px solid rgba(157, 123, 255, 0.38);
-  border-radius: 8px;
-  background: rgba(21, 21, 28, 0.94);
-  box-shadow: 0 0 22px rgba(124, 92, 252, 0.18);
-  opacity: 0;
-  transform: translate(-50%, 8px);
-  transition: opacity 160ms ease, transform 160ms ease;
-  text-align: center;
-  pointer-events: none;
-}
-
-.donut.show-tooltip .donut-tooltip {
-  opacity: 1;
-  transform: translate(-50%, 0);
 }
 
 .donut.is-empty .allocation-track {
@@ -1565,6 +1645,14 @@ menu {
   .hero-grid,
   .hero-card {
     grid-template-columns: 1fr;
+  }
+
+  .hero-card {
+    min-height: 0;
+  }
+
+  .sparkline {
+    min-height: 96px;
   }
 
   .span-4,

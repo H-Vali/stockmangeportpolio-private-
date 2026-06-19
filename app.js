@@ -38,6 +38,7 @@ const allocationColors = {
 const fallbackColors = ["#7c5cfc", "#b69cff", "#3bb5a6", "#e8b339", "#5a5a68"];
 const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 let previousAllocationRatios = loadAllocationRatios();
+let previousDashboardValues = null;
 
 const seedState = {
   schemaVersion: SCHEMA_VERSION,
@@ -255,6 +256,27 @@ function qty(value) {
 
 function signedMoney(value) {
   return `${value >= 0 ? "+" : ""}${money(value)}`;
+}
+
+function markMetricChange(selector, nextValue, previousValue) {
+  const valueNode = document.querySelector(selector);
+  if (!valueNode || typeof previousValue !== "number" || nextValue === previousValue) return;
+  const card = valueNode.closest(".metric-card");
+  if (!card) return;
+  const diff = nextValue - previousValue;
+  const direction = diff >= 0 ? "up" : "down";
+  card.classList.remove("metric-flash-up", "metric-flash-down");
+  void card.offsetWidth;
+  card.classList.add(direction === "up" ? "metric-flash-up" : "metric-flash-down");
+  card.querySelector(".metric-change-badge")?.remove();
+  const badge = document.createElement("b");
+  badge.className = `metric-change-badge ${direction === "up" ? "positive" : "negative"}`;
+  badge.textContent = `${signedMoney(diff)} ${direction === "up" ? "▲" : "▼"}`;
+  card.appendChild(badge);
+  setTimeout(() => {
+    badge.remove();
+    card.classList.remove("metric-flash-up", "metric-flash-down");
+  }, 1800);
 }
 
 function currentUsdKrw() {
@@ -484,6 +506,7 @@ function renderView() {
 function renderDashboard() {
   const summary = summarize();
   const totalProfit = document.querySelector("#totalProfit");
+  const previous = previousDashboardValues;
   setMoneyElement("#totalValue", summary.totalValue);
   setMoneyElement("#totalPrincipal", summary.principal);
   totalProfit.textContent = signedMoney(summary.profit);
@@ -492,6 +515,12 @@ function renderDashboard() {
   document.querySelector("#totalDividend").textContent = `총배당 ${money(summary.dividend)}`;
   setMoneyElement("#cashAmount", summary.cash);
   document.querySelector("#cashRatio").textContent = `평가금액 포함 · ${pct(summary.totalValue ? (summary.cash / summary.totalValue) * 100 : 0)}`;
+  markMetricChange("#totalPrincipal", summary.principal, previous?.principal);
+  markMetricChange("#cashAmount", summary.cash, previous?.cash);
+  previousDashboardValues = {
+    principal: summary.principal,
+    cash: summary.cash
+  };
 }
 
 function renderAllocation() {
@@ -533,22 +562,14 @@ function renderAllocation() {
       <span id="allocationCenterLabel">Allocation</span>
       <strong id="allocationCenterValue">${segments.length ? pct(Math.max(...segments.map((segment) => segment.actual))) : "0.000%"}</strong>
     </div>
-    <div class="donut-tooltip" aria-hidden="true">
-      <span id="allocationTooltipLabel">자산 배분</span>
-      <strong id="allocationTooltipValue">0.000%</strong>
-    </div>
   `;
 
   donut.querySelectorAll(".allocation-segment").forEach((segment) => {
     segment.addEventListener("mouseenter", () => {
-      donut.classList.add("show-tooltip");
-      donut.querySelector("#allocationTooltipLabel").textContent = segment.dataset.label;
-      donut.querySelector("#allocationTooltipValue").textContent = segment.dataset.percent;
       donut.querySelector("#allocationCenterLabel").textContent = segment.dataset.label;
       donut.querySelector("#allocationCenterValue").textContent = segment.dataset.percent;
     });
     segment.addEventListener("mouseleave", () => {
-      donut.classList.remove("show-tooltip");
       donut.querySelector("#allocationCenterLabel").textContent = "Allocation";
       donut.querySelector("#allocationCenterValue").textContent = segments.length ? pct(Math.max(...segments.map((item) => item.actual))) : "0.000%";
     });
@@ -815,19 +836,37 @@ function renderHeroSparkline() {
   const plot = document.querySelector("#heroSparklinePlot");
   const history = totalValueHistory();
   if (!plot) return;
-  if (history.length < 2) {
-    plot.innerHTML = `<path d="M8 78 L352 78" fill="none" stroke="url(#spark)" stroke-width="4" stroke-linecap="round" opacity=".7" />`;
-    return;
-  }
   const width = 360;
   const height = 120;
-  const pad = 10;
+  const pad = 12;
+  if (history.length < 2) {
+    const value = summarize().totalValue;
+    plot.innerHTML = `
+      <path d="M${pad} 78 L${width - pad} 78" fill="none" stroke="url(#spark)" stroke-width="4" stroke-linecap="round" opacity=".7" />
+      <circle class="spark-last-dot" cx="${width - pad}" cy="78" r="5"></circle>
+      <text class="spark-value-label" x="${width - pad - 8}" y="68" text-anchor="end">${money(value)}</text>
+    `;
+    return;
+  }
   const points = chartPoints(history, width, height, pad);
   const line = points.map((point) => `${point.x},${point.y}`).join(" ");
-  const area = `${points[0].x},${height} ${line} ${points.at(-1).x},${height}`;
+  const baseline = height - pad;
+  const area = `${points[0].x},${baseline} ${line} ${points.at(-1).x},${baseline}`;
+  const first = history[0].totalValue || 1;
+  const last = history.at(-1).totalValue;
+  const changeRate = ((last - first) / first) * 100;
+  const lastPoint = points.at(-1);
+  const badgeColor = changeRate >= 0 ? "#F6465D" : "#4691FF";
   plot.innerHTML = `
     <polygon points="${area}" fill="url(#sparkFill)"></polygon>
     <polyline points="${line}" fill="none" stroke="url(#spark)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+    <circle class="spark-last-halo" cx="${lastPoint.x}" cy="${lastPoint.y}" r="11"></circle>
+    <circle class="spark-last-dot" cx="${lastPoint.x}" cy="${lastPoint.y}" r="5"></circle>
+    <text class="spark-value-label" x="${Math.min(lastPoint.x - 8, width - 90)}" y="${Math.max(lastPoint.y - 12, 18)}" text-anchor="end">${money(last)}</text>
+    <g class="spark-rate-badge" transform="translate(${width - 96} 14)">
+      <rect width="84" height="28" rx="8" fill="${badgeColor}" opacity=".12"></rect>
+      <text x="42" y="18" text-anchor="middle" fill="${badgeColor}">${changeRate >= 0 ? "+" : ""}${pct(changeRate)}</text>
+    </g>
   `;
 }
 
