@@ -416,13 +416,34 @@ a.ghost-button {
 
 .spark-area {
   transform-origin: center bottom;
-  animation: sparkWater 5.8s ease-in-out infinite;
+  animation: sparkMist 6.2s ease-in-out infinite;
+}
+
+.spark-wave {
+  fill: none;
+  stroke: #9d7bff;
+  stroke-linecap: round;
+  pointer-events: none;
+  transform-origin: center;
+}
+
+.spark-wave-one {
+  opacity: 0.13;
+  stroke-width: 8;
+  animation: sparkWaveOne 5.7s ease-in-out infinite;
+}
+
+.spark-wave-two {
+  opacity: 0.08;
+  stroke-width: 11;
+  animation: sparkWaveTwo 7.4s ease-in-out infinite;
 }
 
 .spark-last-halo {
   fill: rgba(157, 123, 255, 0.2);
   stroke: rgba(157, 123, 255, 0.28);
   pointer-events: none;
+  animation: sparkHaloPulse 1.9s ease-in-out infinite;
 }
 
 .spark-last-dot {
@@ -431,6 +452,8 @@ a.ghost-button {
   stroke-width: 3;
   cursor: pointer;
   pointer-events: all;
+  filter: drop-shadow(0 0 9px rgba(157, 123, 255, 0.58));
+  animation: sparkPointGlow 2.2s ease-in-out infinite;
   transition: filter 160ms ease, r 160ms ease, stroke-width 160ms ease;
 }
 
@@ -545,6 +568,14 @@ a.ghost-button {
   animation: metricFlashDown 1.8s ease;
 }
 
+.realtime-flash-up {
+  animation: metricFlashUp 1.8s ease;
+}
+
+.realtime-flash-down {
+  animation: metricFlashDown 1.8s ease;
+}
+
 .value-demo-pulse-up,
 .value-demo-pulse-down {
   animation: valueDemoPulse 1.8s ease;
@@ -616,19 +647,70 @@ a.ghost-button {
   }
 }
 
-@keyframes sparkWater {
+@keyframes sparkPointGlow {
   0%,
   100% {
-    opacity: 0.82;
-    transform: translateY(0) scaleY(1);
+    filter: drop-shadow(0 0 8px rgba(157, 123, 255, 0.48));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(157, 123, 255, 0.92));
+  }
+}
+
+@keyframes sparkHaloPulse {
+  0%,
+  100% {
+    opacity: 0.52;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.86;
+    transform: scale(1.16);
+  }
+}
+
+@keyframes sparkMist {
+  0%,
+  100% {
+    opacity: 0.78;
   }
   45% {
-    opacity: 0.64;
-    transform: translateY(2px) scaleY(0.94);
+    opacity: 0.56;
   }
   70% {
-    opacity: 0.78;
-    transform: translateY(-1px) scaleY(1.03);
+    opacity: 0.72;
+  }
+}
+
+@keyframes sparkWaveOne {
+  0%,
+  100% {
+    transform: translateX(-3px) translateY(0) scaleX(1);
+    opacity: 0.11;
+  }
+  34% {
+    transform: translateX(8px) translateY(-4px) scaleX(1.04);
+    opacity: 0.17;
+  }
+  68% {
+    transform: translateX(-6px) translateY(3px) scaleX(0.98);
+    opacity: 0.09;
+  }
+}
+
+@keyframes sparkWaveTwo {
+  0%,
+  100% {
+    transform: translateX(7px) translateY(1px) scaleX(0.98);
+    opacity: 0.08;
+  }
+  41% {
+    transform: translateX(-10px) translateY(4px) scaleX(1.06);
+    opacity: 0.13;
+  }
+  77% {
+    transform: translateX(4px) translateY(-5px) scaleX(1.01);
+    opacity: 0.06;
   }
 }
 
@@ -1227,6 +1309,8 @@ tbody tr:hover {
 .account-card,
 .market-card,
 .investor-card {
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px;

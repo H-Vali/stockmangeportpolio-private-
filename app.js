@@ -38,8 +38,12 @@ const allocationColors = {
 const fallbackColors = ["#7c5cfc", "#b69cff", "#3bb5a6", "#e8b339", "#5a5a68"];
 const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 let previousAllocationRatios = loadAllocationRatios();
-let previousDashboardValues = null;
 let dashboardDemoTimer = null;
+let previousRealtimeValues = {
+  market: {},
+  investors: {},
+  index: {}
+};
 
 const seedState = {
   schemaVersion: SCHEMA_VERSION,
@@ -269,48 +273,66 @@ function signedUsd(value) {
   return `${value >= 0 ? "+" : "-"}${usdFormatter.format(Math.abs(value || 0))}`;
 }
 
+function markRealtimeChange(card, diff, formatter = signedMoney) {
+  if (!card || !Number.isFinite(diff) || Math.abs(diff) < 0.000001) return;
+  const direction = diff >= 0 ? "up" : "down";
+  card.classList.remove("realtime-flash-up", "realtime-flash-down");
+  void card.offsetWidth;
+  card.classList.add(direction === "up" ? "realtime-flash-up" : "realtime-flash-down");
+  card.querySelector(".metric-change-badge")?.remove();
+  const badge = document.createElement("b");
+  badge.className = `metric-change-badge ${direction === "up" ? "positive" : "negative"}`;
+  badge.textContent = `${formatter(diff)} ${direction === "up" ? "▲" : "▼"}`;
+  card.appendChild(badge);
+  setTimeout(() => {
+    badge.remove();
+    card.classList.remove("realtime-flash-up", "realtime-flash-down");
+  }, 1800);
+}
+
 function markMetricChange(selector, nextValue, previousValue) {
   const valueNode = document.querySelector(selector);
   if (!valueNode || typeof previousValue !== "number" || nextValue === previousValue) return;
   const card = valueNode.closest(".metric-card");
   if (!card) return;
-  const diff = nextValue - previousValue;
-  const direction = diff >= 0 ? "up" : "down";
-  card.classList.remove("metric-flash-up", "metric-flash-down");
-  void card.offsetWidth;
-  card.classList.add(direction === "up" ? "metric-flash-up" : "metric-flash-down");
-  card.querySelector(".metric-change-badge")?.remove();
-  const badge = document.createElement("b");
-  badge.className = `metric-change-badge ${direction === "up" ? "positive" : "negative"}`;
-  badge.textContent = `${signedMoney(diff)} ${direction === "up" ? "▲" : "▼"}`;
-  card.appendChild(badge);
-  setTimeout(() => {
-    badge.remove();
-    card.classList.remove("metric-flash-up", "metric-flash-down");
-  }, 1800);
+  markRealtimeChange(card, nextValue - previousValue);
+}
+
+function signedPercentChange(value) {
+  return `${value >= 0 ? "+" : ""}${pct(value)}`;
 }
 
 function triggerDashboardChangeDemo() {
   clearTimeout(dashboardDemoTimer);
-  const summary = summarize();
-  const nextPrincipal = summary.principal + 120000;
-  const nextCash = summary.cash - 45000;
-  const nextProfit = summary.profit + 165000;
-  const nextReturnRate = summary.principal ? (nextProfit / summary.principal) * 100 : 0;
-  setMoneyElement("#totalPrincipal", nextPrincipal);
-  setMoneyElement("#cashAmount", nextCash);
-  markMetricChange("#totalPrincipal", nextPrincipal, summary.principal);
-  markMetricChange("#cashAmount", nextCash, summary.cash);
-  const totalProfit = document.querySelector("#totalProfit");
-  const profitRate = document.querySelector("#profitRate");
-  totalProfit.textContent = signedMoney(nextProfit);
-  totalProfit.className = nextProfit >= 0 ? "positive value-demo-pulse-up" : "negative value-demo-pulse-down";
-  profitRate.textContent = `수익률 ${nextReturnRate >= 0 ? "+" : ""}${pct(nextReturnRate)}`;
-  profitRate.classList.add(nextReturnRate >= summary.returnRate ? "value-demo-pulse-up" : "value-demo-pulse-down");
-  showToast("변동 시각 효과 테스트 중입니다. 실제 데이터는 저장되지 않습니다.");
+  document.querySelectorAll("#marketList .market-card").forEach((card, index) => {
+    const diff = index % 2 === 0 ? 0.216 : -0.142;
+    const value = card.querySelector("span");
+    if (value) {
+      value.textContent = `${diff >= 0 ? "+" : ""}${pct(9.5 + diff)}`;
+      value.className = diff >= 0 ? "positive value-demo-pulse-up" : "negative value-demo-pulse-down";
+    }
+    markRealtimeChange(card, diff, signedPercentChange);
+  });
+  document.querySelectorAll("#investorComparison .investor-card").forEach((card, index) => {
+    const diff = index % 2 === 0 ? 96000 : -52000;
+    const value = card.querySelector(":scope > span");
+    if (value) {
+      value.textContent = signedMoney((index % 2 === 0 ? 460000 : -94000) + diff);
+      value.className = diff >= 0 ? "positive value-demo-pulse-up" : "negative value-demo-pulse-down";
+    }
+    markRealtimeChange(card, diff);
+  });
+  document.querySelectorAll("#indexMonitorList .index-card").forEach((card, index) => {
+    const diff = [0.38, -0.21, 0.16, -0.09][index % 4];
+    const value = card.querySelector(":scope > span");
+    if (value) {
+      value.textContent = `${diff >= 0 ? "+" : ""}${diff.toFixed(2)}%`;
+      value.className = diff >= 0 ? "positive value-demo-pulse-up" : "negative value-demo-pulse-down";
+    }
+    markRealtimeChange(card, diff, (amount) => `${amount >= 0 ? "+" : ""}${amount.toFixed(2)}%`);
+  });
+  showToast("실시간 변동 효과 테스트 중입니다. 실제 데이터는 저장되지 않습니다.");
   dashboardDemoTimer = setTimeout(() => {
-    totalProfit.classList.remove("value-demo-pulse-up", "value-demo-pulse-down");
-    profitRate.classList.remove("value-demo-pulse-up", "value-demo-pulse-down");
     render();
   }, 1900);
 }
@@ -542,7 +564,6 @@ function renderView() {
 function renderDashboard() {
   const summary = summarize();
   const totalProfit = document.querySelector("#totalProfit");
-  const previous = previousDashboardValues;
   setMoneyElement("#totalValue", summary.totalValue);
   setMoneyElement("#totalPrincipal", summary.principal);
   totalProfit.textContent = signedMoney(summary.profit);
@@ -551,12 +572,6 @@ function renderDashboard() {
   document.querySelector("#totalDividend").textContent = `총배당 ${money(summary.dividend)}`;
   setMoneyElement("#cashAmount", summary.cash);
   document.querySelector("#cashRatio").textContent = `평가금액 포함 · ${pct(summary.totalValue ? (summary.cash / summary.totalValue) * 100 : 0)}`;
-  markMetricChange("#totalPrincipal", summary.principal, previous?.principal);
-  markMetricChange("#cashAmount", summary.cash, previous?.cash);
-  previousDashboardValues = {
-    principal: summary.principal,
-    cash: summary.cash
-  };
 }
 
 function renderAllocation() {
@@ -644,8 +659,10 @@ function renderAllocation() {
 function renderMarket() {
   const list = document.querySelector("#marketList");
   list.innerHTML = "";
+  const nextValues = {};
   state.marketIndicators.forEach((item) => {
     const premium = item.globalKrw ? ((item.domestic / item.globalKrw) - 1) * 100 : 0;
+    nextValues[item.symbol] = premium;
     const row = document.createElement("div");
     row.className = "market-card";
     row.innerHTML = `
@@ -653,19 +670,24 @@ function renderMarket() {
       <span class="${premium >= 0 ? "positive" : "negative"}">${premium >= 0 ? "+" : ""}${pct(premium)}</span>
     `;
     list.appendChild(row);
+    const previous = previousRealtimeValues.market[item.symbol];
+    if (typeof previous === "number") markRealtimeChange(row, premium - previous, signedPercentChange);
   });
+  previousRealtimeValues.market = nextValues;
 }
 
 function renderIndexMonitor() {
   const list = document.querySelector("#indexMonitorList");
   if (!list) return;
   const connected = Boolean(proxyBaseUrl());
+  const nextValues = {};
   const cards = INDEX_MONITOR_LIST.map((idx) => {
     const asset = state.assetCatalog[idx.ticker];
     const quote = (state.indexQuotes || {})[idx.ticker];
     const price = quote ? quote.price : (asset ? asset.currentPrice : 0);
     const hasQuote = Boolean(quote);
     const change = hasQuote ? quote.changePercent : 0;
+    nextValues[idx.ticker] = change;
     const glow = change > 0 ? "positive-glow" : change < 0 ? "negative-glow" : "neutral-glow";
     const changeClass = change > 0 ? "positive" : change < 0 ? "negative" : "neutral-text";
     const status = quote ? `실시간 · ${formatClock(quote.updatedAt)}` : (connected ? "갱신 대기" : "프록시 연결 대기");
@@ -683,14 +705,22 @@ function renderIndexMonitor() {
       <div class="index-clone" aria-hidden="true">${cards.join("")}</div>
     </div>
   `;
+  list.querySelectorAll(".index-track > .index-card").forEach((card, index) => {
+    const ticker = INDEX_MONITOR_LIST[index]?.ticker;
+    const previous = previousRealtimeValues.index[ticker];
+    if (typeof previous === "number") markRealtimeChange(card, nextValues[ticker] - previous, (amount) => `${amount >= 0 ? "+" : ""}${amount.toFixed(2)}%`);
+  });
+  previousRealtimeValues.index = nextValues;
 }
 
 function renderInvestorComparison() {
   const list = document.querySelector("#investorComparison");
   list.innerHTML = "";
   const total = summarize().totalValue || 1;
+  const nextValues = {};
   state.investors.forEach((investor) => {
     const summary = summarize(investor.id);
+    nextValues[investor.id] = summary.profit;
     const share = (summary.totalValue / total) * 100;
     const row = document.createElement("div");
     row.className = "investor-card";
@@ -700,7 +730,10 @@ function renderInvestorComparison() {
       <span class="${summary.profit >= 0 ? "positive" : "negative"}">${signedMoney(summary.profit)}</span>
     `;
     list.appendChild(row);
+    const previous = previousRealtimeValues.investors[investor.id];
+    if (typeof previous === "number") markRealtimeChange(row, summary.profit - previous);
   });
+  previousRealtimeValues.investors = nextValues;
 }
 
 function renderInvestorTabs() {
@@ -882,15 +915,20 @@ function renderHeroSparkline() {
   const summary = summarize();
   const summaryClass = summary.profit >= 0 ? "positive-spark" : "negative-spark";
   const summaryBadge = `
-    <g class="spark-summary ${summaryClass}" transform="translate(${width / 2} ${height / 2})">
+    <g class="spark-summary ${summaryClass}" transform="translate(126 58)">
       <rect x="-82" y="-25" width="164" height="50" rx="12"></rect>
       <text class="spark-summary-rate" x="0" y="-5" text-anchor="middle">${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}</text>
       <text class="spark-summary-profit" x="0" y="15" text-anchor="middle">${signedMoney(summary.profit)} · ${signedUsd(summary.profit / currentUsdKrw())}</text>
     </g>
   `;
+  const wavePaths = `
+    <path class="spark-wave spark-wave-one" d="M${pad} 91 C46 76, 72 100, 104 86 S164 77, 201 91 S262 102, 303 84 S335 78, ${width - pad} 91"></path>
+    <path class="spark-wave spark-wave-two" d="M${pad} 101 C38 111, 76 88, 119 99 S177 115, 219 95 S285 82, 319 99 S342 108, ${width - pad} 97"></path>
+  `;
   if (history.length < 2) {
     plot.innerHTML = `
       <path d="M${pad} 78 L${width - pad} 78" fill="none" stroke="url(#spark)" stroke-width="4" stroke-linecap="round" opacity=".7" />
+      ${wavePaths}
       <circle class="spark-last-dot" cx="${width - pad}" cy="78" r="5"></circle>
       ${summaryBadge}
     `;
@@ -903,6 +941,7 @@ function renderHeroSparkline() {
   const lastPoint = points.at(-1);
   plot.innerHTML = `
     <polygon class="spark-area" points="${area}" fill="url(#sparkFill)"></polygon>
+    ${wavePaths}
     <polyline points="${line}" fill="none" stroke="url(#spark)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
     <circle class="spark-last-halo" cx="${lastPoint.x}" cy="${lastPoint.y}" r="11"></circle>
     <circle class="spark-last-dot" cx="${lastPoint.x}" cy="${lastPoint.y}" r="5"></circle>
