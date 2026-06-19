@@ -129,7 +129,7 @@ function normalizeState(input) {
     market: { ...base.market, ...(parsed.market || {}) },
     snapshots: Array.isArray(parsed.snapshots) ? parsed.snapshots : [],
     investors: parsed.investors,
-    assetCatalog: parsed.assetCatalog || base.assetCatalog,
+    assetCatalog: { ...base.assetCatalog, ...(parsed.assetCatalog || {}) },
     marketIndicators: Array.isArray(parsed.marketIndicators) ? parsed.marketIndicators : base.marketIndicators,
     cashflows: parsed.cashflows,
     trades: parsed.trades
