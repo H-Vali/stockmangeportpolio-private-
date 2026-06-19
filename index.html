@@ -221,37 +221,69 @@
                 <h2>배당 시뮬레이션</h2>
               </div>
             </div>
-            <form id="dividendSimForm" class="sim-controls">
-              <label>종목/ETF <input name="ticker" placeholder="예: QQQI, JEPQ, GPIX" value="QQQI" /></label>
-              <label>보유 수량 <input name="quantity" type="number" min="0" step="0.0001" value="100" /></label>
-              <label>현재가 <input name="price" type="number" min="0" step="0.0001" value="50" /></label>
-              <label>통화
-                <select name="currency">
-                  <option value="USD">USD</option>
-                  <option value="KRW">KRW</option>
-                </select>
+            <div class="sim-result-card" id="dividendSummaryCards"></div>
+            <div class="target-dividend-card" id="targetDividendCard">
+              <div>
+                <p class="eyebrow">Target Income</p>
+                <h3>목표 배당 역산</h3>
+              </div>
+              <label>목표 월 배당금(세후, KRW)
+                <input name="targetMonthlyDividend" id="targetMonthlyDividend" type="number" min="0" step="10000" value="1000000" />
               </label>
-              <label>적용 환율 <input name="fx" type="number" min="1" step="0.01" value="1380" /></label>
-              <label>연 배당수익률(%) <input name="yield" type="number" min="0" max="100" step="0.01" value="12" /></label>
-              <label>분배 주기
-                <select name="frequency">
-                  <option value="12">월배당</option>
-                  <option value="4">분기배당</option>
-                  <option value="1">연배당</option>
-                </select>
-              </label>
-              <label>향후 연수 <input name="years" type="number" min="1" max="30" step="1" value="10" /></label>
-              <label>연간 배당성장률(%) <input name="growth" type="number" min="-20" max="50" step="0.1" value="0" /></label>
-              <label class="check-control"><input name="drip" type="checkbox" /> DRIP 재투자</label>
+              <div class="target-results" id="targetDividendResults"></div>
+            </div>
+            <form id="dividendSimForm" class="sim-control-groups">
+              <fieldset class="sim-group-card">
+                <legend><span>◇</span> 종목 정보</legend>
+                <div class="sim-field-grid">
+                  <label>종목/ETF <input name="ticker" placeholder="예: QQQI, JEPQ, GPIX" value="QQQI" /></label>
+                  <label>보유 수량 <input name="quantity" type="number" min="0" step="0.0001" value="100" /></label>
+                  <label>현재가 <input name="price" type="number" min="0" step="0.0001" value="50" /></label>
+                  <label>통화
+                    <select name="currency">
+                      <option value="USD">USD</option>
+                      <option value="KRW">KRW</option>
+                    </select>
+                  </label>
+                </div>
+              </fieldset>
+              <fieldset class="sim-group-card">
+                <legend><span>◆</span> 배당 조건</legend>
+                <div class="sim-field-grid">
+                  <label>연 배당수익률(%) <input name="yield" type="number" min="0" max="100" step="0.01" value="12" /></label>
+                  <label>분배 주기
+                    <select name="frequency">
+                      <option value="12">월배당</option>
+                      <option value="4">분기배당</option>
+                      <option value="1">연배당</option>
+                    </select>
+                  </label>
+                  <label>적용 환율 <input name="fx" type="number" min="1" step="0.01" value="1380" /></label>
+                </div>
+              </fieldset>
+              <fieldset class="sim-group-card">
+                <legend><span>●</span> 시뮬레이션 변수</legend>
+                <div class="sim-field-grid">
+                  <label>향후 연수 <input name="years" type="number" min="1" max="30" step="1" value="10" /></label>
+                  <label>연간 배당성장률(%) <input name="growth" type="number" min="-20" max="50" step="0.1" value="0" /></label>
+                  <label class="switch-row">
+                    <span>DRIP 재투자</span>
+                    <input name="drip" type="checkbox" class="switch-input" />
+                    <i class="switch-track" aria-hidden="true"></i>
+                  </label>
+                </div>
+              </fieldset>
             </form>
-            <div class="sim-summary-grid" id="dividendSummaryCards"></div>
             <div class="dividend-layout">
-              <div class="chart-box" id="dividendChart"></div>
+              <div class="chart-box">
+                <div class="chart-title" id="dividendChartTitle">연도별 예상 배당 · 세후</div>
+                <div id="dividendChart"></div>
+              </div>
               <div class="sim-side-panel" id="dividendScenarioPanel"></div>
             </div>
             <div class="panel-note-row">
               <p class="panel-note">입력한 수량·현재가·배당수익률 기준의 단순 시뮬레이션입니다. 실제 분배금, 옵션 프리미엄, NAV 변화, 세금은 종목별로 달라질 수 있습니다.</p>
-              <button type="button" id="toggleDividendDetail" class="ghost-button">연도별 데이터 조회</button>
+              <button type="button" id="toggleDividendDetail" class="ghost-button">표로 보기</button>
             </div>
             <div class="table-wrap compact hidden" id="dividendDetailTableWrap">
               <table>
