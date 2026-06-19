@@ -102,6 +102,11 @@ const numberFormatter = new Intl.NumberFormat("ko-KR", {
   maximumFractionDigits: 4
 });
 
+const fxFormatter = new Intl.NumberFormat("ko-KR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
+
 const percentFormatter = new Intl.NumberFormat("ko-KR", {
   minimumFractionDigits: 3,
   maximumFractionDigits: 3
@@ -560,8 +565,8 @@ function renderHoldings() {
       <td><span class="owner-label">${owner.name}</span></td>
       <td><span class="pill">${item.type}</span></td>
       <td>${qty(item.quantity)}</td>
-      <td>${money(item.avgPrice * item.avgFx)}<small class="subtext">${item.currency} ${numberFormatter.format(item.avgPrice)} · FX ${numberFormatter.format(item.avgFx)}</small></td>
-      <td>${money(item.currentPrice * item.currentFx)}<small class="subtext">${item.currency} ${numberFormatter.format(item.currentPrice)} · FX ${numberFormatter.format(item.currentFx)}</small></td>
+      <td>${money(item.avgPrice * item.avgFx)}<small class="subtext">${item.currency} ${numberFormatter.format(item.avgPrice)} · FX ${fxFormatter.format(item.avgFx)}</small></td>
+      <td>${money(item.currentPrice * item.currentFx)}<small class="subtext">${item.currency} ${numberFormatter.format(item.currentPrice)} · FX ${fxFormatter.format(item.currentFx)}</small></td>
       <td>${money(item.valueKrw)}</td>
       <td class="${item.profit >= 0 ? "positive" : "negative"}">${signedMoney(item.profit)}<small class="subtext">주가 ${signedMoney(item.stockProfit)} · 환 ${signedMoney(item.fxProfit)}</small></td>
     `;
@@ -690,7 +695,7 @@ function renderTrend() {
 }
 
 function renderFx() {
-  document.querySelector("#fxRateLabel").textContent = numberFormatter.format(currentUsdKrw());
+  document.querySelector("#fxRateLabel").textContent = fxFormatter.format(currentUsdKrw());
   const source = state.fx.source === "hana" ? "하나은행 기준" : state.fx.source === "fallback" ? "환율 API 기준(폴백)" : "수동 기준";
   document.querySelector("#fxSourceLabel").textContent = `${source}${state.fx.updatedAt ? ` · ${formatClock(state.fx.updatedAt)} 갱신` : ""}`;
   document.querySelector("#manualFxToggle").checked = state.fx.mode === "manual";
@@ -853,7 +858,7 @@ function renderDividendSimulation() {
   const form = document.querySelector("#dividendSimForm");
   if (!form) return;
   if (!form.elements.fx.dataset.touched) {
-    form.elements.fx.value = numberFormatter.format(currentUsdKrw()).replace(/,/g, "");
+    form.elements.fx.value = fxFormatter.format(currentUsdKrw()).replace(/,/g, "");
   }
   const scenario = dividendScenario();
   const rows = dividendRows(scenario);
