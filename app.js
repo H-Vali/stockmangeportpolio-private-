@@ -26,7 +26,6 @@ const INDEX_MONITOR_LIST = [
   { ticker: "IWM", label: "러셀2000" },
   { ticker: "SOXX", label: "필라델피아 반도체" }
 ];
-
 const allocationColors = {
   코인: "#7C5CFC",
   주식: "#B69CFF",
@@ -140,6 +139,7 @@ function normalizeState(input) {
     fx: { ...base.fx, ...(parsed.fx || {}) },
     market: { ...base.market, ...(parsed.market || {}) },
     snapshots: Array.isArray(parsed.snapshots) ? parsed.snapshots : [],
+    indexQuotes: parsed.indexQuotes || {},
     investors: parsed.investors,
     assetCatalog: { ...base.assetCatalog, ...(parsed.assetCatalog || {}) },
     marketIndicators: Array.isArray(parsed.marketIndicators) ? parsed.marketIndicators : base.marketIndicators,
@@ -1078,10 +1078,31 @@ async function updateStockQuotes() {
   }
 }
 
+async function updateIndexQuotes() {
+  if (!PROXY_BASE_URL) return;
+  state.indexQuotes = state.indexQuotes || {};
+  for (const idx of INDEX_MONITOR_LIST) {
+    const response = await fetch(`${PROXY_BASE_URL}/quote?symbol=${encodeURIComponent(idx.ticker)}`);
+    if (!response.ok) throw new Error("주요 지수 시세를 가져오지 못했습니다.");
+    const quote = await response.json();
+    const price = Number(quote.c || 0);
+    const changePercent = Number(quote.dp || 0);
+    if (price) {
+      state.indexQuotes[idx.ticker] = { price, changePercent, updatedAt: new Date().toISOString() };
+      if (state.assetCatalog[idx.ticker]) {
+        state.assetCatalog[idx.ticker].currentPrice = price;
+        state.assetCatalog[idx.ticker].currentFx = currentUsdKrw();
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+}
+
 async function refreshQuotes() {
   try {
     await updateCoinQuotes();
     await updateStockQuotes();
+    await updateIndexQuotes();
     state.market = {
       lastUpdatedAt: new Date().toISOString(),
       lastSuccessAt: new Date().toISOString(),
