@@ -20,6 +20,13 @@ const DIVIDEND_MONTHS = {
   "360750": [1, 4, 7, 10],
   KR3Y: [3, 6, 9, 12]
 };
+const INDEX_MONITOR_LIST = [
+  { ticker: "QQQ", label: "나스닥" },
+  { ticker: "SPY", label: "S&P500" },
+  { ticker: "IWM", label: "러셀2000" },
+  { ticker: "SOXX", label: "필라델피아 반도체" }
+];
+
 const allocationColors = {
   코인: "#7C5CFC",
   주식: "#B69CFF",
@@ -60,8 +67,13 @@ const seedState = {
     BTC: { ticker: "BTC", name: "Bitcoin", type: "코인", currency: "USD", currentPrice: 38000, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
     ETH: { ticker: "ETH", name: "Ethereum", type: "코인", currency: "USD", currentPrice: 2391, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
     "360750": { ticker: "360750", name: "TIGER 미국S&P500", type: "ETF", currency: "KRW", currentPrice: 19640, currentFx: 1, annualDividend: 4600 },
-    KR3Y: { ticker: "KR3Y", name: "국고채 3년", type: "채권", currency: "KRW", currentPrice: 100400, currentFx: 1, annualDividend: 36000 }
+    KR3Y: { ticker: "KR3Y", name: "국고채 3년", type: "채권", currency: "KRW", currentPrice: 100400, currentFx: 1, annualDividend: 36000 },
+    QQQ: { ticker: "QQQ", name: "Invesco QQQ Trust", type: "주식", currency: "USD", currentPrice: 512.34, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    SPY: { ticker: "SPY", name: "SPDR S&P 500 ETF", type: "주식", currency: "USD", currentPrice: 612.1, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    IWM: { ticker: "IWM", name: "iShares Russell 2000 ETF", type: "주식", currency: "USD", currentPrice: 224.55, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
+    SOXX: { ticker: "SOXX", name: "iShares Semiconductor ETF", type: "주식", currency: "USD", currentPrice: 268.9, currentFx: DEFAULT_USDKRW, annualDividend: 0 }
   },
+  indexQuotes: {},
   marketIndicators: [
     { symbol: "BTC", domestic: 52000000, globalKrw: 50420000, updatedAt: null },
     { symbol: "ETH", domestic: 3300000, globalKrw: 3244000, updatedAt: null }
