@@ -1282,23 +1282,34 @@ tbody tr:hover {
 }
 
 #allocation .donut-area {
-  grid-template-columns: 1fr;
-  align-items: start;
+  grid-template-columns: minmax(128px, 150px) minmax(0, 1fr);
+  align-items: center;
   gap: 14px;
 }
 
 #allocation .donut {
-  width: clamp(142px, 18vw, 184px);
+  width: clamp(128px, 12vw, 150px);
 }
 
 #allocation .legend {
-  width: min(100%, 330px);
-  justify-self: center;
+  width: 100%;
+  min-width: 0;
+  justify-self: stretch;
 }
 
 #allocation .legend-row {
-  min-height: 26px;
-  gap: 14px;
+  min-height: 25px;
+  gap: 10px;
+}
+
+#allocation .allocation-ratio {
+  min-width: 104px;
+}
+
+#allocation .allocation-trend {
+  min-width: 50px;
+  padding: 0 4px;
+  font-size: 8.5px;
 }
 
 .allocation-trend {
