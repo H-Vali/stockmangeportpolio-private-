@@ -992,14 +992,14 @@ tbody tr:hover {
 
 .donut-area {
   display: grid;
-  grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+  grid-template-columns: minmax(128px, 178px) minmax(0, 1fr);
   align-items: center;
-  gap: clamp(18px, 4vw, 34px);
+  gap: clamp(14px, 2.5vw, 24px);
 }
 
 .donut {
   position: relative;
-  width: clamp(150px, 18vw, 220px);
+  width: clamp(128px, 14vw, 178px);
   max-width: 100%;
   aspect-ratio: 1;
   border-radius: 50%;
@@ -1007,7 +1007,7 @@ tbody tr:hover {
   place-items: center;
   justify-self: center;
   isolation: isolate;
-  box-shadow: 0 0 34px rgba(124, 92, 252, 0.2);
+  box-shadow: 0 0 26px rgba(124, 92, 252, 0.17);
 }
 
 .donut::before {
@@ -1034,11 +1034,11 @@ tbody tr:hover {
 
 .allocation-track {
   stroke: rgba(255, 255, 255, 0.06);
-  stroke-width: 34;
+  stroke-width: 31;
 }
 
 .allocation-segment {
-  stroke-width: 34;
+  stroke-width: 31;
   stroke-linecap: butt;
   cursor: pointer;
   transition:
@@ -1053,7 +1053,7 @@ tbody tr:hover {
 
 .donut .allocation-segment:hover {
   opacity: 1;
-  stroke-width: 40;
+  stroke-width: 36;
   filter: drop-shadow(0 0 12px rgba(157, 123, 255, 0.36));
 }
 
@@ -1279,6 +1279,24 @@ tbody tr:hover {
   gap: 5px;
   min-width: 112px;
   font-variant-numeric: tabular-nums;
+}
+
+#allocation .donut-area {
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 14px;
+}
+
+#allocation .donut {
+  width: clamp(142px, 18vw, 184px);
+}
+
+#allocation .legend {
+  width: 100%;
+}
+
+#allocation .legend-row {
+  min-height: 26px;
 }
 
 .allocation-trend {
