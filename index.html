@@ -80,7 +80,7 @@
                   <span id="totalDividend">총배당 0원</span>
                 </div>
               </div>
-              <svg class="sparkline" viewBox="0 0 360 120" role="img" aria-label="기준가 라인 차트">
+              <svg class="sparkline" id="heroSparkline" viewBox="0 0 360 120" role="img" aria-label="총자산 추이 미니 차트">
                 <defs>
                   <linearGradient id="spark" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stop-color="#7c5cfc" />
@@ -91,8 +91,7 @@
                     <stop offset="100%" stop-color="#9d7bff" stop-opacity="0" />
                   </linearGradient>
                 </defs>
-                <path d="M8 98 C54 70 76 80 116 48 S176 56 214 35 282 26 352 16 L352 120 L8 120 Z" fill="url(#sparkFill)" />
-                <path d="M8 98 C54 70 76 80 116 48 S176 56 214 35 282 26 352 16" fill="none" stroke="url(#spark)" stroke-width="4" stroke-linecap="round" />
+                <g id="heroSparklinePlot"></g>
               </svg>
             </article>
 
@@ -150,6 +149,7 @@
                   <p class="eyebrow">History</p>
                   <h2>총자산 추이</h2>
                 </div>
+                <small class="chart-hint" id="trendHint"></small>
               </div>
               <div class="trend-area" id="trendArea"></div>
             </div>

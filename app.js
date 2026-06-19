@@ -20,7 +20,14 @@ const DIVIDEND_MONTHS = {
   "360750": [1, 4, 7, 10],
   KR3Y: [3, 6, 9, 12]
 };
-const colors = ["#7c5cfc", "#8d6dff", "#9d7bff", "#ae91ff", "#bfa8ff", "#d1c2ff"];
+const allocationColors = {
+  코인: "#7C5CFC",
+  주식: "#B69CFF",
+  ETF: "#3BB5A6",
+  채권: "#E8B339",
+  예수금: "#5A5A68"
+};
+const fallbackColors = ["#7c5cfc", "#b69cff", "#3bb5a6", "#e8b339", "#5a5a68"];
 const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 
 const seedState = {
@@ -93,6 +100,11 @@ const formatter = new Intl.NumberFormat("ko-KR", {
 
 const numberFormatter = new Intl.NumberFormat("ko-KR", {
   maximumFractionDigits: 4
+});
+
+const percentFormatter = new Intl.NumberFormat("ko-KR", {
+  minimumFractionDigits: 3,
+  maximumFractionDigits: 3
 });
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -187,8 +199,21 @@ function money(value) {
   return formatter.format(Math.round(value || 0));
 }
 
+function moneyParts(value) {
+  return {
+    symbol: "KRW",
+    amount: new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 }).format(Math.round(value || 0))
+  };
+}
+
+function setMoneyElement(selector, value) {
+  const element = document.querySelector(selector);
+  const parts = moneyParts(value);
+  element.innerHTML = `<span class="currency-prefix">${parts.symbol}</span>${parts.amount}`;
+}
+
 function pct(value) {
-  return `${numberFormatter.format(value || 0)}%`;
+  return `${percentFormatter.format(value || 0)}%`;
 }
 
 function qty(value) {
@@ -420,13 +445,13 @@ function renderView() {
 function renderDashboard() {
   const summary = summarize();
   const totalProfit = document.querySelector("#totalProfit");
-  document.querySelector("#totalValue").textContent = money(summary.totalValue);
-  document.querySelector("#totalPrincipal").textContent = money(summary.principal);
+  setMoneyElement("#totalValue", summary.totalValue);
+  setMoneyElement("#totalPrincipal", summary.principal);
   totalProfit.textContent = signedMoney(summary.profit);
   totalProfit.className = summary.profit >= 0 ? "positive" : "negative";
   document.querySelector("#profitRate").textContent = `수익률 ${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}`;
   document.querySelector("#totalDividend").textContent = `총배당 ${money(summary.dividend)}`;
-  document.querySelector("#cashAmount").textContent = money(summary.cash);
+  setMoneyElement("#cashAmount", summary.cash);
   document.querySelector("#cashRatio").textContent = `평가금액 포함 · ${pct(summary.totalValue ? (summary.cash / summary.totalValue) * 100 : 0)}`;
 }
 
@@ -439,17 +464,19 @@ function renderAllocation() {
     const start = cursor;
     const end = cursor + (value / total) * 100;
     cursor = end;
-    return `${colors[index % colors.length]} ${start}% ${end}%`;
+    const color = allocationColors[group.type] || fallbackColors[index % fallbackColors.length];
+    return `${color} ${start}% ${end}%`;
   });
-  document.querySelector("#allocationDonut").style.background = `conic-gradient(${segments.join(", ") || `${colors[0]} 0 100%`})`;
+  document.querySelector("#allocationDonut").style.background = `conic-gradient(${segments.join(", ") || `${fallbackColors[0]} 0 100%`})`;
 
   const legend = document.querySelector("#allocationLegend");
   legend.innerHTML = "";
   groups.forEach((group, index) => {
+    const color = allocationColors[group.type] || fallbackColors[index % fallbackColors.length];
     const row = document.createElement("div");
     row.className = "legend-row";
     row.innerHTML = `
-      <span><i class="swatch" style="background:${colors[index % colors.length]}"></i>${group.type}</span>
+      <span><i class="swatch" style="background:${color}"></i>${group.type}</span>
       <strong class="${group.value < 0 ? "negative" : ""}">${pct(group.actual)}</strong>
     `;
     legend.appendChild(row);
@@ -592,34 +619,74 @@ function renderCashflows() {
     });
 }
 
-function renderTrend() {
-  const area = document.querySelector("#trendArea");
-  const snapshots = state.snapshots || [];
-  if (snapshots.length < 2) {
-    area.innerHTML = `<div class="empty-state">데이터가 쌓이면 추이가 표시됩니다.</div>`;
-    return;
+function totalValueHistory() {
+  const snapshots = (state.snapshots || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+  if (!snapshots.length) {
+    return [{ date: new Date().toISOString().slice(0, 10), totalValue: summarize().totalValue }];
   }
-  const width = 760;
-  const height = 220;
-  const pad = 18;
-  const values = snapshots.map((item) => item.totalValue);
+  return snapshots;
+}
+
+function chartPoints(history, width, height, pad) {
+  const values = history.map((item) => item.totalValue);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = Math.max(max - min, 1);
-  const points = snapshots.map((item, index) => {
-    const x = pad + (index / Math.max(snapshots.length - 1, 1)) * (width - pad * 2);
+  return history.map((item, index) => {
+    const x = pad + (index / Math.max(history.length - 1, 1)) * (width - pad * 2);
     const y = height - pad - ((item.totalValue - min) / span) * (height - pad * 2);
-    return `${x},${y}`;
+    return { x, y, item };
   });
+}
+
+function renderHeroSparkline() {
+  const plot = document.querySelector("#heroSparklinePlot");
+  const history = totalValueHistory();
+  if (!plot) return;
+  if (history.length < 2) {
+    plot.innerHTML = `<path d="M8 78 L352 78" fill="none" stroke="url(#spark)" stroke-width="4" stroke-linecap="round" opacity=".7" />`;
+    return;
+  }
+  const width = 360;
+  const height = 120;
+  const pad = 10;
+  const points = chartPoints(history, width, height, pad);
+  const line = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const area = `${points[0].x},${height} ${line} ${points.at(-1).x},${height}`;
+  plot.innerHTML = `
+    <polygon points="${area}" fill="url(#sparkFill)"></polygon>
+    <polyline points="${line}" fill="none" stroke="url(#spark)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+  `;
+}
+
+function renderTrend() {
+  const area = document.querySelector("#trendArea");
+  const snapshots = totalValueHistory();
+  if (snapshots.length < 2) {
+    area.innerHTML = `<div class="empty-state compact-empty">데이터가 쌓이면 추이가 표시됩니다.</div>`;
+    document.querySelector("#trendHint").textContent = "";
+    renderHeroSparkline();
+    return;
+  }
+  const width = 760;
+  const compact = snapshots.length < 7;
+  const height = compact ? 110 : 220;
+  const pad = 18;
+  const values = snapshots.map((item) => item.totalValue);
+  const max = Math.max(...values);
+  const points = chartPoints(snapshots, width, height, pad);
+  const pointString = points.map((point) => `${point.x},${point.y}`).join(" ");
+  document.querySelector("#trendHint").textContent = compact ? `최근 ${snapshots.length}일 데이터 · 더 쌓이면 정확한 추이가 표시됩니다` : "";
   area.innerHTML = `
-    <svg class="trend-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="총자산 추이">
-      <polyline points="${points.join(" ")}" fill="none" stroke="#9d7bff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
-      ${points.map((point) => `<circle cx="${point.split(",")[0]}" cy="${point.split(",")[1]}" r="4" fill="#f3f3f7"></circle>`).join("")}
+    <svg class="trend-svg ${compact ? "compact-trend" : ""}" viewBox="0 0 ${width} ${height}" role="img" aria-label="총자산 추이">
+      <polyline points="${pointString}" fill="none" stroke="#9d7bff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      ${points.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="4" fill="#f3f3f7"></circle>`).join("")}
       <text x="${pad}" y="${height - 2}" fill="#8e8e9c" font-size="12">${snapshots[0].date}</text>
       <text x="${width - pad}" y="${height - 2}" fill="#8e8e9c" font-size="12" text-anchor="end">${snapshots.at(-1).date}</text>
       <text x="${pad}" y="14" fill="#8e8e9c" font-size="12">${money(max)}</text>
     </svg>
   `;
+  renderHeroSparkline();
 }
 
 function renderFx() {
