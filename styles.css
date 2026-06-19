@@ -536,9 +536,12 @@ a.ghost-button {
 }
 
 .metric-change-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
-  margin-left: 8px;
   padding: 4px 8px;
   border-radius: 999px;
   background: rgba(28, 28, 37, 0.9);
@@ -547,7 +550,7 @@ a.ghost-button {
   font-size: 11px;
   font-weight: 800;
   line-height: 1;
-  vertical-align: 0.12em;
+  white-space: nowrap;
   animation: metricBadgeOut 1.8s ease forwards;
 }
 
@@ -1261,6 +1264,7 @@ tbody tr:hover {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  white-space: nowrap;
 }
 
 .legend-row strong {
@@ -1272,21 +1276,24 @@ tbody tr:hover {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 7px;
-  min-width: 88px;
+  gap: 5px;
+  min-width: 112px;
   font-variant-numeric: tabular-nums;
 }
 
 .allocation-trend {
-  display: inline-grid;
-  place-items: center;
-  width: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
   height: 18px;
+  padding: 0 5px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
-  font-size: 10px;
+  font-size: 9px;
   font-style: normal;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .allocation-trend.positive {
@@ -1331,15 +1338,60 @@ tbody tr:hover {
   display: block;
 }
 
+.metric-title {
+  position: relative;
+  display: inline-block !important;
+  max-width: 100%;
+  min-height: 22px;
+  vertical-align: middle;
+}
+
+.metric-title > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metric-badge-slot {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 8px);
+  z-index: 3;
+  display: block;
+  width: 94px;
+  height: 22px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
 .rebalance-item small,
 .account-card small,
 .market-card small,
 .investor-card small {
+  display: block;
   color: var(--muted);
 }
 
 .market-card {
   align-items: flex-start;
+}
+
+.market-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.crypto-logo-frame {
+  width: 30px;
+  height: 30px;
+}
+
+.crypto-logo-frame img {
+  width: 16px;
+  height: 16px;
 }
 
 .market-card span,

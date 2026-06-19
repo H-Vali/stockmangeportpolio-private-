@@ -17,6 +17,12 @@ const COINGECKO_IDS = {
   AVAX: "avalanche-2",
   LINK: "chainlink"
 };
+const CRYPTO_LOGOS = {
+  BTC: "https://cdn.simpleicons.org/bitcoin/f7931a",
+  ETH: "https://cdn.simpleicons.org/ethereum/627eea",
+  SOL: "https://cdn.simpleicons.org/solana/9945ff",
+  BNB: "https://cdn.simpleicons.org/binance/f3ba2f"
+};
 const DIVIDEND_MONTHS = {
   SCHD: [3, 6, 9, 12],
   O: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
@@ -308,9 +314,13 @@ function markRealtimeChange(card, diff, formatter = signedMoney) {
   const badge = document.createElement("b");
   badge.className = `metric-change-badge ${direction === "up" ? "positive" : "negative"}`;
   badge.textContent = `${formatter(diff)} ${direction === "up" ? "▲" : "▼"}`;
-  const title = card.querySelector("strong");
-  if (title) title.appendChild(badge);
-  else card.appendChild(badge);
+  const slot = card.querySelector(".metric-badge-slot");
+  if (slot) slot.appendChild(badge);
+  else {
+    const title = card.querySelector("strong");
+    if (title) title.appendChild(badge);
+    else card.appendChild(badge);
+  }
   setTimeout(() => {
     badge.remove();
     card.classList.remove("realtime-flash-up", "realtime-flash-down");
@@ -319,6 +329,18 @@ function markRealtimeChange(card, diff, formatter = signedMoney) {
 
 function signedPercentChange(value) {
   return `${value >= 0 ? "+" : ""}${pct(value)}`;
+}
+
+function renderMetricTitle(label) {
+  return `<strong class="metric-title"><span>${label}</span><i class="metric-badge-slot" aria-hidden="true"></i></strong>`;
+}
+
+function renderCryptoLogo(symbol) {
+  const logo = CRYPTO_LOGOS[symbol];
+  const text = symbol.slice(0, 3);
+  return logo
+    ? `<i class="stock-logo-frame crypto-logo-frame"><img src="${logo}" alt="" loading="lazy" onerror="this.remove()" /><b>${text}</b></i>`
+    : `<i class="stock-logo-frame stock-logo-text crypto-logo-frame"><b>${text}</b></i>`;
 }
 
 function randomBetween(min, max) {
@@ -689,13 +711,14 @@ function renderAllocation() {
     const trendClass = diff > 0.001 ? "positive" : diff < -0.001 ? "negative" : "neutral-text";
     const trendLabel = diff > 0.001 ? "상승" : diff < -0.001 ? "하락" : "변동 없음";
     const trendMark = diff > 0.001 ? "▲" : diff < -0.001 ? "▼" : "—";
+    const trendValue = Math.abs(diff) > 0.001 ? `${diff >= 0 ? "+" : ""}${diff.toFixed(3)}%p` : "0.000%p";
     const row = document.createElement("div");
     row.className = "legend-row";
     row.innerHTML = `
       <span><i class="swatch" style="background:${color}"></i>${group.type}</span>
       <strong class="allocation-ratio ${group.value < 0 ? "negative" : ""}">
         <span>${pct(group.actual)}</span>
-        <em class="allocation-trend ${trendClass}" title="이전 비율 대비 ${trendLabel}">${trendMark}</em>
+        <em class="allocation-trend ${trendClass}" title="이전 비율 대비 ${trendLabel}">${trendMark} ${trendValue}</em>
       </strong>
     `;
     legend.appendChild(row);
@@ -715,7 +738,10 @@ function renderMarket() {
     const row = document.createElement("div");
     row.className = "market-card";
     row.innerHTML = `
-      <div><strong>${item.symbol}</strong><small>국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)}</small></div>
+      <div class="market-title-row">
+        ${renderCryptoLogo(item.symbol)}
+        <div>${renderMetricTitle(item.symbol)}<small>국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)}</small></div>
+      </div>
       <span class="${premium >= 0 ? "positive" : "negative"}">${premium >= 0 ? "+" : ""}${pct(premium)}</span>
     `;
     list.appendChild(row);
@@ -748,7 +774,7 @@ function renderIndexMonitor() {
     return `
       <div class="market-card index-card stock-index-card ${idx.group === "M7" ? "m7-index-card" : "etf-index-card"} ${glow}">
         ${logo}
-        <div><strong>${idx.label}</strong><small>${idx.group} · ${idx.ticker} · $${numberFormatter.format(price)} · ${status}</small></div>
+        <div>${renderMetricTitle(idx.label)}<small>${idx.group} · ${idx.ticker} · $${numberFormatter.format(price)} · ${status}</small></div>
         <span class="${changeClass}">${changeLabel}</span>
       </div>
     `;
@@ -780,7 +806,7 @@ function renderInvestorComparison() {
     row.className = "investor-card";
     row.innerHTML = `
       <div class="avatar">${investor.initials}</div>
-      <div><strong>${investor.name}</strong><small>지분 ${pct(share)} · ${summary.holdings.length}개 종목</small></div>
+      <div>${renderMetricTitle(investor.name)}<small>지분 ${pct(share)} · ${summary.holdings.length}개 종목</small></div>
       <span class="${summary.profit >= 0 ? "positive" : "negative"}">${signedMoney(summary.profit)}</span>
     `;
     list.appendChild(row);
