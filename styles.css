@@ -720,6 +720,10 @@ tbody tr:hover {
   color: var(--down) !important;
 }
 
+.neutral-text {
+  color: var(--muted) !important;
+}
+
 .donut-area {
   display: grid;
   grid-template-columns: 160px minmax(0, 1fr);
@@ -764,8 +768,54 @@ tbody tr:hover {
 
 .index-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+}
+
+.index-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(124, 92, 252, 0.26);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.index-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.index-card:hover {
+  transform: translateY(-1px);
+}
+
+.index-card.positive-glow {
+  border-color: rgba(246, 70, 93, 0.38);
+  box-shadow: 0 0 22px rgba(246, 70, 93, 0.12);
+}
+
+.index-card.positive-glow::after {
+  background: radial-gradient(circle at 100% 0%, rgba(246, 70, 93, 0.42), transparent 48%);
+}
+
+.index-card.negative-glow {
+  border-color: rgba(70, 145, 255, 0.38);
+  box-shadow: 0 0 22px rgba(70, 145, 255, 0.12);
+}
+
+.index-card.negative-glow::after {
+  background: radial-gradient(circle at 100% 0%, rgba(70, 145, 255, 0.38), transparent 48%);
+}
+
+.index-card.neutral-glow {
+  border-color: rgba(157, 123, 255, 0.28);
+  box-shadow: 0 0 20px rgba(124, 92, 252, 0.1);
+}
+
+.index-card.neutral-glow::after {
+  background: radial-gradient(circle at 100% 0%, rgba(157, 123, 255, 0.32), transparent 48%);
 }
 
 .empty-hint {
@@ -1429,5 +1479,11 @@ menu {
 @media (max-width: 760px) {
   .index-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .index-grid {
+    grid-template-columns: 1fr;
   }
 }

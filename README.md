@@ -55,6 +55,7 @@
 - 코인: 브라우저에서 빗썸 공개 API와 CoinGecko 공개 API를 직접 호출합니다.
 - 미국주식/환율: API 키 노출과 서버 측 HTML 파싱 문제 때문에 `/proxy`의 Cloudflare Workers 프록시를 사용합니다.
 - Worker 배포 후 `app.js`의 `PROXY_BASE_URL`에 Worker URL을 입력하면 미국주식 `/quote`, 환율 `/fxrate` 호출이 활성화됩니다.
+- 코드 수정 없이 연결하려면 Pages URL에 `?proxy=https://YOUR-WORKER.workers.dev`를 한 번 붙여 접속하세요. 앱이 해당 URL을 `localStorage`에 저장하고 이후 1분 폴링에 사용합니다.
 - Finnhub API key는 프론트 코드에 넣지 말고 `wrangler secret put FINNHUB_API_KEY`로 등록하세요.
 
 ## GitHub Pages

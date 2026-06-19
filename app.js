@@ -3,7 +3,8 @@ const LEGACY_STORAGE_KEY = "assetpilot-ledger-state-v1";
 const SCHEMA_VERSION = 2;
 const DIVIDEND_TAX_RATE = 0.15;
 const DEFAULT_USDKRW = 1380;
-const PROXY_BASE_URL = "";
+const DEFAULT_PROXY_BASE_URL = "";
+const PROXY_STORAGE_KEY = "assetpilot-proxy-base-url";
 const COINGECKO_IDS = {
   BTC: "bitcoin",
   ETH: "ethereum",
@@ -93,6 +94,10 @@ const seedState = {
 
 let state = loadState();
 const requestedView = new URLSearchParams(window.location.search).get("view");
+const requestedProxy = new URLSearchParams(window.location.search).get("proxy");
+if (requestedProxy) {
+  localStorage.setItem(PROXY_STORAGE_KEY, requestedProxy.replace(/\/$/, ""));
+}
 if (["dashboard", "investor", "dividend", "calendar"].includes(requestedView)) {
   state.selectedView = requestedView;
 }
@@ -243,6 +248,10 @@ function signedMoney(value) {
 
 function currentUsdKrw() {
   return state.fx.mode === "manual" ? Number(state.fx.manualUsdkrw || DEFAULT_USDKRW) : Number(state.fx.usdkrw || DEFAULT_USDKRW);
+}
+
+function proxyBaseUrl() {
+  return (localStorage.getItem(PROXY_STORAGE_KEY) || DEFAULT_PROXY_BASE_URL).replace(/\/$/, "");
 }
 
 function formatClock(value) {
@@ -519,16 +528,20 @@ function renderIndexMonitor() {
   const list = document.querySelector("#indexMonitorList");
   if (!list) return;
   list.innerHTML = "";
+  const connected = Boolean(proxyBaseUrl());
   INDEX_MONITOR_LIST.forEach((idx) => {
     const asset = state.assetCatalog[idx.ticker];
     const quote = (state.indexQuotes || {})[idx.ticker];
     const price = quote ? quote.price : (asset ? asset.currentPrice : 0);
     const change = quote ? quote.changePercent : 0;
+    const glow = change > 0 ? "positive-glow" : change < 0 ? "negative-glow" : "neutral-glow";
+    const changeClass = change > 0 ? "positive" : change < 0 ? "negative" : "neutral-text";
+    const status = quote ? `실시간 · ${formatClock(quote.updatedAt)}` : (connected ? "갱신 대기" : "프록시 연결 대기");
     const row = document.createElement("div");
-    row.className = "market-card";
+    row.className = `market-card index-card ${glow}`;
     row.innerHTML = `
-      <div><strong>${idx.label}</strong><small>${idx.ticker} · $${numberFormatter.format(price)}</small></div>
-      <span class="${change >= 0 ? "positive" : "negative"}">${change >= 0 ? "+" : ""}${change.toFixed(2)}%</span>
+      <div><strong>${idx.label}</strong><small>${idx.ticker} · $${numberFormatter.format(price)} · ${status}</small></div>
+      <span class="${changeClass}">${change > 0 ? "+" : ""}${change.toFixed(2)}%</span>
     `;
     list.appendChild(row);
   });
@@ -1127,11 +1140,12 @@ async function updateCoinQuotes() {
 }
 
 async function updateStockQuotes() {
-  if (!PROXY_BASE_URL) return;
+  const baseUrl = proxyBaseUrl();
+  if (!baseUrl) return;
   const holdings = replayHoldings().filter((holding) => holding.type === "주식" && holding.currency === "USD");
   const symbols = [...new Set(holdings.map((holding) => holding.ticker))];
   for (const symbol of symbols) {
-    const response = await fetch(`${PROXY_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}`);
+    const response = await fetch(`${baseUrl}/quote?symbol=${encodeURIComponent(symbol)}`);
     if (!response.ok) throw new Error("미국주식 시세를 가져오지 못했습니다.");
     const quote = await response.json();
     if (quote.c && state.assetCatalog[symbol]) {
@@ -1143,10 +1157,11 @@ async function updateStockQuotes() {
 }
 
 async function updateIndexQuotes() {
-  if (!PROXY_BASE_URL) return;
+  const baseUrl = proxyBaseUrl();
+  if (!baseUrl) return;
   state.indexQuotes = state.indexQuotes || {};
   for (const idx of INDEX_MONITOR_LIST) {
-    const response = await fetch(`${PROXY_BASE_URL}/quote?symbol=${encodeURIComponent(idx.ticker)}`);
+    const response = await fetch(`${baseUrl}/quote?symbol=${encodeURIComponent(idx.ticker)}`);
     if (!response.ok) throw new Error("주요 지수 시세를 가져오지 못했습니다.");
     const quote = await response.json();
     const price = Number(quote.c || 0);
@@ -1184,9 +1199,10 @@ async function refreshQuotes() {
 }
 
 async function refreshFxRate() {
-  if (state.fx.mode === "manual" || !PROXY_BASE_URL) return;
+  const baseUrl = proxyBaseUrl();
+  if (state.fx.mode === "manual" || !baseUrl) return;
   try {
-    const response = await fetch(`${PROXY_BASE_URL}/fxrate`);
+    const response = await fetch(`${baseUrl}/fxrate`);
     if (!response.ok) throw new Error("환율을 가져오지 못했습니다.");
     const data = await response.json();
     const usdkrw = Number(data.usdkrw);
