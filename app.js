@@ -39,6 +39,7 @@ const fallbackColors = ["#7c5cfc", "#b69cff", "#3bb5a6", "#e8b339", "#5a5a68"];
 const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 let previousAllocationRatios = loadAllocationRatios();
 let previousDashboardValues = null;
+let dashboardDemoTimer = null;
 
 const seedState = {
   schemaVersion: SCHEMA_VERSION,
@@ -116,6 +117,12 @@ const formatter = new Intl.NumberFormat("ko-KR", {
   style: "currency",
   currency: "KRW",
   maximumFractionDigits: 0
+});
+
+const usdFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 2
 });
 
 const numberFormatter = new Intl.NumberFormat("ko-KR", {
@@ -258,6 +265,10 @@ function signedMoney(value) {
   return `${value >= 0 ? "+" : ""}${money(value)}`;
 }
 
+function signedUsd(value) {
+  return `${value >= 0 ? "+" : "-"}${usdFormatter.format(Math.abs(value || 0))}`;
+}
+
 function markMetricChange(selector, nextValue, previousValue) {
   const valueNode = document.querySelector(selector);
   if (!valueNode || typeof previousValue !== "number" || nextValue === previousValue) return;
@@ -277,6 +288,31 @@ function markMetricChange(selector, nextValue, previousValue) {
     badge.remove();
     card.classList.remove("metric-flash-up", "metric-flash-down");
   }, 1800);
+}
+
+function triggerDashboardChangeDemo() {
+  clearTimeout(dashboardDemoTimer);
+  const summary = summarize();
+  const nextPrincipal = summary.principal + 120000;
+  const nextCash = summary.cash - 45000;
+  const nextProfit = summary.profit + 165000;
+  const nextReturnRate = summary.principal ? (nextProfit / summary.principal) * 100 : 0;
+  setMoneyElement("#totalPrincipal", nextPrincipal);
+  setMoneyElement("#cashAmount", nextCash);
+  markMetricChange("#totalPrincipal", nextPrincipal, summary.principal);
+  markMetricChange("#cashAmount", nextCash, summary.cash);
+  const totalProfit = document.querySelector("#totalProfit");
+  const profitRate = document.querySelector("#profitRate");
+  totalProfit.textContent = signedMoney(nextProfit);
+  totalProfit.className = nextProfit >= 0 ? "positive value-demo-pulse-up" : "negative value-demo-pulse-down";
+  profitRate.textContent = `수익률 ${nextReturnRate >= 0 ? "+" : ""}${pct(nextReturnRate)}`;
+  profitRate.classList.add(nextReturnRate >= summary.returnRate ? "value-demo-pulse-up" : "value-demo-pulse-down");
+  showToast("변동 시각 효과 테스트 중입니다. 실제 데이터는 저장되지 않습니다.");
+  dashboardDemoTimer = setTimeout(() => {
+    totalProfit.classList.remove("value-demo-pulse-up", "value-demo-pulse-down");
+    profitRate.classList.remove("value-demo-pulse-up", "value-demo-pulse-down");
+    render();
+  }, 1900);
 }
 
 function currentUsdKrw() {
@@ -623,9 +659,8 @@ function renderMarket() {
 function renderIndexMonitor() {
   const list = document.querySelector("#indexMonitorList");
   if (!list) return;
-  list.innerHTML = "";
   const connected = Boolean(proxyBaseUrl());
-  INDEX_MONITOR_LIST.forEach((idx) => {
+  const cards = INDEX_MONITOR_LIST.map((idx) => {
     const asset = state.assetCatalog[idx.ticker];
     const quote = (state.indexQuotes || {})[idx.ticker];
     const price = quote ? quote.price : (asset ? asset.currentPrice : 0);
@@ -635,14 +670,19 @@ function renderIndexMonitor() {
     const changeClass = change > 0 ? "positive" : change < 0 ? "negative" : "neutral-text";
     const status = quote ? `실시간 · ${formatClock(quote.updatedAt)}` : (connected ? "갱신 대기" : "프록시 연결 대기");
     const changeLabel = hasQuote ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "—";
-    const row = document.createElement("div");
-    row.className = `market-card index-card ${glow}`;
-    row.innerHTML = `
+    return `
+      <div class="market-card index-card ${glow}">
       <div><strong>${idx.label}</strong><small>${idx.ticker} · $${numberFormatter.format(price)} · ${status}</small></div>
       <span class="${changeClass}">${changeLabel}</span>
+      </div>
     `;
-    list.appendChild(row);
   });
+  list.innerHTML = `
+    <div class="index-track">
+      ${cards.join("")}
+      <div class="index-clone" aria-hidden="true">${cards.join("")}</div>
+    </div>
+  `;
 }
 
 function renderInvestorComparison() {
@@ -839,12 +879,20 @@ function renderHeroSparkline() {
   const width = 360;
   const height = 120;
   const pad = 12;
+  const summary = summarize();
+  const summaryClass = summary.profit >= 0 ? "positive-spark" : "negative-spark";
+  const summaryBadge = `
+    <g class="spark-summary ${summaryClass}" transform="translate(${width / 2} ${height / 2})">
+      <rect x="-82" y="-25" width="164" height="50" rx="12"></rect>
+      <text class="spark-summary-rate" x="0" y="-5" text-anchor="middle">${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}</text>
+      <text class="spark-summary-profit" x="0" y="15" text-anchor="middle">${signedMoney(summary.profit)} · ${signedUsd(summary.profit / currentUsdKrw())}</text>
+    </g>
+  `;
   if (history.length < 2) {
-    const value = summarize().totalValue;
     plot.innerHTML = `
       <path d="M${pad} 78 L${width - pad} 78" fill="none" stroke="url(#spark)" stroke-width="4" stroke-linecap="round" opacity=".7" />
       <circle class="spark-last-dot" cx="${width - pad}" cy="78" r="5"></circle>
-      <text class="spark-value-label" x="${width - pad - 8}" y="68" text-anchor="end">${money(value)}</text>
+      ${summaryBadge}
     `;
     return;
   }
@@ -852,21 +900,13 @@ function renderHeroSparkline() {
   const line = points.map((point) => `${point.x},${point.y}`).join(" ");
   const baseline = height - pad;
   const area = `${points[0].x},${baseline} ${line} ${points.at(-1).x},${baseline}`;
-  const first = history[0].totalValue || 1;
-  const last = history.at(-1).totalValue;
-  const changeRate = ((last - first) / first) * 100;
   const lastPoint = points.at(-1);
-  const badgeColor = changeRate >= 0 ? "#F6465D" : "#4691FF";
   plot.innerHTML = `
-    <polygon points="${area}" fill="url(#sparkFill)"></polygon>
+    <polygon class="spark-area" points="${area}" fill="url(#sparkFill)"></polygon>
     <polyline points="${line}" fill="none" stroke="url(#spark)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
     <circle class="spark-last-halo" cx="${lastPoint.x}" cy="${lastPoint.y}" r="11"></circle>
     <circle class="spark-last-dot" cx="${lastPoint.x}" cy="${lastPoint.y}" r="5"></circle>
-    <text class="spark-value-label" x="${Math.min(lastPoint.x - 8, width - 90)}" y="${Math.max(lastPoint.y - 12, 18)}" text-anchor="end">${money(last)}</text>
-    <g class="spark-rate-badge" transform="translate(${width - 96} 14)">
-      <rect width="84" height="28" rx="8" fill="${badgeColor}" opacity=".12"></rect>
-      <text x="42" y="18" text-anchor="middle" fill="${badgeColor}">${changeRate >= 0 ? "+" : ""}${pct(changeRate)}</text>
-    </g>
+    ${summaryBadge}
   `;
 }
 
@@ -1527,6 +1567,8 @@ document.querySelector("#seedButton").addEventListener("click", () => {
   render();
   showToast("데모 데이터를 초기화했습니다.");
 });
+
+document.querySelector("#demoChangeButton").addEventListener("click", triggerDashboardChangeDemo);
 
 document.querySelector("#exportButton").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(exportableState(), null, 2)], { type: "application/json" });

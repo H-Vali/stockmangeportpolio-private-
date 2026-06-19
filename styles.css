@@ -414,26 +414,66 @@ a.ghost-button {
   filter: drop-shadow(0 0 12px rgba(124, 92, 252, 0.18));
 }
 
+.spark-area {
+  transform-origin: center bottom;
+  animation: sparkWater 5.8s ease-in-out infinite;
+}
+
 .spark-last-halo {
   fill: rgba(157, 123, 255, 0.2);
   stroke: rgba(157, 123, 255, 0.28);
+  pointer-events: none;
 }
 
 .spark-last-dot {
   fill: #f3f3f7;
   stroke: #9d7bff;
   stroke-width: 3;
+  cursor: pointer;
+  pointer-events: all;
+  transition: filter 160ms ease, r 160ms ease, stroke-width 160ms ease;
+}
+
+.spark-last-dot:hover {
+  r: 7;
+  stroke-width: 4;
+  filter: drop-shadow(0 0 12px rgba(157, 123, 255, 0.82));
+  animation: sparkPointBlink 850ms ease-in-out infinite;
 }
 
 .spark-value-label,
-.spark-rate-badge text {
+.spark-rate-badge text,
+.spark-summary text {
   font-family: "Space Grotesk", Pretendard, sans-serif;
-  font-size: 13px;
   font-weight: 800;
 }
 
 .spark-value-label {
   fill: var(--ink);
+}
+
+.spark-summary rect {
+  fill: rgba(21, 21, 28, 0.78);
+  stroke: rgba(157, 123, 255, 0.28);
+  filter: drop-shadow(0 0 18px rgba(124, 92, 252, 0.18));
+}
+
+.spark-summary-rate {
+  font-size: 16px;
+}
+
+.spark-summary-profit {
+  fill: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
+.spark-summary.positive-spark .spark-summary-rate {
+  fill: var(--up);
+}
+
+.spark-summary.negative-spark .spark-summary-rate {
+  fill: var(--down);
 }
 
 .metric-stack {
@@ -505,6 +545,11 @@ a.ghost-button {
   animation: metricFlashDown 1.8s ease;
 }
 
+.value-demo-pulse-up,
+.value-demo-pulse-down {
+  animation: valueDemoPulse 1.8s ease;
+}
+
 @keyframes metricFlashUp {
   0% {
     border-color: rgba(246, 70, 93, 0.62);
@@ -542,6 +587,48 @@ a.ghost-button {
   100% {
     opacity: 0;
     transform: translateY(-6px);
+  }
+}
+
+@keyframes valueDemoPulse {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(157, 123, 255, 0));
+    transform: translateY(0);
+  }
+  18%,
+  72% {
+    filter: drop-shadow(0 0 12px rgba(157, 123, 255, 0.42));
+    transform: translateY(-1px);
+  }
+  100% {
+    filter: drop-shadow(0 0 0 rgba(157, 123, 255, 0));
+    transform: translateY(0);
+  }
+}
+
+@keyframes sparkPointBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.58;
+  }
+}
+
+@keyframes sparkWater {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: translateY(0) scaleY(1);
+  }
+  45% {
+    opacity: 0.64;
+    transform: translateY(2px) scaleY(0.94);
+  }
+  70% {
+    opacity: 0.78;
+    transform: translateY(-1px) scaleY(1.03);
   }
 }
 
@@ -977,29 +1064,27 @@ tbody tr:hover {
 }
 
 .index-grid {
-  display: flex;
-  gap: 12px;
+  position: relative;
+  display: block;
   margin: 0 -4px;
-  padding: 2px 4px 8px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-padding-inline: 4px;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(157, 123, 255, 0.44) transparent;
+  padding: 2px 12px 10px;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent 0, black 14px, black calc(100% - 14px), transparent 100%);
 }
 
-.index-grid::-webkit-scrollbar {
-  height: 6px;
+.index-track {
+  display: flex;
+  width: max-content;
+  gap: 12px;
+  animation: indexMarquee 28s linear infinite;
 }
 
-.index-grid::-webkit-scrollbar-track {
-  background: transparent;
+.index-grid:hover .index-track {
+  animation-play-state: paused;
 }
 
-.index-grid::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(157, 123, 255, 0.44);
+.index-clone {
+  display: contents;
 }
 
 .index-card {
@@ -1010,6 +1095,15 @@ tbody tr:hover {
   border-color: rgba(124, 92, 252, 0.26);
   scroll-snap-align: start;
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+@keyframes indexMarquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-50% - 6px));
+  }
 }
 
 .index-card::after {
