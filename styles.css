@@ -1659,22 +1659,38 @@ tbody tr:hover {
 }
 
 .investor-donut-area {
-  display: grid;
-  grid-template-columns: 128px minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 14px;
 }
 
-#investorAllocationDonut {
-  filter: drop-shadow(0 18px 28px rgba(124, 92, 252, 0.12));
+.investor-donut-wrap {
+  width: clamp(150px, 14vw, 176px);
+  height: clamp(150px, 14vw, 176px);
+}
+
+.investor-donut-center {
+  max-width: 98px;
+}
+
+.investor-donut-center .donut-center-pct {
+  font-size: clamp(18px, 1.7vw, 22px);
+}
+
+.investor-donut-center .donut-center-amt {
+  max-width: 92px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .investor-allocation-legend {
-  gap: 6px;
+  flex: 1 1 120px;
+  gap: 2px;
 }
 
 .investor-allocation-legend .leg-row {
-  padding: 4px 0;
+  min-height: 28px;
+  padding: 6px 4px;
   font-size: 12px;
 }
 
@@ -2447,8 +2463,8 @@ menu {
   }
 
   .investor-donut-area {
-    grid-template-columns: 1fr;
-    justify-items: center;
+    align-items: center;
+    flex-direction: column;
   }
 
   h1 {

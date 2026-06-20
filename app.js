@@ -1037,7 +1037,26 @@ function renderInvestorSheet() {
 
 function renderInvestorAllocation() {
   const { slices, totalValue } = getAllocationSlices(state.selectedInvestorId);
-  renderDonutInto("#investorAllocationDonut", "#investorAllocationLegend", null, slices, totalValue);
+  renderDonutInto(
+    "#investorAllocationDonut",
+    "#investorAllocationLegend",
+    {
+      label: "#investorAllocationCenterLabel",
+      pct: "#investorAllocationCenterPct",
+      amt: "#investorAllocationCenterAmt"
+    },
+    slices,
+    totalValue
+  );
+  wireAllocationInteractions(
+    slices,
+    totalValue,
+    "#investorAllocationDonut",
+    "#investorAllocationLegend",
+    "#investorAllocationCenterLabel",
+    "#investorAllocationCenterPct",
+    "#investorAllocationCenterAmt"
+  );
 }
 
 function renderInvestorHoldingsPreview() {
