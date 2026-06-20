@@ -247,50 +247,52 @@
               <article class="metric-card"><span>예수금</span><strong id="investorCash">0원</strong><small>매수 가능 현금</small></article>
             </div>
 
-            <div class="investor-insight-grid">
-              <div class="panel investor-allocation-panel">
-                <p class="eyebrow">Allocation</p>
-                <h2>자산 배분</h2>
-                <div class="donut-area allocation-area investor-donut-area">
-                  <div class="donut-wrap investor-donut-wrap">
-                    <svg id="investorAllocationDonut" viewBox="0 0 100 100" width="168" height="168" role="img" aria-label="투자자 자산배분 도넛"></svg>
-                    <div class="donut-center investor-donut-center">
-                      <div class="eyebrow" id="investorAllocationCenterLabel">전체</div>
-                      <div class="donut-center-pct" id="investorAllocationCenterPct">100.0%</div>
-                      <div class="donut-center-amt" id="investorAllocationCenterAmt">₩0</div>
+            <div class="investor-columns">
+              <div class="investor-col investor-col-left">
+                <div class="panel investor-allocation-panel">
+                  <p class="eyebrow">Allocation</p>
+                  <h2>자산 배분</h2>
+                  <div class="donut-area allocation-area investor-donut-area">
+                    <div class="donut-wrap investor-donut-wrap">
+                      <svg id="investorAllocationDonut" viewBox="0 0 100 100" width="168" height="168" role="img" aria-label="투자자 자산배분 도넛"></svg>
+                      <div class="donut-center investor-donut-center">
+                        <div class="eyebrow" id="investorAllocationCenterLabel">전체</div>
+                        <div class="donut-center-pct" id="investorAllocationCenterPct">100.0%</div>
+                        <div class="donut-center-amt" id="investorAllocationCenterAmt">₩0</div>
+                      </div>
                     </div>
+                    <div class="legend investor-allocation-legend" id="investorAllocationLegend"></div>
                   </div>
-                  <div class="legend investor-allocation-legend" id="investorAllocationLegend"></div>
+                </div>
+
+                <div class="panel investor-holdings-panel">
+                  <div class="panel-header compact-head">
+                    <div>
+                      <p class="eyebrow">Holdings</p>
+                      <h2>보유 종목</h2>
+                    </div>
+                    <a href="#holdings" class="ghost-button" data-expand-ledger>전체보기 →</a>
+                  </div>
+                  <div class="market-list" id="investorHoldingsPreview"></div>
                 </div>
               </div>
 
-              <div class="panel">
-                <p class="eyebrow">Dividend</p>
-                <h2>다가오는 배당</h2>
-                <div id="investorUpcomingDividend"></div>
-              </div>
-
-              <div class="panel">
-                <p class="eyebrow">Profit</p>
-                <h2>손익 분해</h2>
-                <div id="investorProfitBreakdown"></div>
-              </div>
-
-              <div class="panel">
-                <div class="panel-header compact-head">
-                  <div>
-                    <p class="eyebrow">Holdings</p>
-                    <h2>보유 종목</h2>
-                  </div>
-                  <a href="#holdings" class="ghost-button" data-expand-ledger>전체보기 →</a>
+              <div class="investor-col investor-col-right">
+                <div class="panel investor-income-panel">
+                  <p class="eyebrow">Dividend</p>
+                  <h2>다가오는 배당</h2>
+                  <div id="investorUpcomingDividend"></div>
+                  <div class="quick-trade-divider"></div>
+                  <p class="eyebrow">Profit</p>
+                  <h2>손익 분해</h2>
+                  <div id="investorProfitBreakdown"></div>
                 </div>
-                <div class="market-list" id="investorHoldingsPreview"></div>
-              </div>
 
-              <div class="panel investor-activity-panel">
-                <p class="eyebrow">Activity</p>
-                <h2>최근 활동</h2>
-                <div id="investorActivity"></div>
+                <div class="panel investor-activity-panel">
+                  <p class="eyebrow">Activity</p>
+                  <h2>최근 활동</h2>
+                  <div id="investorActivity"></div>
+                </div>
               </div>
             </div>
 

@@ -1641,23 +1641,27 @@ tbody tr:hover {
   font-size: 13px;
 }
 
-.investor-insight-grid {
+.investor-columns {
   display: grid;
-  grid-template-columns: minmax(280px, 1.2fr) repeat(2, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  align-items: start;
+  gap: 14px;
 }
 
-.investor-insight-grid .panel {
+.investor-col {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.investor-columns .panel {
   padding: 16px;
 }
 
-.investor-insight-grid h2 {
+.investor-columns h2 {
   margin: 4px 0 12px;
   font-size: 18px;
-}
-
-.investor-activity-panel {
-  grid-column: span 2;
 }
 
 .investor-donut-area {
@@ -2392,12 +2396,8 @@ menu {
   .target-dividend-card,
   .target-results,
   .calendar-grid,
-  .investor-insight-grid {
+  .investor-columns {
     grid-template-columns: 1fr;
-  }
-
-  .investor-activity-panel {
-    grid-column: auto;
   }
 
   .sim-group-card:first-child .sim-field-grid,
