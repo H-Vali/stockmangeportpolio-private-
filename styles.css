@@ -1837,6 +1837,33 @@ tbody tr:hover {
   gap: 8px;
 }
 
+.quick-trade-fx-row {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.quick-trade-fixed-cell {
+  display: grid;
+  min-height: 38px;
+  place-items: center;
+  border-right: 1px solid var(--line);
+  background: rgba(124, 92, 252, 0.12);
+  color: var(--violet-3);
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.quick-trade-fx-row input {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
 .quick-trade-preview {
   display: grid;
   gap: 4px;

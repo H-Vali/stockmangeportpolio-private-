@@ -1275,18 +1275,21 @@ function populateQuickTradeTicker() {
 
 function updateQuickTradeDefaults() {
   const asset = quickTradeAsset();
+  const fxRow = document.querySelector("#quickTradeFxRow");
   const fxInput = document.querySelector("#quickTradeFx");
+  const fxLabel = document.querySelector("#quickTradeFxLabel");
   const priceInput = document.querySelector("#quickTradePrice");
   const submit = document.querySelector("#quickTradeSubmit");
   if (!fxInput || !priceInput) return;
+  if (fxLabel) fxLabel.textContent = quickTradeSide === "buy" ? "매입환율" : "매도환율";
   if (!asset) {
-    fxInput.style.display = "none";
+    if (fxRow) fxRow.style.display = "none";
     if (submit) submit.disabled = true;
     renderQuickTradePreview();
     return;
   }
   if (submit) submit.disabled = false;
-  fxInput.style.display = shouldShowQuickTradeFx(asset) ? "" : "none";
+  if (fxRow) fxRow.style.display = shouldShowQuickTradeFx(asset) ? "" : "none";
   if (!fxInput.value) fxInput.value = asset.currency === "KRW" ? 1 : Math.round(asset.currentFx || currentUsdKrw());
   if (!priceInput.value) priceInput.value = asset.currentPrice || "";
   renderQuickTradePreview();
@@ -1337,6 +1340,8 @@ function setQuickTradeSide(side) {
   sellBtn.classList.toggle("active", side === "sell");
   sellBtn.classList.toggle("sell", side === "sell");
   document.querySelector("#quickTradeSubmit").textContent = side === "buy" ? "매수 추가" : "매도 추가";
+  const fxLabel = document.querySelector("#quickTradeFxLabel");
+  if (fxLabel) fxLabel.textContent = side === "buy" ? "매입환율" : "매도환율";
   renderQuickTradePreview();
 }
 

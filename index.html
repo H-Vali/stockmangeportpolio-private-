@@ -18,7 +18,7 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260620-investor-swap-number-font" />
+    <link rel="stylesheet" href="./styles.css?v=20260620-quick-trade-fx-label" />
   </head>
   <body>
     <div class="app-shell">
@@ -304,7 +304,10 @@
                       <input type="number" id="quickTradeQty" placeholder="수량" min="0" step="any" />
                       <input type="number" id="quickTradePrice" placeholder="체결가" min="0" step="any" />
                     </div>
-                    <input type="number" id="quickTradeFx" placeholder="매입 환율" min="0" step="any" />
+                    <div class="quick-trade-fx-row" id="quickTradeFxRow">
+                      <span class="quick-trade-fixed-cell" id="quickTradeFxLabel">매입환율</span>
+                      <input type="number" id="quickTradeFx" placeholder="환율" min="0" step="any" />
+                    </div>
                     <button type="button" id="quickTradeSubmit" class="primary-button">추가</button>
                     <div class="quick-trade-preview" id="quickTradePreview" hidden></div>
                     <p class="quick-trade-hint">새 종목은 <a href="#" id="openTradeModalLink">거래 입력 모달</a>에서 추가하세요</p>
@@ -564,6 +567,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260620-investor-swap-number-font"></script>
+    <script src="./app.js?v=20260620-quick-trade-fx-label"></script>
   </body>
 </html>
