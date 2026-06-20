@@ -1363,6 +1363,156 @@ tbody tr:hover {
   box-shadow: 0 0 12px rgba(70, 145, 255, 0.1);
 }
 
+.allocation-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.donut-wrap {
+  position: relative;
+  width: 212px;
+  height: 212px;
+  flex: 0 0 auto;
+}
+
+.donut-wrap svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 120px;
+  margin: 0 auto;
+  text-align: center;
+  pointer-events: none;
+}
+
+.donut-center-pct {
+  margin-top: 4px;
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.donut-center-amt {
+  margin-top: 3px;
+  color: var(--muted);
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 11px;
+}
+
+.allocation-area .legend {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.leg-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  border-radius: 8px;
+  padding: 7px 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.leg-row:hover,
+.leg-row.hl {
+  background: var(--surface-2);
+}
+
+.donut-seg {
+  cursor: pointer;
+  transition: stroke-width 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+}
+
+.allocation-hint {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.allocation-divider {
+  margin: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.allocation-subhead {
+  margin-bottom: 12px;
+}
+
+.investor-bar-row {
+  margin-bottom: 14px;
+}
+
+.investor-bar-row:last-child {
+  margin-bottom: 0;
+}
+
+.investor-bar-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+  font-size: 12px;
+}
+
+.investor-bar-head .muted {
+  color: var(--muted);
+}
+
+.investor-bar-track {
+  display: flex;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--surface-2);
+}
+
+.ibar-seg {
+  min-width: 1px;
+  transition: opacity 0.15s ease;
+}
+
+.holdings-filter-banner {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(124, 92, 252, 0.4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: rgba(124, 92, 252, 0.12);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.holdings-filter-banner.active {
+  display: flex;
+}
+
+.holdings-filter-banner .ghost-button {
+  min-height: 30px;
+  padding: 0 10px;
+}
+
 .swatch {
   width: 10px;
   height: 10px;
