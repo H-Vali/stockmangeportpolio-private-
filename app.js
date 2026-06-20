@@ -45,13 +45,13 @@ const INDEX_MONITOR_LIST = [
 ];
 const allocationColors = {
   코인: "#7C5CFC",
-  주식: "#B69CFF",
+  주식: "#FF7AC8",
   ETF: "#3BB5A6",
   채권: "#E8B339",
   예수금: "#5A5A68"
 };
 const ALLOCATION_ORDER = ["주식", "ETF", "코인", "채권", "예수금"];
-const fallbackColors = ["#7c5cfc", "#b69cff", "#3bb5a6", "#e8b339", "#5a5a68"];
+const fallbackColors = ["#ff7ac8", "#3bb5a6", "#7c5cfc", "#e8b339", "#5a5a68"];
 const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 let previousAllocationRatios = loadAllocationRatios();
 let realtimeDemoInterval = null;
