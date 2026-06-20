@@ -739,6 +739,12 @@ a.ghost-button {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background:
+    radial-gradient(130% 150% at 0% 0%, rgba(124, 92, 252, 0.18), rgba(124, 92, 252, 0.04) 45%, transparent 70%),
+    transparent;
 }
 
 .investor-tabs {
@@ -768,7 +774,7 @@ a.ghost-button {
   font-weight: 800;
 }
 
-.investor-chip span,
+.investor-chip .chip-initial,
 .avatar {
   display: grid;
   width: 22px;
@@ -780,13 +786,25 @@ a.ghost-button {
   font-size: 12px;
 }
 
+.investor-chip .chip-name {
+  min-width: 0;
+}
+
+.tab-balance {
+  margin-left: 2px;
+  color: currentColor;
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 11px;
+  opacity: 0.72;
+}
+
 .investor-chip.active {
   border-color: rgba(157, 123, 255, 0.44);
   background: linear-gradient(135deg, var(--violet-2), var(--violet));
   color: white;
 }
 
-.investor-chip.active span {
+.investor-chip.active .chip-initial {
   background: rgba(255, 255, 255, 0.22);
   color: white;
 }
@@ -836,6 +854,56 @@ a.ghost-button {
   display: grid;
   justify-items: end;
   gap: 10px;
+}
+
+.hero-menu {
+  position: relative;
+}
+
+.hero-menu .icon-button {
+  border-color: rgba(157, 123, 255, 0.24);
+  background: rgba(28, 28, 37, 0.72);
+  color: var(--muted);
+}
+
+.hero-menu .icon-button:hover {
+  border-color: rgba(157, 123, 255, 0.5);
+  color: var(--ink);
+}
+
+.hero-menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+  min-width: 148px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px;
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.menu-item.danger {
+  color: var(--up);
 }
 
 .danger-button {
@@ -1272,6 +1340,10 @@ tbody tr:hover {
   padding: 12px 0;
 }
 
+.muted {
+  color: var(--muted);
+}
+
 .legend-row,
 .rebalance-item,
 .account-card,
@@ -1565,6 +1637,131 @@ tbody tr:hover {
   background: rgba(124, 92, 252, 0.12);
   color: var(--ink);
   font-size: 13px;
+}
+
+.investor-insight-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.2fr) repeat(2, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.investor-insight-grid .panel {
+  padding: 16px;
+}
+
+.investor-insight-grid h2 {
+  margin: 4px 0 12px;
+  font-size: 18px;
+}
+
+.investor-activity-panel {
+  grid-column: span 2;
+}
+
+.investor-donut-area {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+#investorAllocationDonut {
+  filter: drop-shadow(0 18px 28px rgba(124, 92, 252, 0.12));
+}
+
+.investor-allocation-legend {
+  gap: 6px;
+}
+
+.investor-allocation-legend .leg-row {
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.investor-kpi-line,
+.breakdown-row,
+.activity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.investor-kpi-line {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.investor-kpi-line strong {
+  color: var(--ink);
+}
+
+.investor-kpi-value {
+  margin: 7px 0 4px;
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.breakdown-row {
+  border-bottom: 1px solid rgba(39, 39, 48, 0.72);
+  padding: 8px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.breakdown-row:last-child {
+  border-bottom: 0;
+}
+
+.activity-row {
+  border-bottom: 1px solid rgba(39, 39, 48, 0.72);
+  padding: 9px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.activity-row:last-child {
+  border-bottom: 0;
+}
+
+.activity-row > span {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+}
+
+.activity-row strong {
+  color: var(--ink);
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  white-space: nowrap;
+}
+
+.activity-badge {
+  display: inline-grid;
+  min-width: 34px;
+  min-height: 20px;
+  place-items: center;
+  border-radius: 5px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.activity-badge.cash {
+  background: rgba(124, 92, 252, 0.16);
+  color: var(--violet-3);
+}
+
+.activity-badge.buy {
+  background: rgba(246, 70, 93, 0.12);
+  color: var(--up);
+}
+
+.activity-badge.sell {
+  background: rgba(70, 145, 255, 0.12);
+  color: var(--down);
 }
 
 .holdings-filter-banner.active {
@@ -2176,8 +2373,13 @@ menu {
   .sim-result-sub,
   .target-dividend-card,
   .target-results,
-  .calendar-grid {
+  .calendar-grid,
+  .investor-insight-grid {
     grid-template-columns: 1fr;
+  }
+
+  .investor-activity-panel {
+    grid-column: auto;
   }
 
   .sim-group-card:first-child .sim-field-grid,
@@ -2242,6 +2444,11 @@ menu {
   .mini-metrics,
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .investor-donut-area {
+    grid-template-columns: 1fr;
+    justify-items: center;
   }
 
   h1 {

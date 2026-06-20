@@ -336,6 +336,13 @@ function signedPercentChange(value) {
   return `${value >= 0 ? "+" : ""}${pct(value)}`;
 }
 
+function formatCompact(value) {
+  const abs = Math.abs(value);
+  if (abs >= 100000000) return `₩${(value / 100000000).toFixed(1)}억`;
+  if (abs >= 10000) return `₩${(value / 10000).toFixed(1)}만`;
+  return money(value);
+}
+
 function renderMetricTitle(label) {
   return `<strong class="metric-title"><span>${label}</span><i class="metric-badge-slot" aria-hidden="true"></i></strong>`;
 }
@@ -651,6 +658,28 @@ function renderView() {
   ledgerWorkspace.classList.toggle("collapsed-ledger", !ledgerExpanded);
 }
 
+function getAllocationSlices(ownerId) {
+  const holdings = replayHoldings(ownerId);
+  const summary = summarize(ownerId);
+  const totals = {};
+
+  holdings.forEach((item) => {
+    totals[item.type] = (totals[item.type] || 0) + item.valueKrw;
+  });
+  if (summary.cash > 0) totals["예수금"] = summary.cash;
+
+  const slices = ALLOCATION_ORDER
+    .filter((key) => totals[key] > 0)
+    .map((key) => ({
+      key,
+      amount: totals[key],
+      pct: summary.totalValue > 0 ? (totals[key] / summary.totalValue) * 100 : 0,
+      color: allocationColors[key] || fallbackColors[0]
+    }));
+
+  return { slices, totalValue: summary.totalValue };
+}
+
 function renderDashboard() {
   const summary = summarize();
   const totalProfit = document.querySelector("#totalProfit");
@@ -666,33 +695,38 @@ function renderDashboard() {
 
 function renderAllocation() {
   const ownerId = visibleOwnerId();
-  const holdings = replayHoldings(ownerId);
-  const summary = summarize(ownerId);
-  const totalValue = summary.totalValue;
-  const totals = {};
-
-  holdings.forEach((item) => {
-    totals[item.type] = (totals[item.type] || 0) + item.valueKrw;
-  });
-  if (summary.cash > 0) totals["예수금"] = summary.cash;
-
-  const slices = ALLOCATION_ORDER
-    .filter((key) => totals[key] > 0)
-    .map((key) => ({
-      key,
-      amount: totals[key],
-      pct: totalValue > 0 ? (totals[key] / totalValue) * 100 : 0,
-      color: allocationColors[key] || fallbackColors[0]
-    }));
-
-  renderAllocationDonut(slices, totalValue);
-  renderAllocationLegend(slices);
+  const { slices, totalValue } = getAllocationSlices(ownerId);
+  renderDonutInto(
+    "#allocationDonut",
+    "#allocationLegend",
+    { label: "#allocationCenterLabel", pct: "#allocationCenterPct", amt: "#allocationCenterAmt" },
+    slices,
+    totalValue
+  );
   renderAllocationInvestorBreakdown();
-  wireAllocationInteractions(slices, totalValue);
+  wireAllocationInteractions(
+    slices,
+    totalValue,
+    "#allocationDonut",
+    "#allocationLegend",
+    "#allocationCenterLabel",
+    "#allocationCenterPct",
+    "#allocationCenterAmt"
+  );
 }
 
 function renderAllocationDonut(slices, totalValue) {
-  const svg = document.querySelector("#allocationDonut");
+  renderDonutInto(
+    "#allocationDonut",
+    null,
+    { label: "#allocationCenterLabel", pct: "#allocationCenterPct", amt: "#allocationCenterAmt" },
+    slices,
+    totalValue
+  );
+}
+
+function renderDonutInto(svgSelector, legendSelector, centerSelectors, slices, totalValue) {
+  const svg = document.querySelector(svgSelector);
   if (!svg) return;
   const r = 40;
   const circumference = 2 * Math.PI * r;
@@ -708,16 +742,22 @@ function renderAllocationDonut(slices, totalValue) {
     .join("");
   svg.innerHTML = `<circle cx="50" cy="50" r="${r}" fill="none" stroke="#1C1C25" stroke-width="16"></circle>${segmentsSvg}`;
 
-  const centerAmt = document.querySelector("#allocationCenterAmt");
-  const centerPct = document.querySelector("#allocationCenterPct");
-  const centerLabel = document.querySelector("#allocationCenterLabel");
-  if (centerLabel) centerLabel.textContent = "전체";
-  if (centerPct) centerPct.textContent = totalValue > 0 ? "100.0%" : "0.0%";
-  if (centerAmt) centerAmt.textContent = money(totalValue);
+  if (legendSelector) {
+    renderAllocationLegend(slices, legendSelector);
+  }
+
+  if (centerSelectors) {
+    const centerAmt = document.querySelector(centerSelectors.amt);
+    const centerPct = document.querySelector(centerSelectors.pct);
+    const centerLabel = document.querySelector(centerSelectors.label);
+    if (centerLabel) centerLabel.textContent = "전체";
+    if (centerPct) centerPct.textContent = totalValue > 0 ? "100.0%" : "0.0%";
+    if (centerAmt) centerAmt.textContent = money(totalValue);
+  }
 }
 
-function renderAllocationLegend(slices) {
-  const legend = document.querySelector("#allocationLegend");
+function renderAllocationLegend(slices, selector = "#allocationLegend") {
+  const legend = document.querySelector(selector);
   if (!legend) return;
   legend.innerHTML = slices
     .map((slice) => `
@@ -760,12 +800,20 @@ function renderAllocationInvestorBreakdown() {
     .join("");
 }
 
-function wireAllocationInteractions(slices, totalValue) {
-  const segments = document.querySelectorAll("#allocationDonut .donut-seg");
-  const rows = document.querySelectorAll("#allocationLegend .leg-row");
-  const centerLabel = document.querySelector("#allocationCenterLabel");
-  const centerPct = document.querySelector("#allocationCenterPct");
-  const centerAmt = document.querySelector("#allocationCenterAmt");
+function wireAllocationInteractions(
+  slices,
+  totalValue,
+  svgSelector = "#allocationDonut",
+  legendSelector = "#allocationLegend",
+  centerLabelSelector = "#allocationCenterLabel",
+  centerPctSelector = "#allocationCenterPct",
+  centerAmtSelector = "#allocationCenterAmt"
+) {
+  const segments = document.querySelectorAll(`${svgSelector} .donut-seg`);
+  const rows = document.querySelectorAll(`${legendSelector} .leg-row`);
+  const centerLabel = document.querySelector(centerLabelSelector);
+  const centerPct = document.querySelector(centerPctSelector);
+  const centerAmt = document.querySelector(centerAmtSelector);
 
   function setCenter(key) {
     if (!centerLabel || !centerPct || !centerAmt) return;
@@ -950,11 +998,12 @@ function renderInvestorTabs() {
   const tabs = document.querySelector("#investorTabs");
   tabs.innerHTML = "";
   state.investors.forEach((investor) => {
+    const summary = summarize(investor.id);
     const button = document.createElement("button");
     button.type = "button";
     button.className = `investor-chip ${investor.id === state.selectedInvestorId ? "active" : ""}`;
     button.dataset.investorId = investor.id;
-    button.innerHTML = `<span>${investor.initials}</span>${investor.name}`;
+    button.innerHTML = `<span class="chip-initial">${investor.initials}</span><span class="chip-name">${investor.name}</span><span class="tab-balance">${formatCompact(summary.totalValue)}</span>`;
     tabs.appendChild(button);
   });
 }
@@ -969,14 +1018,127 @@ function renderInvestorSheet() {
   document.querySelector("#investorReturn").textContent = `수익률 ${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}`;
   document.querySelector("#investorHoldingsCount").textContent = `${summary.holdings.length}개 종목`;
   document.querySelector("#investorPrincipal").textContent = money(summary.principal);
-  document.querySelector("#investorTax").textContent = money(summary.tax);
-  document.querySelector("#investorDividend").textContent = money(summary.dividend);
-  document.querySelector("#investorDividendAfterTax").textContent = `세후 ${money(summary.dividendAfterTax)}`;
+  document.querySelector("#investorStatProfit").textContent = signedMoney(summary.profit);
+  document.querySelector("#investorStatProfit").className = summary.profit >= 0 ? "positive" : "negative";
+  document.querySelector("#investorReturnRate").textContent = `${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}`;
+  document.querySelector("#investorDividendAfterTax").textContent = money(summary.dividendAfterTax);
+  document.querySelector("#investorDividendDetail").textContent = `세전 ${money(summary.dividend)} · 세금 ${money(summary.tax)}`;
   document.querySelector("#investorCash").textContent = money(summary.cash);
   document.querySelector("#deleteInvestorButton").disabled = state.investors.length <= 1;
   renderDeleteConfirm();
+  renderInvestorAllocation();
+  renderInvestorHoldingsPreview();
+  renderUpcomingDividend();
+  renderInvestorProfitBreakdown();
+  renderInvestorActivityTimeline();
   renderCashflows();
   renderTradePreview();
+}
+
+function renderInvestorAllocation() {
+  const { slices, totalValue } = getAllocationSlices(state.selectedInvestorId);
+  renderDonutInto("#investorAllocationDonut", "#investorAllocationLegend", null, slices, totalValue);
+}
+
+function renderInvestorHoldingsPreview() {
+  const list = document.querySelector("#investorHoldingsPreview");
+  if (!list) return;
+  const top = replayHoldings(state.selectedInvestorId)
+    .slice()
+    .sort((a, b) => b.valueKrw - a.valueKrw)
+    .slice(0, 3);
+  if (!top.length) {
+    list.innerHTML = `<p class="empty-hint">보유 종목이 없습니다.</p>`;
+    return;
+  }
+  list.innerHTML = top
+    .map(
+      (item) => `
+        <div class="market-card">
+          <div><strong>${item.ticker}</strong><small>${item.type} · ${money(item.valueKrw)}</small></div>
+          <span class="${item.profit >= 0 ? "positive" : "negative"}">${signedMoney(item.profit)}</span>
+        </div>
+      `
+    )
+    .join("");
+}
+
+function renderUpcomingDividend() {
+  const el = document.querySelector("#investorUpcomingDividend");
+  if (!el) return;
+  const holdings = replayHoldings(state.selectedInvestorId).filter((item) => item.annualDividend > 0);
+  const currentMonth = new Date().getMonth() + 1;
+  let best = null;
+  holdings.forEach((item) => {
+    const months = DIVIDEND_MONTHS[item.ticker] || [];
+    months.forEach((month) => {
+      const diff = month >= currentMonth ? month - currentMonth : month + 12 - currentMonth;
+      if (!best || diff < best.diff) {
+        best = {
+          ticker: item.ticker,
+          diff,
+          perPayment: (item.annualDividend / months.length) * (1 - DIVIDEND_TAX_RATE)
+        };
+      }
+    });
+  });
+  const summary = summarize(state.selectedInvestorId);
+  if (!best) {
+    el.innerHTML = `<p class="empty-hint">예정된 배당이 없습니다.</p>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="investor-kpi-line"><strong>${best.ticker}</strong><span>약 D-${best.diff * 30}</span></div>
+    <div class="investor-kpi-value positive">${signedMoney(best.perPayment)}</div>
+    <small class="muted">연간 예상 세후 배당 ${money(summary.dividendAfterTax)}</small>
+  `;
+}
+
+function renderInvestorProfitBreakdown() {
+  const el = document.querySelector("#investorProfitBreakdown");
+  if (!el) return;
+  const holdings = replayHoldings(state.selectedInvestorId);
+  const stockProfit = holdings.reduce((sum, item) => sum + (item.stockProfit || 0), 0);
+  const fxProfit = holdings.reduce((sum, item) => sum + (item.fxProfit || 0), 0);
+  const summary = summarize(state.selectedInvestorId);
+  const rows = [
+    ["주가", stockProfit],
+    ["환차", fxProfit],
+    ["배당", summary.dividendAfterTax]
+  ];
+  el.innerHTML = rows
+    .map(([label, value]) => `
+      <div class="breakdown-row">
+        <span>${label}</span>
+        <strong class="${value >= 0 ? "positive" : "negative"}">${signedMoney(value)}</strong>
+      </div>
+    `)
+    .join("");
+}
+
+function renderInvestorActivityTimeline() {
+  const list = document.querySelector("#investorActivity");
+  if (!list) return;
+  const items = visibleTransactions().slice(0, 8);
+  if (!items.length) {
+    list.innerHTML = `<p class="empty-hint">활동 내역이 없습니다.</p>`;
+    return;
+  }
+  list.innerHTML = items
+    .map((item) => {
+      const isCashflow = item.kind === "cashflow";
+      const label = isCashflow ? (item.type === "deposit" ? "입금" : "출금") : item.side === "buy" ? "매수" : "매도";
+      const tone = isCashflow ? "cash" : item.side === "buy" ? "buy" : "sell";
+      const detail = isCashflow ? (item.memo ? ` · ${item.memo}` : "") : ` · ${item.ticker}`;
+      const amount = isCashflow ? item.amount : tradeAmountKrw(item);
+      return `
+        <div class="activity-row">
+          <span><i class="activity-badge ${tone}">${label}</i>${item.date}${detail}</span>
+          <strong>${money(amount)}</strong>
+        </div>
+      `;
+    })
+    .join("");
 }
 
 function renderHoldings() {
@@ -1085,9 +1247,10 @@ function renderCashflows() {
     .forEach((flow) => {
       const row = document.createElement("div");
       row.className = "cashflow-row";
+      const colorClass = flow.type === "withdraw" ? "negative" : "";
       row.innerHTML = `
         <span>${flow.date}</span>
-        <strong class="${flow.type === "deposit" ? "positive" : "negative"}">${flow.type === "deposit" ? "입금" : "출금"} ${money(flow.amount)}</strong>
+        <strong class="${colorClass}">${flow.type === "deposit" ? "입금" : "출금"} ${money(flow.amount)}</strong>
       `;
       list.appendChild(row);
     });
@@ -1689,8 +1852,24 @@ document.querySelector("#dashboardAddInvestorForm").addEventListener("submit", (
   input.value = "";
 });
 
+document.querySelector("#heroMenuToggle").addEventListener("click", (event) => {
+  event.stopPropagation();
+  const dropdown = document.querySelector("#heroMenuDropdown");
+  dropdown.hidden = !dropdown.hidden;
+});
+
+document.querySelector("#heroMenuDropdown").addEventListener("click", (event) => {
+  event.stopPropagation();
+});
+
+document.addEventListener("click", () => {
+  const dropdown = document.querySelector("#heroMenuDropdown");
+  if (dropdown) dropdown.hidden = true;
+});
+
 document.querySelector("#deleteInvestorButton").addEventListener("click", () => {
   if (state.investors.length <= 1) return;
+  document.querySelector("#heroMenuDropdown").hidden = true;
   state.pendingDeleteInvestorId = state.selectedInvestorId;
   renderDeleteConfirm();
 });
