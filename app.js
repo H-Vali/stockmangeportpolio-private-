@@ -982,16 +982,17 @@ function overseasPriceSourceLabel() {
   return "시드 데이터";
 }
 
-function cryptoQuoteFxLabel(item = {}) {
-  const rate = item.quoteFx || state.cryptoQuoteFx?.rate || currentUsdKrw();
-  const source = item.quoteFxSource || state.cryptoQuoteFx?.source || "USD/KRW";
-  return `${source} ${fxFormatter.format(rate)}`;
-}
-
 function renderMarket() {
   const list = document.querySelector("#marketList");
   list.innerHTML = "";
   const sourceLabel = overseasPriceSourceLabel();
+  const ratePill = document.querySelector("#cryptoRatePill");
+  if (ratePill) {
+    const rate = Number(state.cryptoQuoteFx?.rate || 0);
+    const source = state.cryptoQuoteFx?.source || "USDT/KRW";
+    const updatedAt = state.cryptoQuoteFx?.updatedAt ? `${formatClock(state.cryptoQuoteFx.updatedAt)} 갱신` : "업데이트 대기";
+    ratePill.textContent = rate ? `${source} ${fxFormatter.format(rate)} · ${updatedAt}` : `${source} 대기 중`;
+  }
   const nextValues = {};
   state.marketIndicators.forEach((item) => {
     const premium = item.globalKrw ? ((item.domestic / item.globalKrw) - 1) * 100 : 0;
@@ -1001,7 +1002,7 @@ function renderMarket() {
     row.innerHTML = `
       <div class="market-title-row">
         ${renderCryptoLogo(item.symbol)}
-        <div>${renderMetricTitle(item.symbol)}<small>국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)} · ${sourceLabel} · ${cryptoQuoteFxLabel(item)}</small></div>
+        <div>${renderMetricTitle(item.symbol)}<small>국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)} · ${sourceLabel}</small></div>
       </div>
       <span class="${premium >= 0 ? "positive" : "negative"}">${premium >= 0 ? "+" : ""}${pct(premium)}</span>
     `;
@@ -1638,10 +1639,14 @@ function renderTrend() {
 function renderFx() {
   document.querySelector("#fxRateLabel").textContent = fxFormatter.format(currentUsdKrw());
   const source = state.fx.source === "hana" ? "하나은행 기준" : state.fx.source === "fallback" ? "환율 API 기준(폴백)" : "수동 기준";
-  document.querySelector("#fxSourceLabel").textContent = `${source}${state.fx.updatedAt ? ` · ${formatClock(state.fx.updatedAt)} 갱신` : ""}`;
+  document.querySelector("#fxSourceLabel").textContent = `${source} · ${state.fx.updatedAt ? `${formatClock(state.fx.updatedAt)} 갱신` : "업데이트 대기"}`;
   document.querySelector("#manualFxToggle").checked = state.fx.mode === "manual";
   document.querySelector("#manualFxInput").value = state.fx.manualUsdkrw || currentUsdKrw();
   document.querySelector("#manualFxInput").disabled = state.fx.mode !== "manual";
+  const usdtRate = Number(state.cryptoQuoteFx?.rate || 0);
+  document.querySelector("#usdtKrwLabel").textContent = usdtRate ? fxFormatter.format(usdtRate) : "대기 중";
+  const usdtSource = state.cryptoQuoteFx?.source || "USDT/KRW";
+  document.querySelector("#usdtKrwSourceLabel").textContent = `${usdtSource} · ${state.cryptoQuoteFx?.updatedAt ? `${formatClock(state.cryptoQuoteFx.updatedAt)} 갱신` : "업데이트 대기"}`;
 }
 
 function renderMarketStatus() {

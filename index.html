@@ -18,7 +18,7 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260620-krw-usdt-premium" />
+    <link rel="stylesheet" href="./styles.css?v=20260620-fx-panel-usdt" />
   </head>
   <body>
     <div class="app-shell">
@@ -40,16 +40,6 @@
           <a href="#transactions">원장 내역</a>
         </nav>
 
-        <div class="currency-card">
-          <span>USD/KRW</span>
-          <strong id="fxRateLabel">1,380</strong>
-          <small id="fxSourceLabel">수동 기준</small>
-          <label class="mini-toggle">
-            <input type="checkbox" id="manualFxToggle" />
-            <span>수동 환율</span>
-          </label>
-          <input id="manualFxInput" class="compact-input" type="number" min="1" step="0.01" placeholder="USD/KRW" />
-        </div>
       </aside>
 
       <main class="main">
@@ -141,6 +131,7 @@
                   <p class="eyebrow">Crypto</p>
                   <h2>김프 지표</h2>
                 </div>
+                <div class="crypto-rate-pill" id="cryptoRatePill">USDT/KRW 대기 중</div>
               </div>
               <div class="market-list" id="marketList"></div>
             </div>
@@ -201,6 +192,34 @@
                 <a href="#transactions" class="ghost-button" data-expand-ledger>전체보기 →</a>
               </div>
               <div class="market-list" id="ledgerPreview"></div>
+            </div>
+
+            <div class="panel span-12 fx-panel" id="fxPanel">
+              <div class="panel-header compact-head">
+                <div>
+                  <p class="eyebrow">Exchange Rates</p>
+                  <h2>환율 기준</h2>
+                </div>
+                <small class="fx-panel-note">해외자산은 USD/KRW, 코인 김프는 USDT/KRW 기준으로 환산합니다.</small>
+              </div>
+              <div class="fx-card-grid">
+                <div class="currency-card">
+                  <span>USD/KRW</span>
+                  <strong id="fxRateLabel">1,380.00</strong>
+                  <small id="fxSourceLabel">수동 기준 · 업데이트 대기</small>
+                  <label class="mini-toggle">
+                    <input type="checkbox" id="manualFxToggle" />
+                    <span>수동 환율</span>
+                  </label>
+                  <input id="manualFxInput" class="compact-input" type="number" min="1" step="0.01" placeholder="USD/KRW" />
+                </div>
+                <div class="currency-card usdt-rate-card">
+                  <span>USDT/KRW</span>
+                  <strong id="usdtKrwLabel">대기 중</strong>
+                  <small id="usdtKrwSourceLabel">김프 환산 기준 · 업데이트 대기</small>
+                  <p class="fx-card-caption">Binance USDT 가격을 원화로 바꿀 때 사용하는 테더 원화 기준가입니다.</p>
+                </div>
+              </div>
             </div>
           </section>
         </section>
@@ -567,6 +586,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260620-krw-usdt-premium"></script>
+    <script src="./app.js?v=20260620-fx-panel-usdt"></script>
   </body>
 </html>
