@@ -801,6 +801,35 @@ a.ghost-button {
   border-style: dashed;
 }
 
+.dashboard-add-investor-form {
+  width: 100%;
+  min-width: 0;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.dashboard-add-investor-form input {
+  min-width: 0;
+  flex: 1;
+  background: rgba(28, 28, 37, 0.72);
+}
+
+.dashboard-add-investor-form .icon-button {
+  flex: 0 0 36px;
+  border-color: rgba(124, 92, 252, 0.45);
+  background: linear-gradient(135deg, rgba(124, 92, 252, 0.24), rgba(157, 123, 255, 0.12));
+  color: var(--ink);
+  box-shadow: 0 0 20px rgba(124, 92, 252, 0.14);
+}
+
+.dashboard-add-investor-hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .investor-actions {
   position: relative;
   z-index: 1;

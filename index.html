@@ -18,7 +18,7 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260620-allocation-interactive" />
+    <link rel="stylesheet" href="./styles.css?v=20260620-dashboard-investor-xrp" />
   </head>
   <body>
     <div class="app-shell">
@@ -153,6 +153,11 @@
                 </div>
               </div>
               <div class="investor-comparison" id="investorComparison"></div>
+              <form id="dashboardAddInvestorForm" class="add-investor-form dashboard-add-investor-form">
+                <input name="investorName" placeholder="투자자 추가" autocomplete="off" />
+                <button type="submit" class="icon-button" title="투자자 추가">+</button>
+              </form>
+              <p class="dashboard-add-investor-hint">대시보드에서 바로 추가하고, 세부 입출금은 투자자별 시트에서 관리합니다.</p>
             </div>
 
             <div class="panel span-12" id="indexMonitor">
@@ -488,6 +493,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260620-allocation-interactive"></script>
+    <script src="./app.js?v=20260620-dashboard-investor-xrp"></script>
   </body>
 </html>

@@ -21,7 +21,8 @@ const CRYPTO_LOGOS = {
   BTC: "https://cdn.simpleicons.org/bitcoin/f7931a",
   ETH: "https://cdn.simpleicons.org/ethereum/627eea",
   SOL: "https://cdn.simpleicons.org/solana/9945ff",
-  BNB: "https://cdn.simpleicons.org/binance/f3ba2f"
+  BNB: "https://cdn.simpleicons.org/binance/f3ba2f",
+  XRP: "https://cdn.simpleicons.org/xrp/f3f3f7"
 };
 const DIVIDEND_MONTHS = {
   SCHD: [3, 6, 9, 12],
@@ -93,6 +94,7 @@ const seedState = {
     ETH: { ticker: "ETH", name: "Ethereum", type: "코인", currency: "USD", currentPrice: 2391, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
     "360750": { ticker: "360750", name: "TIGER 미국S&P500", type: "ETF", currency: "KRW", currentPrice: 19640, currentFx: 1, annualDividend: 4600 },
     KR3Y: { ticker: "KR3Y", name: "국고채 3년", type: "채권", currency: "KRW", currentPrice: 100400, currentFx: 1, annualDividend: 36000 },
+    XRP: { ticker: "XRP", name: "XRP", type: "코인", currency: "USD", currentPrice: 2.44, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
     QQQ: { ticker: "QQQ", name: "Invesco QQQ Trust", type: "주식", currency: "USD", currentPrice: 740.62, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
     SPY: { ticker: "SPY", name: "SPDR S&P 500 ETF", type: "주식", currency: "USD", currentPrice: 746.74, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
     IWM: { ticker: "IWM", name: "iShares Russell 2000 ETF", type: "주식", currency: "USD", currentPrice: 295.59, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
@@ -110,7 +112,8 @@ const seedState = {
     { symbol: "BTC", domestic: 52000000, globalKrw: 50420000, updatedAt: null },
     { symbol: "ETH", domestic: 3300000, globalKrw: 3244000, updatedAt: null },
     { symbol: "SOL", domestic: 224000, globalKrw: 216800, updatedAt: null },
-    { symbol: "BNB", domestic: 978000, globalKrw: 951000, updatedAt: null }
+    { symbol: "BNB", domestic: 978000, globalKrw: 951000, updatedAt: null },
+    { symbol: "XRP", domestic: 3500, globalKrw: 3370, updatedAt: null }
   ],
   cashflows: [
     { id: crypto.randomUUID(), ownerId: "kim", date: "2026-06-01", type: "deposit", amount: 3000000, memo: "초기 입금" },
@@ -449,6 +452,20 @@ function makeInvestor(name) {
     name: clean,
     initials: clean.slice(0, 1).toUpperCase()
   };
+}
+
+function addInvestorByName(name, options = {}) {
+  const clean = name.trim();
+  if (!clean) return null;
+  const investor = makeInvestor(clean);
+  state.investors.push(investor);
+  state.selectedInvestorId = investor.id;
+  state.pendingDeleteInvestorId = null;
+  if (options.openSheet) state.selectedView = "investor";
+  saveState();
+  render();
+  showToast(`${investor.name} 투자자를 추가했습니다.`);
+  return investor;
 }
 
 function tradeAmountKrw(trade) {
@@ -1660,13 +1677,16 @@ document.querySelector("#addInvestorForm").addEventListener("submit", (event) =>
   event.preventDefault();
   const input = event.currentTarget.elements.investorName;
   if (!input.value.trim()) return;
-  const investor = makeInvestor(input.value);
-  state.investors.push(investor);
-  state.selectedInvestorId = investor.id;
-  state.selectedView = "investor";
+  addInvestorByName(input.value, { openSheet: true });
   input.value = "";
-  saveState();
-  render();
+});
+
+document.querySelector("#dashboardAddInvestorForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const input = event.currentTarget.elements.investorName;
+  if (!input.value.trim()) return;
+  addInvestorByName(input.value, { openSheet: false });
+  input.value = "";
 });
 
 document.querySelector("#deleteInvestorButton").addEventListener("click", () => {
