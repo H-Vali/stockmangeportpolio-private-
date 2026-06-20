@@ -118,10 +118,21 @@
                   <h2>자산 배분</h2>
                 </div>
               </div>
-              <div class="donut-area">
-                <div class="donut" id="allocationDonut" aria-label="자산 배분 도넛 차트"></div>
+              <div class="donut-area allocation-area">
+                <div class="donut-wrap">
+                  <svg id="allocationDonut" viewBox="0 0 100 100" width="212" height="212" role="img" aria-label="자산 배분 도넛 차트"></svg>
+                  <div class="donut-center">
+                    <div class="eyebrow" id="allocationCenterLabel">전체</div>
+                    <div class="donut-center-pct" id="allocationCenterPct">100.0%</div>
+                    <div class="donut-center-amt" id="allocationCenterAmt">₩0</div>
+                  </div>
+                </div>
                 <div class="legend" id="allocationLegend"></div>
               </div>
+              <div class="allocation-hint" id="allocationHint">조각이나 범례를 클릭하면 보유 종목이 해당 분류로 필터됩니다</div>
+              <div class="allocation-divider"></div>
+              <div class="eyebrow allocation-subhead">투자자별 자산배분 비교</div>
+              <div id="allocationInvestorBreakdown"></div>
             </div>
 
             <div class="panel span-4 crypto-panel">
@@ -363,6 +374,10 @@
                 <h2>보유 종목</h2>
               </div>
               <button type="button" id="openTradeForm" class="primary-button" title="매수·매도 입력">거래 입력</button>
+            </div>
+            <div class="holdings-filter-banner" id="holdingsFilterBanner">
+              <span id="holdingsFilterLabel">필터 적용 중</span>
+              <button type="button" class="ghost-button" id="clearHoldingsFilterButton">필터 해제</button>
             </div>
             <div class="table-wrap">
               <table>
