@@ -756,7 +756,7 @@ function renderIndexMonitor() {
   if (!list) return;
   const connected = Boolean(proxyBaseUrl());
   const nextValues = {};
-  const cards = INDEX_MONITOR_LIST.map((idx) => {
+  const snapshots = INDEX_MONITOR_LIST.map((idx) => {
     const asset = state.assetCatalog[idx.ticker];
     const quote = (state.indexQuotes || {})[idx.ticker];
     const price = quote ? quote.price : (asset ? asset.currentPrice : 0);
@@ -771,24 +771,47 @@ function renderIndexMonitor() {
     const logo = idx.logo
       ? `<i class="stock-logo-frame"><img src="${idx.logo}" alt="" loading="lazy" onerror="this.remove()" /><b>${logoText}</b></i>`
       : `<i class="stock-logo-frame stock-logo-text"><b>${logoText}</b></i>`;
-    return `
-      <div class="market-card index-card stock-index-card ${idx.group === "M7" ? "m7-index-card" : "etf-index-card"} ${glow}">
-        ${logo}
-        <div>${renderMetricTitle(idx.label)}<small>${idx.group} · ${idx.ticker} · $${numberFormatter.format(price)} · ${status}</small></div>
-        <span class="${changeClass}">${changeLabel}</span>
+    return { ...idx, price, change, glow, changeClass, status, changeLabel, logo };
+  });
+  const cardMarkup = (idx) => `
+      <div class="market-card index-card stock-index-card ${idx.group === "M7" ? "m7-index-card" : "etf-index-card"} ${idx.glow}" data-ticker="${idx.ticker}">
+        ${idx.logo}
+        <div>${renderMetricTitle(idx.label)}<small>${idx.group} · ${idx.ticker} · $${numberFormatter.format(idx.price)} · ${idx.status}</small></div>
+        <span class="${idx.changeClass}">${idx.changeLabel}</span>
       </div>
     `;
-  });
-  list.innerHTML = `
-    <div class="index-track">
-      ${cards.join("")}
-      <div class="index-clone" aria-hidden="true">${cards.join("")}</div>
-    </div>
-  `;
-  list.querySelectorAll(".index-track > .index-card").forEach((card, index) => {
-    const ticker = INDEX_MONITOR_LIST[index]?.ticker;
-    const previous = previousRealtimeValues.index[ticker];
-    if (typeof previous === "number") markRealtimeChange(card, nextValues[ticker] - previous, (amount) => `${amount >= 0 ? "+" : ""}${amount.toFixed(2)}%`);
+  const track = list.querySelector(".index-track");
+  const expectedCards = INDEX_MONITOR_LIST.length * 2;
+  if (!track || list.querySelectorAll(".index-card").length !== expectedCards) {
+    const cards = snapshots.map(cardMarkup).join("");
+    list.innerHTML = `
+      <div class="index-track">
+        ${cards}
+        <div class="index-clone" aria-hidden="true">${cards}</div>
+      </div>
+    `;
+  } else {
+    snapshots.forEach((idx) => {
+      list.querySelectorAll(`.index-card[data-ticker="${idx.ticker}"]`).forEach((card) => {
+        card.classList.remove("positive-glow", "negative-glow", "neutral-glow");
+        card.classList.add(idx.glow);
+        const detail = card.querySelector("small");
+        const value = card.querySelector(":scope > span");
+        if (detail) detail.textContent = `${idx.group} · ${idx.ticker} · $${numberFormatter.format(idx.price)} · ${idx.status}`;
+        if (value) {
+          value.className = idx.changeClass;
+          value.textContent = idx.changeLabel;
+        }
+      });
+    });
+  }
+  snapshots.forEach((idx) => {
+    const previous = previousRealtimeValues.index[idx.ticker];
+    if (typeof previous === "number") {
+      list.querySelectorAll(`.index-track > .index-card[data-ticker="${idx.ticker}"]`).forEach((card) => {
+        markRealtimeChange(card, nextValues[idx.ticker] - previous, (amount) => `${amount >= 0 ? "+" : ""}${amount.toFixed(2)}%`);
+      });
+    }
   });
   previousRealtimeValues.index = nextValues;
 }
