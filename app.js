@@ -5,7 +5,39 @@ const DIVIDEND_TAX_RATE = 0.15;
 const DEFAULT_USDKRW = 1380;
 const DEFAULT_PROXY_BASE_URL = "";
 const PROXY_STORAGE_KEY = "assetpilot-proxy-base-url";
+const FX_API_PRIMARY_URL = "https://api.frankfurter.app/latest?from=USD&to=KRW";
+const FX_API_FALLBACK_URL = "https://open.er-api.com/v6/latest/USD";
 const ALLOCATION_RATIOS_KEY = "assetpilot-allocation-ratios-v1";
+
+function getKstNowParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    hourCycle: "h23"
+  }).formatToParts(date).reduce((acc, part) => {
+    if (part.type !== "literal") acc[part.type] = part.value;
+    return acc;
+  }, {});
+
+  return {
+    hours: Number(parts.hour),
+    minutes: Number(parts.minute),
+    dateKey: `${parts.year}-${parts.month}-${parts.day}`
+  };
+}
+
+function currentFxSlot() {
+  const { hours, minutes } = getKstNowParts();
+  const minutesNow = hours * 60 + minutes;
+  if (minutesNow >= 9 * 60 && minutesNow < 15 * 60 + 30) return "open";
+  if (minutesNow >= 15 * 60 + 30) return "close";
+  return null;
+}
 const COINGECKO_IDS = {
   BTC: "bitcoin",
   ETH: "ethereum",
@@ -87,7 +119,9 @@ const seedState = {
     mode: "auto",
     manualUsdkrw: DEFAULT_USDKRW,
     source: "manual",
-    updatedAt: null
+    updatedAt: null,
+    lastAutoFetchDate: null,
+    lastAutoFetchSlot: null
   },
   market: {
     lastUpdatedAt: null,
@@ -1739,7 +1773,11 @@ function renderTrend() {
 
 function renderFx() {
   document.querySelector("#fxRateLabel").textContent = fxFormatter.format(currentUsdKrw());
-  const source = state.fx.source === "hana" ? "하나은행 기준" : state.fx.source === "fallback" ? "환율 API 기준(폴백)" : "수동 기준";
+  const source = state.fx.source === "hana" ? "하나은행 기준"
+    : state.fx.source === "frankfurter" ? "환율 API 기준 (Frankfurter)"
+    : state.fx.source === "exchangerate-api" ? "환율 API 기준 (폴백)"
+    : state.fx.source === "fallback" ? "환율 API 기준 (폴백)"
+    : "수동 기준";
   document.querySelector("#fxSourceLabel").textContent = `${source} · ${state.fx.updatedAt ? `${formatClock(state.fx.updatedAt)} 갱신` : "업데이트 대기"}`;
   document.querySelector("#manualFxToggle").checked = state.fx.mode === "manual";
   document.querySelector("#manualFxInput").value = state.fx.manualUsdkrw || currentUsdKrw();
@@ -2217,27 +2255,75 @@ async function refreshQuotes() {
   }
 }
 
+async function fetchFxRateFrankfurter() {
+  const response = await fetch(FX_API_PRIMARY_URL);
+  if (!response.ok) throw new Error("Frankfurter 환율 조회 실패");
+  const data = await response.json();
+  const rate = data.rates && data.rates.KRW;
+  if (!rate) throw new Error("Frankfurter 응답에 KRW 없음");
+  return Number(rate);
+}
+
+async function fetchFxRateExchangeRateApi() {
+  const response = await fetch(FX_API_FALLBACK_URL);
+  if (!response.ok) throw new Error("ExchangeRate-API 환율 조회 실패");
+  const data = await response.json();
+  const rate = data.rates && data.rates.KRW;
+  if (!rate) throw new Error("ExchangeRate-API 응답에 KRW 없음");
+  return Number(rate);
+}
+
 async function refreshFxRate() {
+  if (state.fx.mode === "manual") return;
+
+  const { dateKey } = getKstNowParts();
+  const slot = currentFxSlot();
+  if (!slot) return;
+  if (state.fx.lastAutoFetchDate === dateKey && state.fx.lastAutoFetchSlot === slot) return;
+
   const baseUrl = proxyBaseUrl();
-  if (state.fx.mode === "manual" || !baseUrl) return;
-  try {
-    const response = await fetch(`${baseUrl}/fxrate`);
-    if (!response.ok) throw new Error("환율을 가져오지 못했습니다.");
-    const data = await response.json();
-    const usdkrw = Number(data.usdkrw);
-    if (!usdkrw) throw new Error("환율 응답이 올바르지 않습니다.");
-    state.fx.usdkrw = usdkrw;
-    state.fx.source = data.source || "fallback";
-    state.fx.updatedAt = data.updatedAt || new Date().toISOString();
-    Object.values(state.assetCatalog).forEach((asset) => {
-      if (asset.currency === "USD") asset.currentFx = usdkrw;
-    });
-    saveState({ snapshot: true });
-    render();
-  } catch {
-    state.fx.source = "manual";
-    renderFx();
+  let usdkrw = null;
+  let source = null;
+  let updatedAt = new Date().toISOString();
+
+  if (baseUrl) {
+    try {
+      const response = await fetch(`${baseUrl}/fxrate`);
+      if (!response.ok) throw new Error("환율을 가져오지 못했습니다.");
+      const data = await response.json();
+      usdkrw = Number(data.usdkrw);
+      if (!usdkrw) throw new Error("환율 응답이 올바르지 않습니다.");
+      source = data.source === "fallback" ? "fallback" : "hana";
+      updatedAt = data.updatedAt || updatedAt;
+    } catch (error) {
+      console.warn("프록시 환율 갱신 실패", error);
+    }
+  } else {
+    try {
+      usdkrw = await fetchFxRateFrankfurter();
+      source = "frankfurter";
+    } catch (primaryError) {
+      try {
+        usdkrw = await fetchFxRateExchangeRateApi();
+        source = "exchangerate-api";
+      } catch (fallbackError) {
+        console.warn("환율 자동 갱신 실패", primaryError, fallbackError);
+      }
+    }
   }
+
+  if (!usdkrw || !source) return;
+
+  state.fx.usdkrw = usdkrw;
+  state.fx.source = source;
+  state.fx.updatedAt = updatedAt;
+  state.fx.lastAutoFetchDate = dateKey;
+  state.fx.lastAutoFetchSlot = slot;
+  Object.values(state.assetCatalog).forEach((asset) => {
+    if (asset.currency === "USD") asset.currentFx = usdkrw;
+  });
+  saveState({ snapshot: true });
+  render();
 }
 
 function startPolling() {
@@ -2246,7 +2332,7 @@ function startPolling() {
   clearInterval(pollingTimer);
   clearInterval(fxTimer);
   pollingTimer = setInterval(refreshQuotes, 60000);
-  fxTimer = setInterval(refreshFxRate, 60 * 60 * 1000);
+  fxTimer = setInterval(refreshFxRate, 5 * 60 * 1000);
 }
 
 document.querySelectorAll("[data-view]").forEach((button) => {
