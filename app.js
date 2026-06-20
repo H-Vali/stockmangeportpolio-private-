@@ -1746,8 +1746,7 @@ function renderFx() {
   document.querySelector("#manualFxInput").disabled = state.fx.mode !== "manual";
   const usdtRate = Number(state.cryptoQuoteFx?.rate || 0);
   document.querySelector("#usdtKrwLabel").textContent = usdtRate ? fxFormatter.format(usdtRate) : "대기 중";
-  const usdtSource = state.cryptoQuoteFx?.source || "USDT/KRW";
-  document.querySelector("#usdtKrwSourceLabel").textContent = `${usdtSource} · ${state.cryptoQuoteFx?.updatedAt ? `${formatClock(state.cryptoQuoteFx.updatedAt)} 갱신` : "업데이트 대기"}`;
+  document.querySelector("#usdtKrwSourceLabel").textContent = state.cryptoQuoteFx?.updatedAt ? `${formatClock(state.cryptoQuoteFx.updatedAt)} 갱신` : "업데이트 대기";
 }
 
 function renderMarketStatus() {
