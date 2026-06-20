@@ -193,6 +193,28 @@ td:nth-child(n + 3) {
   margin-top: 8px;
 }
 
+.sidebar-fx-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.sidebar-rate-card {
+  padding: 13px;
+}
+
+.sidebar-rate-card strong {
+  font-size: 24px;
+  line-height: 1.08;
+}
+
+.sidebar-rate-card .compact-input {
+  min-height: 34px;
+}
+
+.sidebar-rate-card .mini-toggle {
+  margin-top: 10px;
+}
+
 .fx-panel {
   background:
     linear-gradient(180deg, rgba(124, 92, 252, 0.08), rgba(21, 21, 28, 0.96)),
