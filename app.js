@@ -96,6 +96,11 @@ const seedState = {
     error: null
   },
   overseasPriceSource: "seed",
+  cryptoQuoteFx: {
+    rate: null,
+    source: null,
+    updatedAt: null
+  },
   snapshots: [],
   investors: [
     { id: "kim", name: "김지훈", initials: "김" },
@@ -161,8 +166,6 @@ let dividendDetailOpen = false;
 let ledgerExpanded = false;
 
 const formatter = new Intl.NumberFormat("ko-KR", {
-  style: "currency",
-  currency: "KRW",
   maximumFractionDigits: 0
 });
 
@@ -209,6 +212,7 @@ function normalizeState(input) {
     fx: { ...base.fx, ...(parsed.fx || {}) },
     market: { ...base.market, ...(parsed.market || {}) },
     overseasPriceSource: parsed.overseasPriceSource || base.overseasPriceSource,
+    cryptoQuoteFx: { ...base.cryptoQuoteFx, ...(parsed.cryptoQuoteFx || {}) },
     snapshots: Array.isArray(parsed.snapshots) ? parsed.snapshots : [],
     indexQuotes: parsed.indexQuotes || {},
     investors: parsed.investors,
@@ -292,7 +296,7 @@ function loadAllocationRatios() {
 }
 
 function money(value) {
-  return formatter.format(Math.round(value || 0));
+  return `KRW ${formatter.format(Math.round(value || 0))}`;
 }
 
 function moneyParts(value) {
@@ -360,8 +364,8 @@ function signedPercentChange(value) {
 
 function formatCompact(value) {
   const abs = Math.abs(value);
-  if (abs >= 100000000) return `₩${(value / 100000000).toFixed(1)}억`;
-  if (abs >= 10000) return `₩${(value / 10000).toFixed(1)}만`;
+  if (abs >= 100000000) return `KRW ${(value / 100000000).toFixed(1)}억`;
+  if (abs >= 10000) return `KRW ${(value / 10000).toFixed(1)}만`;
   return money(value);
 }
 
@@ -978,6 +982,12 @@ function overseasPriceSourceLabel() {
   return "시드 데이터";
 }
 
+function cryptoQuoteFxLabel(item = {}) {
+  const rate = item.quoteFx || state.cryptoQuoteFx?.rate || currentUsdKrw();
+  const source = item.quoteFxSource || state.cryptoQuoteFx?.source || "USD/KRW";
+  return `${source} ${fxFormatter.format(rate)}`;
+}
+
 function renderMarket() {
   const list = document.querySelector("#marketList");
   list.innerHTML = "";
@@ -991,7 +1001,7 @@ function renderMarket() {
     row.innerHTML = `
       <div class="market-title-row">
         ${renderCryptoLogo(item.symbol)}
-        <div>${renderMetricTitle(item.symbol)}<small>국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)} · ${sourceLabel}</small></div>
+        <div>${renderMetricTitle(item.symbol)}<small>국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)} · ${sourceLabel} · ${cryptoQuoteFxLabel(item)}</small></div>
       </div>
       <span class="${premium >= 0 ? "positive" : "negative"}">${premium >= 0 ? "+" : ""}${pct(premium)}</span>
     `;
@@ -1783,8 +1793,8 @@ function renderDividendSimulation() {
   const periodAfterTax = first.afterTax / scenario.frequency;
   const totalReturnOnCost = scenario.principal ? (last.cumulativeAfterTax / scenario.principal) * 100 : 0;
   const monthlyAfterTax = first.afterTax / 12;
-  const nativeSymbol = scenario.currency === "USD" ? "$" : "₩";
-  const basisText = `${qty(scenario.quantity)}주 × ${nativeSymbol}${numberFormatter.format(scenario.price)} × ${numberFormatter.format(scenario.fx)}`;
+  const nativePrefix = scenario.currency === "USD" ? "$" : "KRW ";
+  const basisText = `${qty(scenario.quantity)}주 × ${nativePrefix}${numberFormatter.format(scenario.price)} × ${numberFormatter.format(scenario.fx)}`;
   const afterTaxYield = scenario.annualYield * (1 - DIVIDEND_TAX_RATE) * 100;
   const growthText = `성장률 ${pct(scenario.growthRate * 100)} 가정`;
 
@@ -1795,7 +1805,7 @@ function renderDividendSimulation() {
         <strong>${money(first.afterTax)}</strong>
       </div>
       <span>월 평균 <b>${money(monthlyAfterTax)}</b></span>
-      <span>세전 <b>${nativeSymbol}${numberFormatter.format(scenario.annualBeforeTaxNative)}</b> (${money(first.beforeTax)})</span>
+      <span>세전 <b>${nativePrefix}${numberFormatter.format(scenario.annualBeforeTaxNative)}</b> (${money(first.beforeTax)})</span>
     </div>
     <div class="sim-result-sub">
       <div>
@@ -1865,7 +1875,7 @@ function renderTargetDividend(scenario) {
   const requiredPrincipal = requiredAnnualAfterTax / effectiveYield;
   const requiredQuantity = requiredPrincipal / scenario.priceKrw;
   const additionalQuantity = requiredQuantity - scenario.quantity;
-  const basis = `현재 종목 단가(${scenario.currency === "USD" ? "$" : "₩"}${numberFormatter.format(scenario.price)})·환율(${numberFormatter.format(scenario.fx)})·배당수익률(${pct(scenario.annualYield * 100)}) 기준`;
+  const basis = `현재 종목 단가(${scenario.currency === "USD" ? "$" : "KRW "}${numberFormatter.format(scenario.price)})·환율(${numberFormatter.format(scenario.fx)})·배당수익률(${pct(scenario.annualYield * 100)}) 기준`;
   const message = additionalQuantity > 0
     ? `현재 보유수량 대비 추가 매수 ${qty(additionalQuantity)}주 필요`
     : "이미 목표 초과 달성";
@@ -1976,6 +1986,28 @@ async function fetchOverseasPrices(symbols) {
   }
 }
 
+async function fetchCryptoQuoteFx() {
+  try {
+    const response = await fetch("https://api.bithumb.com/public/ticker/USDT_KRW");
+    if (!response.ok) throw new Error("빗썸 USDT/KRW 시세를 가져오지 못했습니다.");
+    const data = await response.json();
+    const rate = Number(data?.data?.closing_price);
+    if (!rate) throw new Error("빗썸 USDT/KRW 응답이 올바르지 않습니다.");
+    const quoteFx = { rate, source: "USDT/KRW", updatedAt: new Date().toISOString() };
+    state.cryptoQuoteFx = quoteFx;
+    return quoteFx;
+  } catch (error) {
+    console.warn("USDT/KRW 조회 실패, 앱 USD/KRW 환율로 폴백합니다.", error);
+    const quoteFx = {
+      rate: currentUsdKrw(),
+      source: state.fx.mode === "manual" ? "수동 USD/KRW" : "USD/KRW",
+      updatedAt: state.fx.updatedAt || new Date().toISOString()
+    };
+    state.cryptoQuoteFx = quoteFx;
+    return quoteFx;
+  }
+}
+
 async function updateCoinQuotes() {
   const coinHoldings = replayHoldings().filter((holding) => holding.type === "코인");
   const indicatorSymbols = (state.marketIndicators || [])
@@ -1987,6 +2019,7 @@ async function updateCoinQuotes() {
   ])];
   if (!symbols.length) return;
   const overseas = await fetchOverseasPrices(symbols);
+  const quoteFx = await fetchCryptoQuoteFx();
 
   for (const symbol of symbols) {
     try {
@@ -1998,11 +2031,18 @@ async function updateCoinQuotes() {
       const asset = state.assetCatalog[symbol];
       if (asset && globalUsd) {
         asset.currentPrice = globalUsd;
-        asset.currentFx = currentUsdKrw();
+        asset.currentFx = quoteFx.rate;
       }
       if (domestic && globalUsd) {
-        const globalKrw = globalUsd * currentUsdKrw();
-        const next = { symbol, domestic, globalKrw, updatedAt: new Date().toISOString() };
+        const globalKrw = globalUsd * quoteFx.rate;
+        const next = {
+          symbol,
+          domestic,
+          globalKrw,
+          quoteFx: quoteFx.rate,
+          quoteFxSource: quoteFx.source,
+          updatedAt: new Date().toISOString()
+        };
         const index = state.marketIndicators.findIndex((item) => item.symbol === symbol);
         if (index >= 0) state.marketIndicators[index] = next;
         else state.marketIndicators.push(next);
