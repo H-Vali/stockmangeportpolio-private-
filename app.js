@@ -17,6 +17,18 @@ const COINGECKO_IDS = {
   AVAX: "avalanche-2",
   LINK: "chainlink"
 };
+// 주의: Binance는 USDT 기준가를 반환함. USDT는 통상 1달러에 근접하나 완전히 동일하지는 않음.
+const BINANCE_SYMBOLS = {
+  BTC: "BTCUSDT",
+  ETH: "ETHUSDT",
+  SOL: "SOLUSDT",
+  XRP: "XRPUSDT",
+  ADA: "ADAUSDT",
+  DOGE: "DOGEUSDT",
+  AVAX: "AVAXUSDT",
+  LINK: "LINKUSDT",
+  BNB: "BNBUSDT"
+};
 const CRYPTO_LOGOS = {
   BTC: "https://cdn.simpleicons.org/bitcoin/f7931a",
   ETH: "https://cdn.simpleicons.org/ethereum/627eea",
@@ -83,6 +95,7 @@ const seedState = {
     lastSuccessAt: null,
     error: null
   },
+  overseasPriceSource: "seed",
   snapshots: [],
   investors: [
     { id: "kim", name: "김지훈", initials: "김" },
@@ -195,6 +208,7 @@ function normalizeState(input) {
     schemaVersion: parsed.schemaVersion || 1,
     fx: { ...base.fx, ...(parsed.fx || {}) },
     market: { ...base.market, ...(parsed.market || {}) },
+    overseasPriceSource: parsed.overseasPriceSource || base.overseasPriceSource,
     snapshots: Array.isArray(parsed.snapshots) ? parsed.snapshots : [],
     indexQuotes: parsed.indexQuotes || {},
     investors: parsed.investors,
@@ -374,18 +388,9 @@ function nudgeValue(value, percent, minimum = 0) {
 function triggerDashboardChangeDemo(options = {}) {
   const silent = Boolean(options.silent);
   const now = new Date().toISOString();
-  state.marketIndicators = mergeMarketIndicators(state.marketIndicators, seedState.marketIndicators).map((item) => {
-    const domesticMove = randomBetween(-0.42, 0.58);
-    const globalMove = randomBetween(-0.34, 0.46);
-    return {
-      ...item,
-      domestic: Math.round(nudgeValue(item.domestic, domesticMove, 1)),
-      globalKrw: Math.round(nudgeValue(item.globalKrw, globalMove, 1)),
-      updatedAt: now
-    };
-  });
 
   replayHoldings().forEach((holding) => {
+    if (holding.type === "코인") return;
     const asset = state.assetCatalog[holding.ticker];
     if (asset?.currentPrice) {
       asset.currentPrice = Number(nudgeValue(asset.currentPrice, randomBetween(-0.36, 0.44), 0.0001).toFixed(asset.currency === "KRW" ? 0 : 2));
@@ -406,14 +411,6 @@ function triggerDashboardChangeDemo(options = {}) {
       changePercent: Math.max(-7.5, Math.min(7.5, Number(((existing?.changePercent || 0) + move).toFixed(2)))),
       updatedAt: now
     };
-  });
-
-  state.marketIndicators.forEach((item) => {
-    const asset = state.assetCatalog[item.symbol];
-    if (asset && item.globalKrw) {
-      asset.currentPrice = Number((item.globalKrw / currentUsdKrw()).toFixed(2));
-      asset.currentFx = currentUsdKrw();
-    }
   });
 
   render();
@@ -974,9 +971,17 @@ function clearHoldingsFilter() {
   if (banner) banner.classList.remove("active");
 }
 
+function overseasPriceSourceLabel() {
+  if (state.overseasPriceSource === "binance") return "Binance 기준";
+  if (state.overseasPriceSource === "mixed") return "Binance+CoinGecko 기준";
+  if (state.overseasPriceSource === "coingecko") return "CoinGecko 기준(폴백)";
+  return "시드 데이터";
+}
+
 function renderMarket() {
   const list = document.querySelector("#marketList");
   list.innerHTML = "";
+  const sourceLabel = overseasPriceSourceLabel();
   const nextValues = {};
   state.marketIndicators.forEach((item) => {
     const premium = item.globalKrw ? ((item.domestic / item.globalKrw) - 1) * 100 : 0;
@@ -986,7 +991,7 @@ function renderMarket() {
     row.innerHTML = `
       <div class="market-title-row">
         ${renderCryptoLogo(item.symbol)}
-        <div>${renderMetricTitle(item.symbol)}<small>국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)}</small></div>
+        <div>${renderMetricTitle(item.symbol)}<small>국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)} · ${sourceLabel}</small></div>
       </div>
       <span class="${premium >= 0 ? "positive" : "negative"}">${premium >= 0 ? "+" : ""}${pct(premium)}</span>
     `;
@@ -1925,41 +1930,85 @@ function openDialog(dialog) {
   if (typeof dialog.showModal === "function") dialog.showModal();
 }
 
+async function fetchOverseasPricesBinance(symbols) {
+  const overseas = {};
+  for (const symbol of symbols) {
+    const binanceSymbol = BINANCE_SYMBOLS[symbol];
+    if (!binanceSymbol) continue;
+    const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${binanceSymbol}`);
+    if (!response.ok) throw new Error(`Binance 시세를 가져오지 못했습니다: ${symbol}`);
+    const data = await response.json();
+    if (data.price) overseas[symbol] = Number(data.price);
+  }
+  return overseas;
+}
+
+async function fetchOverseasPricesCoinGecko(symbols) {
+  const coingeckoIds = symbols.map((symbol) => COINGECKO_IDS[symbol]).filter(Boolean);
+  if (!coingeckoIds.length) return {};
+  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoIds.join(",")}&vs_currencies=usd`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("CoinGecko 시세를 가져오지 못했습니다.");
+  const data = await response.json();
+  const overseas = {};
+  symbols.forEach((symbol) => {
+    const id = COINGECKO_IDS[symbol];
+    if (data[id]?.usd) overseas[symbol] = data[id].usd;
+  });
+  return overseas;
+}
+
+async function fetchOverseasPrices(symbols) {
+  try {
+    const result = await fetchOverseasPricesBinance(symbols);
+    const missing = symbols.filter((symbol) => !result[symbol]);
+    if (!missing.length) {
+      state.overseasPriceSource = "binance";
+      return result;
+    }
+    const fallback = await fetchOverseasPricesCoinGecko(missing);
+    state.overseasPriceSource = Object.keys(result).length ? "mixed" : "coingecko";
+    return { ...result, ...fallback };
+  } catch (error) {
+    console.warn("Binance 시세 조회 실패, CoinGecko로 폴백합니다.", error);
+    state.overseasPriceSource = "coingecko";
+    return fetchOverseasPricesCoinGecko(symbols);
+  }
+}
+
 async function updateCoinQuotes() {
   const coinHoldings = replayHoldings().filter((holding) => holding.type === "코인");
-  const symbols = [...new Set(coinHoldings.map((holding) => holding.ticker.toUpperCase()))];
+  const indicatorSymbols = (state.marketIndicators || [])
+    .map((item) => item.symbol?.toUpperCase())
+    .filter((symbol) => BINANCE_SYMBOLS[symbol] || COINGECKO_IDS[symbol]);
+  const symbols = [...new Set([
+    ...coinHoldings.map((holding) => holding.ticker.toUpperCase()),
+    ...indicatorSymbols
+  ])];
   if (!symbols.length) return;
-  const coingeckoIds = symbols.map((symbol) => COINGECKO_IDS[symbol]).filter(Boolean);
-  const overseas = {};
-
-  if (coingeckoIds.length) {
-    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoIds.join(",")}&vs_currencies=usd`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("CoinGecko 시세를 가져오지 못했습니다.");
-    const data = await response.json();
-    symbols.forEach((symbol) => {
-      const id = COINGECKO_IDS[symbol];
-      if (data[id]?.usd) overseas[symbol] = data[id].usd;
-    });
-  }
+  const overseas = await fetchOverseasPrices(symbols);
 
   for (const symbol of symbols) {
-    const bithumbResponse = await fetch(`https://api.bithumb.com/public/ticker/${symbol}_KRW`);
-    if (!bithumbResponse.ok) throw new Error("빗썸 시세를 가져오지 못했습니다.");
-    const bithumb = await bithumbResponse.json();
-    const domestic = Number(bithumb?.data?.closing_price);
-    const globalUsd = overseas[symbol];
-    const asset = state.assetCatalog[symbol];
-    if (asset && globalUsd) {
-      asset.currentPrice = globalUsd;
-      asset.currentFx = currentUsdKrw();
-    }
-    if (domestic && globalUsd) {
-      const globalKrw = globalUsd * currentUsdKrw();
-      const next = { symbol, domestic, globalKrw, updatedAt: new Date().toISOString() };
-      const index = state.marketIndicators.findIndex((item) => item.symbol === symbol);
-      if (index >= 0) state.marketIndicators[index] = next;
-      else state.marketIndicators.push(next);
+    try {
+      const bithumbResponse = await fetch(`https://api.bithumb.com/public/ticker/${symbol}_KRW`);
+      if (!bithumbResponse.ok) throw new Error(`빗썸 시세를 가져오지 못했습니다: ${symbol}`);
+      const bithumb = await bithumbResponse.json();
+      const domestic = Number(bithumb?.data?.closing_price);
+      const globalUsd = overseas[symbol];
+      const asset = state.assetCatalog[symbol];
+      if (asset && globalUsd) {
+        asset.currentPrice = globalUsd;
+        asset.currentFx = currentUsdKrw();
+      }
+      if (domestic && globalUsd) {
+        const globalKrw = globalUsd * currentUsdKrw();
+        const next = { symbol, domestic, globalKrw, updatedAt: new Date().toISOString() };
+        const index = state.marketIndicators.findIndex((item) => item.symbol === symbol);
+        if (index >= 0) state.marketIndicators[index] = next;
+        else state.marketIndicators.push(next);
+      }
+    } catch (error) {
+      console.warn("국내 코인 시세 조회를 건너뜁니다.", error);
     }
   }
 }
