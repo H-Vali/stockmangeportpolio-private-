@@ -1786,6 +1786,85 @@ tbody tr:hover {
   color: var(--down);
 }
 
+.quick-trade-divider {
+  border-top: 1px solid var(--line);
+  margin: 14px 0;
+}
+
+.quick-trade {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-trade select,
+.quick-trade input {
+  width: 100%;
+  min-width: 0;
+}
+
+.quick-trade-side {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.side-btn {
+  flex: 1;
+  min-height: 34px;
+  border: 0;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.side-btn.active.buy {
+  background: var(--up);
+  color: #fff;
+}
+
+.side-btn.active.sell {
+  background: var(--down);
+  color: #fff;
+}
+
+.quick-trade-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.quick-trade-preview {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(124, 92, 252, 0.4);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.quick-trade-preview strong {
+  color: var(--violet-3);
+}
+
+.quick-trade-hint {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.quick-trade-hint a {
+  color: var(--violet-3);
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .holdings-filter-banner.active {
   display: flex;
 }

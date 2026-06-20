@@ -18,7 +18,7 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260620-investor-insight-order" />
+    <link rel="stylesheet" href="./styles.css?v=20260620-investor-layout-quick-trade" />
   </head>
   <body>
     <div class="app-shell">
@@ -274,6 +274,23 @@
                     <a href="#holdings" class="ghost-button" data-expand-ledger>전체보기 →</a>
                   </div>
                   <div class="market-list" id="investorHoldingsPreview"></div>
+                  <div class="quick-trade" id="quickTrade">
+                    <div class="quick-trade-divider"></div>
+                    <p class="eyebrow">빠른 매수·매도</p>
+                    <select id="quickTradeTicker"></select>
+                    <div class="quick-trade-side">
+                      <button type="button" id="quickTradeBuy" class="side-btn active buy">매수</button>
+                      <button type="button" id="quickTradeSell" class="side-btn">매도</button>
+                    </div>
+                    <div class="quick-trade-row">
+                      <input type="number" id="quickTradeQty" placeholder="수량" min="0" step="any" />
+                      <input type="number" id="quickTradePrice" placeholder="체결가" min="0" step="any" />
+                    </div>
+                    <input type="number" id="quickTradeFx" placeholder="매입 환율" min="0" step="any" />
+                    <button type="button" id="quickTradeSubmit" class="primary-button">추가</button>
+                    <div class="quick-trade-preview" id="quickTradePreview" hidden></div>
+                    <p class="quick-trade-hint">새 종목은 <a href="#" id="openTradeModalLink">거래 입력 모달</a>에서 추가하세요</p>
+                  </div>
                 </div>
               </div>
 
@@ -547,6 +564,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260620-investor-insight-order"></script>
+    <script src="./app.js?v=20260620-investor-layout-quick-trade"></script>
   </body>
 </html>

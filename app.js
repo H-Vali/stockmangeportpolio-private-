@@ -62,6 +62,7 @@ let previousRealtimeValues = {
   index: {}
 };
 let holdingsTypeFilter = null;
+let quickTradeSide = "buy";
 
 const seedState = {
   schemaVersion: SCHEMA_VERSION,
@@ -502,6 +503,89 @@ function ensureAssetFromTrade(trade) {
     currentFx: existing?.currentFx ?? trade.fx,
     annualDividend: existing?.annualDividend ?? 0
   };
+}
+
+function computeAveragingPreview({ ownerId, side, ticker, quantity, price, fx, currency, currentFx, currentPrice }) {
+  const before = replayHoldings(ownerId).find((holding) => holding.ticker === ticker);
+  const tradeForeign = quantity * price;
+  const tradeKrw = tradeForeign * fx;
+
+  if (!ticker || !quantity || !price) {
+    return { before, text: "종목, 수량, 체결가를 입력하면 물타기 결과가 표시됩니다." };
+  }
+
+  if (side === "sell") {
+    return {
+      before,
+      text: `예상 매도대금 ${money(tradeKrw)} · 보유수량 ${qty(before?.quantity || 0)}`,
+      proceeds: tradeKrw
+    };
+  }
+
+  const prevQty = before?.quantity || 0;
+  const prevForeign = before?.costForeign || 0;
+  const prevKrw = before?.costKrw || 0;
+  const nextQty = prevQty + quantity;
+  const nextForeign = prevForeign + tradeForeign;
+  const nextKrw = prevKrw + tradeKrw;
+  const beforeAvgPrice = prevQty ? prevForeign / prevQty : 0;
+  const beforeAvgFx = prevForeign ? prevKrw / prevForeign : fx;
+  const afterAvgPrice = nextQty ? nextForeign / nextQty : 0;
+  const afterAvgFx = nextForeign ? nextKrw / nextForeign : fx;
+  const expectedValue = nextQty * currentPrice * currentFx;
+  const expectedProfit = expectedValue - nextKrw;
+  return {
+    before,
+    beforeAvgPrice,
+    beforeAvgFx,
+    afterAvgPrice,
+    afterAvgFx,
+    expectedProfit,
+    text: `매수 후 수량 ${qty(nextQty)} · 새 평단 ${money(afterAvgPrice * afterAvgFx)} · 평균환율 ${qty(afterAvgFx)} · 예상손익 ${signedMoney(expectedProfit)}`
+  };
+}
+
+function commitTrade(data) {
+  const ticker = data.ticker.trim().toUpperCase();
+  const asset = getAsset(ticker, data);
+  const currency = data.currency || asset.currency;
+  const fx = currency === "KRW" ? 1 : Number(data.fx || asset.currentFx || currentUsdKrw());
+  const currentFx = currency === "KRW" ? 1 : Number(data.currentFx || asset.currentFx || fx);
+  const currentPrice = Number(data.currentPrice || asset.currentPrice || data.price);
+  const quantity = Number(data.quantity) || 0;
+  const price = Number(data.price) || 0;
+  const amount = quantity * price * fx;
+  const existing = replayHoldings(data.ownerId).find((holding) => holding.ticker === ticker);
+
+  if (!ticker || !quantity || !price) return { ok: false, message: "종목, 수량, 체결가를 입력하세요." };
+  if (data.side === "buy" && cashBalance(data.ownerId) < amount) {
+    return { ok: false, field: "quantity", message: "매수금액이 예수금을 초과합니다." };
+  }
+  if (data.side === "sell" && (!existing || existing.quantity < quantity)) {
+    return { ok: false, field: "quantity", message: "매도수량이 보유수량을 초과합니다." };
+  }
+
+  const trade = {
+    id: crypto.randomUUID(),
+    ownerId: data.ownerId,
+    date: data.date || new Date().toISOString().slice(0, 10),
+    side: data.side,
+    ticker,
+    name: data.name || asset.name || ticker,
+    type: data.type || asset.type,
+    currency,
+    quantity,
+    price,
+    fx,
+    memo: data.memo || ""
+  };
+  ensureAssetFromTrade({ ...trade, price: currentPrice, fx: currentFx });
+  state.assetCatalog[ticker].currentPrice = currentPrice;
+  state.assetCatalog[ticker].currentFx = currentFx;
+  state.trades.push(trade);
+  saveState();
+  render();
+  return { ok: true, trade };
 }
 
 function replayHoldings(ownerId) {
@@ -1031,6 +1115,7 @@ function renderInvestorSheet() {
   renderUpcomingDividend();
   renderInvestorProfitBreakdown();
   renderInvestorActivityTimeline();
+  populateQuickTradeTicker();
   renderCashflows();
   renderTradePreview();
 }
@@ -1158,6 +1243,156 @@ function renderInvestorActivityTimeline() {
       `;
     })
     .join("");
+}
+
+function quickTradeAsset() {
+  const ticker = document.querySelector("#quickTradeTicker")?.value;
+  return ticker ? state.assetCatalog[ticker] : null;
+}
+
+function shouldShowQuickTradeFx(asset) {
+  return asset?.currency === "USD" && asset?.type !== "코인";
+}
+
+function populateQuickTradeTicker() {
+  const select = document.querySelector("#quickTradeTicker");
+  if (!select) return;
+  const current = select.value;
+  const holdings = replayHoldings(state.selectedInvestorId);
+  select.innerHTML = holdings.length
+    ? holdings.map((item) => `<option value="${item.ticker}">${item.ticker} · ${item.name || item.ticker}</option>`).join("")
+    : `<option value="">보유 종목 없음</option>`;
+  if (holdings.some((item) => item.ticker === current)) select.value = current;
+  updateQuickTradeDefaults();
+}
+
+function updateQuickTradeDefaults() {
+  const asset = quickTradeAsset();
+  const fxInput = document.querySelector("#quickTradeFx");
+  const priceInput = document.querySelector("#quickTradePrice");
+  const submit = document.querySelector("#quickTradeSubmit");
+  if (!fxInput || !priceInput) return;
+  if (!asset) {
+    fxInput.style.display = "none";
+    if (submit) submit.disabled = true;
+    renderQuickTradePreview();
+    return;
+  }
+  if (submit) submit.disabled = false;
+  fxInput.style.display = shouldShowQuickTradeFx(asset) ? "" : "none";
+  if (!fxInput.value) fxInput.value = asset.currency === "KRW" ? 1 : Math.round(asset.currentFx || currentUsdKrw());
+  if (!priceInput.value) priceInput.value = asset.currentPrice || "";
+  renderQuickTradePreview();
+}
+
+function renderQuickTradePreview() {
+  const preview = document.querySelector("#quickTradePreview");
+  if (!preview) return;
+  const ticker = document.querySelector("#quickTradeTicker")?.value;
+  const asset = quickTradeAsset();
+  const quantity = Number(document.querySelector("#quickTradeQty")?.value) || 0;
+  const price = Number(document.querySelector("#quickTradePrice")?.value) || 0;
+  if (!ticker || !asset || !quantity || !price) {
+    preview.hidden = true;
+    return;
+  }
+  const fxInput = Number(document.querySelector("#quickTradeFx")?.value) || 0;
+  const fx = asset.currency === "KRW" ? 1 : shouldShowQuickTradeFx(asset) ? fxInput || asset.currentFx || currentUsdKrw() : currentUsdKrw();
+  const result = computeAveragingPreview({
+    ownerId: state.selectedInvestorId,
+    side: quickTradeSide,
+    ticker,
+    quantity,
+    price,
+    fx,
+    currency: asset.currency,
+    currentFx: asset.currency === "KRW" ? 1 : asset.currentFx || fx,
+    currentPrice: asset.currentPrice || price
+  });
+  preview.hidden = false;
+  if (quickTradeSide === "sell") {
+    preview.innerHTML = `<strong>매도 미리보기</strong><span>${result.text}</span>`;
+    return;
+  }
+  preview.innerHTML = `
+    <strong>물타기 미리보기</strong>
+    <span>평단 ${money((result.beforeAvgPrice || 0) * (result.beforeAvgFx || fx))} → ${money((result.afterAvgPrice || 0) * (result.afterAvgFx || fx))}</span>
+    <span>평균환율 ${qty(result.beforeAvgFx || fx)} → ${qty(result.afterAvgFx || fx)}</span>
+  `;
+}
+
+function setQuickTradeSide(side) {
+  quickTradeSide = side;
+  const buyBtn = document.querySelector("#quickTradeBuy");
+  const sellBtn = document.querySelector("#quickTradeSell");
+  buyBtn.classList.toggle("active", side === "buy");
+  buyBtn.classList.toggle("buy", side === "buy");
+  sellBtn.classList.toggle("active", side === "sell");
+  sellBtn.classList.toggle("sell", side === "sell");
+  document.querySelector("#quickTradeSubmit").textContent = side === "buy" ? "매수 추가" : "매도 추가";
+  renderQuickTradePreview();
+}
+
+function resetQuickTradeInputs() {
+  document.querySelector("#quickTradeQty").value = "";
+  document.querySelector("#quickTradePrice").value = "";
+  document.querySelector("#quickTradeFx").value = "";
+  document.querySelector("#quickTradePreview").hidden = true;
+  updateQuickTradeDefaults();
+}
+
+function setupQuickTrade() {
+  document.querySelector("#quickTradeBuy").addEventListener("click", () => setQuickTradeSide("buy"));
+  document.querySelector("#quickTradeSell").addEventListener("click", () => setQuickTradeSide("sell"));
+  document.querySelector("#quickTradeTicker").addEventListener("change", updateQuickTradeDefaults);
+  ["#quickTradeQty", "#quickTradePrice", "#quickTradeFx"].forEach((selector) => {
+    document.querySelector(selector).addEventListener("input", renderQuickTradePreview);
+  });
+  document.querySelector("#quickTradeSubmit").addEventListener("click", () => {
+    const ticker = document.querySelector("#quickTradeTicker").value;
+    const asset = quickTradeAsset();
+    const quantity = Number(document.querySelector("#quickTradeQty").value) || 0;
+    const price = Number(document.querySelector("#quickTradePrice").value) || 0;
+    if (!ticker || !asset || !quantity || !price) {
+      showToast("보유 종목, 수량, 체결가를 입력하세요.", "error");
+      return;
+    }
+    const fxInput = Number(document.querySelector("#quickTradeFx").value) || 0;
+    const fx = asset.currency === "KRW" ? 1 : shouldShowQuickTradeFx(asset) ? fxInput || asset.currentFx || currentUsdKrw() : currentUsdKrw();
+    const result = commitTrade({
+      ownerId: state.selectedInvestorId,
+      side: quickTradeSide,
+      ticker,
+      name: asset.name,
+      type: asset.type,
+      currency: asset.currency,
+      quantity,
+      price,
+      fx,
+      currentPrice: asset.currentPrice || price,
+      currentFx: asset.currency === "KRW" ? 1 : asset.currentFx || fx,
+      date: new Date().toISOString().slice(0, 10),
+      memo: "빠른 입력"
+    });
+    if (!result.ok) {
+      showToast(result.message, "error");
+      return;
+    }
+    resetQuickTradeInputs();
+    showToast(`${ticker} ${quickTradeSide === "buy" ? "매수" : "매도"} 거래를 추가했습니다.`);
+  });
+  document.querySelector("#openTradeModalLink").addEventListener("click", (event) => {
+    event.preventDefault();
+    const form = document.querySelector("#tradeForm");
+    form.reset();
+    populateOwnerSelects();
+    form.elements.ownerId.value = state.selectedInvestorId;
+    form.elements.date.valueAsDate = new Date();
+    form.elements.fx.value = currentUsdKrw();
+    form.elements.currentFx.value = currentUsdKrw();
+    renderTradePreview();
+    openDialog(document.querySelector("#tradeDialog"));
+  });
 }
 
 function renderHoldings() {
@@ -1439,35 +1674,20 @@ function tradePreviewData() {
   const quantity = Number(form.elements.quantity.value) || 0;
   const price = Number(form.elements.price.value) || 0;
   const fx = Number(form.elements.fx.value) || 1;
-  const before = replayHoldings(ownerId).find((holding) => holding.ticker === ticker);
-  const buyForeign = quantity * price;
-  const buyKrw = buyForeign * fx;
-
-  if (!ticker || !quantity || !price) {
-    return { before, text: "종목, 수량, 체결가를 입력하면 물타기 결과가 표시됩니다." };
-  }
-
-  if (side === "sell") {
-    return { before, text: `예상 매도대금 ${money(buyKrw)} · 보유수량 ${qty(before?.quantity || 0)}` };
-  }
-
-  const prevQty = before?.quantity || 0;
-  const prevForeign = before?.costForeign || 0;
-  const prevKrw = before?.costKrw || 0;
-  const newQty = prevQty + quantity;
-  const newForeign = prevForeign + buyForeign;
-  const newKrw = prevKrw + buyKrw;
-  const newAvgPrice = newQty ? newForeign / newQty : 0;
-  const newAvgFx = newForeign ? newKrw / newForeign : fx;
   const asset = getAsset(ticker, { price, fx, currency: form.elements.currency.value });
   const currentFx = asset.currency === "KRW" ? 1 : Number(form.elements.currentFx.value || asset.currentFx || fx);
   const currentPrice = Number(form.elements.currentPrice.value || asset.currentPrice || price);
-  const expectedValue = newQty * currentPrice * currentFx;
-  const expectedProfit = expectedValue - newKrw;
-  return {
-    before,
-    text: `매수 후 수량 ${qty(newQty)} · 새 평단 ${money(newAvgPrice * newAvgFx)} · 평균환율 ${qty(newAvgFx)} · 예상손익 ${signedMoney(expectedProfit)}`
-  };
+  return computeAveragingPreview({
+    ownerId,
+    side,
+    ticker,
+    quantity,
+    price,
+    fx,
+    currency: form.elements.currency.value,
+    currentFx,
+    currentPrice
+  });
 }
 
 function renderTradePreview() {
@@ -1968,50 +2188,28 @@ document.querySelector("#tradeForm").addEventListener("input", (event) => {
 document.querySelector("#tradeForm").addEventListener("submit", (event) => {
   event.preventDefault();
   const form = event.currentTarget;
-  const ownerId = form.elements.ownerId.value;
-  const side = form.elements.side.value;
-  const ticker = form.elements.ticker.value.trim().toUpperCase();
-  const quantity = Number(form.elements.quantity.value) || 0;
-  const price = Number(form.elements.price.value) || 0;
-  const fx = Number(form.elements.fx.value) || 1;
-  const currentPrice = Number(form.elements.currentPrice.value) || price;
-  const currentFx = form.elements.currency.value === "KRW" ? 1 : Number(form.elements.currentFx.value) || fx;
-  const amount = quantity * price * fx;
-  const existing = replayHoldings(ownerId).find((holding) => holding.ticker === ticker);
-
-  if (side === "buy" && cashBalance(ownerId) < amount) {
-    form.elements.quantity.setCustomValidity("매수금액이 예수금을 초과합니다.");
-    form.reportValidity();
-    form.elements.quantity.setCustomValidity("");
-    return;
-  }
-  if (side === "sell" && (!existing || existing.quantity < quantity)) {
-    form.elements.quantity.setCustomValidity("매도수량이 보유수량을 초과합니다.");
-    form.reportValidity();
-    form.elements.quantity.setCustomValidity("");
-    return;
-  }
-
-  const trade = {
-    id: crypto.randomUUID(),
-    ownerId,
+  const result = commitTrade({
+    ownerId: form.elements.ownerId.value,
     date: form.elements.date.value,
-    side,
-    ticker,
-    name: form.elements.name.value.trim() || ticker,
+    side: form.elements.side.value,
+    ticker: form.elements.ticker.value,
+    name: form.elements.name.value.trim(),
     type: form.elements.type.value,
     currency: form.elements.currency.value,
-    quantity,
-    price,
-    fx,
+    quantity: Number(form.elements.quantity.value) || 0,
+    price: Number(form.elements.price.value) || 0,
+    fx: Number(form.elements.fx.value) || 1,
+    currentPrice: Number(form.elements.currentPrice.value) || Number(form.elements.price.value) || 0,
+    currentFx: form.elements.currency.value === "KRW" ? 1 : Number(form.elements.currentFx.value) || Number(form.elements.fx.value) || 1,
     memo: form.elements.memo.value.trim()
-  };
-  ensureAssetFromTrade({ ...trade, price: currentPrice, fx: currentFx });
-  state.assetCatalog[ticker].currentPrice = currentPrice;
-  state.assetCatalog[ticker].currentFx = currentFx;
-  state.trades.push(trade);
-  saveState();
-  render();
+  });
+  if (!result.ok) {
+    const field = form.elements[result.field || "ticker"];
+    field.setCustomValidity(result.message);
+    form.reportValidity();
+    field.setCustomValidity("");
+    return;
+  }
   form.closest("dialog").close();
 });
 
@@ -2119,6 +2317,7 @@ document.querySelector("#targetMonthlyDividend").addEventListener("input", rende
 document.querySelector("#calendarTargetSelect").addEventListener("change", renderDividendCalendar);
 
 document.querySelector("#cashflowForm").elements.date.valueAsDate = new Date();
+setupQuickTrade();
 recordSnapshot();
 render();
 startPolling();
