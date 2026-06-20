@@ -309,8 +309,10 @@
                         <div class="quick-trade-half-label">신규 자산 등록</div>
                         <div class="quick-trade-fields">
                           <div class="quick-trade-row">
-                            <input type="text" id="newAssetTicker" placeholder="티커 (예: QQQ)" autocomplete="off" />
-                            <input type="text" id="newAssetName" placeholder="종목명" autocomplete="off" />
+                            <input type="text" id="newAssetTicker" placeholder="티커 (예: QQQ)" autocomplete="off" list="newAssetTickerSuggestions" />
+                            <input type="text" id="newAssetName" placeholder="종목명" autocomplete="off" list="newAssetNameSuggestions" />
+                            <datalist id="newAssetTickerSuggestions"></datalist>
+                            <datalist id="newAssetNameSuggestions"></datalist>
                           </div>
                           <div class="quick-trade-row">
                             <select id="newAssetType">
@@ -613,6 +615,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260620-fx-auto-refresh"></script>
+    <script src="./app.js?v=20260621-asset-autofill"></script>
   </body>
 </html>

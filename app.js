@@ -87,6 +87,142 @@ const INDEX_MONITOR_LIST = [
   { ticker: "META", label: "Meta", group: "M7", logo: "https://cdn.simpleicons.org/meta/f3f3f7" },
   { ticker: "TSLA", label: "Tesla", group: "M7", logo: "https://cdn.simpleicons.org/tesla/f3f3f7" }
 ];
+const ASSET_DICTIONARY = [
+  { ticker: "AAPL", name: "Apple", type: "주식", currency: "USD" },
+  { ticker: "MSFT", name: "Microsoft", type: "주식", currency: "USD" },
+  { ticker: "NVDA", name: "NVIDIA", type: "주식", currency: "USD" },
+  { ticker: "AMZN", name: "Amazon", type: "주식", currency: "USD" },
+  { ticker: "GOOGL", name: "Alphabet", type: "주식", currency: "USD" },
+  { ticker: "META", name: "Meta Platforms", type: "주식", currency: "USD" },
+  { ticker: "TSLA", name: "Tesla", type: "주식", currency: "USD" },
+  { ticker: "AVGO", name: "Broadcom", type: "주식", currency: "USD" },
+  { ticker: "BRK.B", name: "Berkshire Hathaway", type: "주식", currency: "USD" },
+  { ticker: "LLY", name: "Eli Lilly", type: "주식", currency: "USD" },
+  { ticker: "JPM", name: "JPMorgan Chase", type: "주식", currency: "USD" },
+  { ticker: "V", name: "Visa", type: "주식", currency: "USD" },
+  { ticker: "MA", name: "Mastercard", type: "주식", currency: "USD" },
+  { ticker: "WMT", name: "Walmart", type: "주식", currency: "USD" },
+  { ticker: "XOM", name: "Exxon Mobil", type: "주식", currency: "USD" },
+  { ticker: "UNH", name: "UnitedHealth Group", type: "주식", currency: "USD" },
+  { ticker: "COST", name: "Costco Wholesale", type: "주식", currency: "USD" },
+  { ticker: "HD", name: "Home Depot", type: "주식", currency: "USD" },
+  { ticker: "PG", name: "Procter & Gamble", type: "주식", currency: "USD" },
+  { ticker: "JNJ", name: "Johnson & Johnson", type: "주식", currency: "USD" },
+  { ticker: "ABBV", name: "AbbVie", type: "주식", currency: "USD" },
+  { ticker: "NFLX", name: "Netflix", type: "주식", currency: "USD" },
+  { ticker: "CRM", name: "Salesforce", type: "주식", currency: "USD" },
+  { ticker: "ORCL", name: "Oracle", type: "주식", currency: "USD" },
+  { ticker: "AMD", name: "Advanced Micro Devices", type: "주식", currency: "USD" },
+  { ticker: "BAC", name: "Bank of America", type: "주식", currency: "USD" },
+  { ticker: "KO", name: "Coca-Cola", type: "주식", currency: "USD" },
+  { ticker: "PEP", name: "PepsiCo", type: "주식", currency: "USD" },
+  { ticker: "MCD", name: "McDonald's", type: "주식", currency: "USD" },
+  { ticker: "CSCO", name: "Cisco Systems", type: "주식", currency: "USD" },
+  { ticker: "TMO", name: "Thermo Fisher Scientific", type: "주식", currency: "USD" },
+  { ticker: "LIN", name: "Linde", type: "주식", currency: "USD" },
+  { ticker: "ADBE", name: "Adobe", type: "주식", currency: "USD" },
+  { ticker: "WFC", name: "Wells Fargo", type: "주식", currency: "USD" },
+  { ticker: "DIS", name: "Walt Disney", type: "주식", currency: "USD" },
+  { ticker: "INTU", name: "Intuit", type: "주식", currency: "USD" },
+  { ticker: "IBM", name: "IBM", type: "주식", currency: "USD" },
+  { ticker: "GE", name: "GE Aerospace", type: "주식", currency: "USD" },
+  { ticker: "CAT", name: "Caterpillar", type: "주식", currency: "USD" },
+  { ticker: "QCOM", name: "Qualcomm", type: "주식", currency: "USD" },
+  { ticker: "TXN", name: "Texas Instruments", type: "주식", currency: "USD" },
+  { ticker: "AMAT", name: "Applied Materials", type: "주식", currency: "USD" },
+  { ticker: "NOW", name: "ServiceNow", type: "주식", currency: "USD" },
+  { ticker: "ISRG", name: "Intuitive Surgical", type: "주식", currency: "USD" },
+  { ticker: "VZ", name: "Verizon", type: "주식", currency: "USD" },
+  { ticker: "T", name: "AT&T", type: "주식", currency: "USD" },
+  { ticker: "CMCSA", name: "Comcast", type: "주식", currency: "USD" },
+  { ticker: "NKE", name: "Nike", type: "주식", currency: "USD" },
+  { ticker: "PFE", name: "Pfizer", type: "주식", currency: "USD" },
+  { ticker: "MRK", name: "Merck", type: "주식", currency: "USD" },
+  { ticker: "SPY", name: "SPDR S&P 500 ETF", type: "ETF", currency: "USD" },
+  { ticker: "QQQ", name: "Invesco QQQ Trust", type: "ETF", currency: "USD" },
+  { ticker: "VOO", name: "Vanguard S&P 500 ETF", type: "ETF", currency: "USD" },
+  { ticker: "IVV", name: "iShares Core S&P 500 ETF", type: "ETF", currency: "USD" },
+  { ticker: "VTI", name: "Vanguard Total Stock Market ETF", type: "ETF", currency: "USD" },
+  { ticker: "SCHD", name: "Schwab U.S. Dividend Equity ETF", type: "ETF", currency: "USD" },
+  { ticker: "JEPI", name: "JPMorgan Equity Premium Income ETF", type: "ETF", currency: "USD" },
+  { ticker: "JEPQ", name: "JPMorgan Nasdaq Equity Premium Income ETF", type: "ETF", currency: "USD" },
+  { ticker: "QQQI", name: "NEOS Nasdaq-100 High Income ETF", type: "ETF", currency: "USD" },
+  { ticker: "GPIX", name: "Goldman Sachs S&P 500 Core Premium Income ETF", type: "ETF", currency: "USD" },
+  { ticker: "GPIQ", name: "Goldman Sachs Nasdaq-100 Core Premium Income ETF", type: "ETF", currency: "USD" },
+  { ticker: "FEPI", name: "REX FANG & Innovation Equity Premium Income ETF", type: "ETF", currency: "USD" },
+  { ticker: "DIVO", name: "Amplify CWP Enhanced Dividend Income ETF", type: "ETF", currency: "USD" },
+  { ticker: "XYLD", name: "Global X S&P 500 Covered Call ETF", type: "ETF", currency: "USD" },
+  { ticker: "QYLD", name: "Global X Nasdaq 100 Covered Call ETF", type: "ETF", currency: "USD" },
+  { ticker: "RYLD", name: "Global X Russell 2000 Covered Call ETF", type: "ETF", currency: "USD" },
+  { ticker: "TSLY", name: "YieldMax TSLA Option Income Strategy ETF", type: "ETF", currency: "USD" },
+  { ticker: "NVDY", name: "YieldMax NVDA Option Income Strategy ETF", type: "ETF", currency: "USD" },
+  { ticker: "CONY", name: "YieldMax COIN Option Income Strategy ETF", type: "ETF", currency: "USD" },
+  { ticker: "MSTY", name: "YieldMax MSTR Option Income Strategy ETF", type: "ETF", currency: "USD" },
+  { ticker: "YMAX", name: "YieldMax Universe Fund of Option Income ETFs", type: "ETF", currency: "USD" },
+  { ticker: "YMAG", name: "YieldMax Magnificent 7 Fund of Option Income ETFs", type: "ETF", currency: "USD" },
+  { ticker: "TLT", name: "iShares 20+ Year Treasury Bond ETF", type: "ETF", currency: "USD" },
+  { ticker: "SHY", name: "iShares 1-3 Year Treasury Bond ETF", type: "ETF", currency: "USD" },
+  { ticker: "IEF", name: "iShares 7-10 Year Treasury Bond ETF", type: "ETF", currency: "USD" },
+  { ticker: "HYG", name: "iShares iBoxx High Yield Corporate Bond ETF", type: "ETF", currency: "USD" },
+  { ticker: "LQD", name: "iShares iBoxx Investment Grade Corporate Bond ETF", type: "ETF", currency: "USD" },
+  { ticker: "BND", name: "Vanguard Total Bond Market ETF", type: "ETF", currency: "USD" },
+  { ticker: "AGG", name: "iShares Core U.S. Aggregate Bond ETF", type: "ETF", currency: "USD" },
+  { ticker: "VNQ", name: "Vanguard Real Estate ETF", type: "ETF", currency: "USD" },
+  { ticker: "GLD", name: "SPDR Gold Shares", type: "ETF", currency: "USD" },
+  { ticker: "SLV", name: "iShares Silver Trust", type: "ETF", currency: "USD" },
+  { ticker: "SOXX", name: "iShares Semiconductor ETF", type: "ETF", currency: "USD" },
+  { ticker: "SMH", name: "VanEck Semiconductor ETF", type: "ETF", currency: "USD" },
+  { ticker: "XLK", name: "Technology Select Sector SPDR Fund", type: "ETF", currency: "USD" },
+  { ticker: "XLF", name: "Financial Select Sector SPDR Fund", type: "ETF", currency: "USD" },
+  { ticker: "XLE", name: "Energy Select Sector SPDR Fund", type: "ETF", currency: "USD" },
+  { ticker: "XLY", name: "Consumer Discretionary Select Sector SPDR Fund", type: "ETF", currency: "USD" },
+  { ticker: "XLP", name: "Consumer Staples Select Sector SPDR Fund", type: "ETF", currency: "USD" },
+  { ticker: "XLU", name: "Utilities Select Sector SPDR Fund", type: "ETF", currency: "USD" },
+  { ticker: "XLI", name: "Industrial Select Sector SPDR Fund", type: "ETF", currency: "USD" },
+  { ticker: "XLV", name: "Health Care Select Sector SPDR Fund", type: "ETF", currency: "USD" },
+  { ticker: "ARKK", name: "ARK Innovation ETF", type: "ETF", currency: "USD" },
+  { ticker: "069500", name: "KODEX 200", type: "ETF", currency: "KRW" },
+  { ticker: "102110", name: "TIGER 200", type: "ETF", currency: "KRW" },
+  { ticker: "133690", name: "TIGER 미국나스닥100", type: "ETF", currency: "KRW" },
+  { ticker: "360750", name: "TIGER 미국S&P500", type: "ETF", currency: "KRW" },
+  { ticker: "379800", name: "KODEX 미국S&P500TR", type: "ETF", currency: "KRW" },
+  { ticker: "381180", name: "TIGER 미국필라델피아반도체나스닥", type: "ETF", currency: "KRW" },
+  { ticker: "458730", name: "TIGER 미국배당다우존스", type: "ETF", currency: "KRW" },
+  { ticker: "441640", name: "KODEX 미국배당프리미엄액티브", type: "ETF", currency: "KRW" },
+  { ticker: "305540", name: "TIGER 2차전지테마", type: "ETF", currency: "KRW" },
+  { ticker: "229200", name: "KODEX 코스닥150", type: "ETF", currency: "KRW" },
+  { ticker: "KR3Y", name: "국고채 3년", type: "채권", currency: "KRW" },
+  { ticker: "BTC", name: "Bitcoin", type: "코인", currency: "USD" },
+  { ticker: "ETH", name: "Ethereum", type: "코인", currency: "USD" },
+  { ticker: "SOL", name: "Solana", type: "코인", currency: "USD" },
+  { ticker: "BNB", name: "BNB", type: "코인", currency: "USD" },
+  { ticker: "XRP", name: "XRP", type: "코인", currency: "USD" },
+  { ticker: "ADA", name: "Cardano", type: "코인", currency: "USD" },
+  { ticker: "DOGE", name: "Dogecoin", type: "코인", currency: "USD" },
+  { ticker: "AVAX", name: "Avalanche", type: "코인", currency: "USD" },
+  { ticker: "LINK", name: "Chainlink", type: "코인", currency: "USD" },
+  { ticker: "DOT", name: "Polkadot", type: "코인", currency: "USD" },
+  { ticker: "MATIC", name: "Polygon", type: "코인", currency: "USD" },
+  { ticker: "TON", name: "Toncoin", type: "코인", currency: "USD" },
+  { ticker: "TRX", name: "TRON", type: "코인", currency: "USD" },
+  { ticker: "LTC", name: "Litecoin", type: "코인", currency: "USD" },
+  { ticker: "BCH", name: "Bitcoin Cash", type: "코인", currency: "USD" },
+  { ticker: "UNI", name: "Uniswap", type: "코인", currency: "USD" },
+  { ticker: "AAVE", name: "Aave", type: "코인", currency: "USD" },
+  { ticker: "NEAR", name: "NEAR Protocol", type: "코인", currency: "USD" },
+  { ticker: "ATOM", name: "Cosmos", type: "코인", currency: "USD" },
+  { ticker: "FIL", name: "Filecoin", type: "코인", currency: "USD" },
+  { ticker: "ICP", name: "Internet Computer", type: "코인", currency: "USD" },
+  { ticker: "ETC", name: "Ethereum Classic", type: "코인", currency: "USD" },
+  { ticker: "XLM", name: "Stellar", type: "코인", currency: "USD" },
+  { ticker: "HBAR", name: "Hedera", type: "코인", currency: "USD" },
+  { ticker: "APT", name: "Aptos", type: "코인", currency: "USD" },
+  { ticker: "SUI", name: "Sui", type: "코인", currency: "USD" },
+  { ticker: "ARB", name: "Arbitrum", type: "코인", currency: "USD" },
+  { ticker: "OP", name: "Optimism", type: "코인", currency: "USD" },
+  { ticker: "PEPE", name: "Pepe", type: "코인", currency: "USD" },
+  { ticker: "SHIB", name: "Shiba Inu", type: "코인", currency: "USD" }
+];
 const allocationColors = {
   코인: "#7C5CFC",
   주식: "#FF7AC8",
@@ -1315,6 +1451,78 @@ function newAssetField(selector) {
   return document.querySelector(selector);
 }
 
+function normalizeAssetSearch(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function escapeOptionText(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function assetLookupEntries() {
+  const merged = new Map();
+  ASSET_DICTIONARY.forEach((asset) => {
+    merged.set(asset.ticker.toUpperCase(), { ...asset, ticker: asset.ticker.toUpperCase() });
+  });
+  Object.values(state.assetCatalog || {}).forEach((asset) => {
+    const ticker = asset.ticker.toUpperCase();
+    const known = merged.get(ticker);
+    merged.set(ticker, known ? {
+      ...known,
+      currentPrice: asset.currentPrice,
+      currentFx: asset.currentFx,
+      annualDividend: asset.annualDividend
+    } : { ...asset, ticker });
+  });
+  return [...merged.values()].sort((a, b) => a.ticker.localeCompare(b.ticker));
+}
+
+function findAssetLookupMatch(value, mode) {
+  const query = normalizeAssetSearch(value);
+  if (!query) return null;
+  const entries = assetLookupEntries();
+  if (mode === "ticker") {
+    const upper = value.trim().toUpperCase();
+    return entries.find((asset) => asset.ticker === upper) || null;
+  }
+  return entries.find((asset) => normalizeAssetSearch(asset.name) === query)
+    || (query.length >= 3 ? entries.find((asset) => normalizeAssetSearch(asset.name).startsWith(query)) : null)
+    || null;
+}
+
+function applyNewAssetLookup(asset, sourceField) {
+  if (!asset) return;
+  const tickerInput = newAssetField("#newAssetTicker");
+  const nameInput = newAssetField("#newAssetName");
+  const typeInput = newAssetField("#newAssetType");
+  const currencyInput = newAssetField("#newAssetCurrency");
+  const priceInput = newAssetField("#newAssetPrice");
+  const fxInput = newAssetField("#newAssetFx");
+
+  if (tickerInput) tickerInput.value = asset.ticker;
+  if (nameInput) nameInput.value = asset.name;
+  if (typeInput && asset.type) typeInput.value = asset.type;
+  if (currencyInput && asset.currency) currencyInput.value = asset.currency;
+  if (priceInput && !priceInput.value && asset.currentPrice) priceInput.value = asset.currentPrice;
+  if (fxInput && !fxInput.value && asset.currency === "USD") fxInput.value = Math.round(asset.currentFx || currentUsdKrw());
+  updateNewAssetFxVisibility();
+  updateNewAssetSubmitState();
+}
+
+function populateNewAssetSuggestions() {
+  const tickerList = document.querySelector("#newAssetTickerSuggestions");
+  const nameList = document.querySelector("#newAssetNameSuggestions");
+  if (!tickerList || !nameList) return;
+  const entries = assetLookupEntries();
+  tickerList.innerHTML = entries.map((asset) => `<option value="${escapeOptionText(asset.ticker)}">${escapeOptionText(asset.name)}</option>`).join("");
+  nameList.innerHTML = entries.map((asset) => `<option value="${escapeOptionText(asset.name)}">${escapeOptionText(asset.ticker)}</option>`).join("");
+}
+
 function isNewAssetFormValid() {
   const ticker = newAssetField("#newAssetTicker")?.value.trim();
   const name = newAssetField("#newAssetName")?.value.trim();
@@ -1354,6 +1562,23 @@ function resetNewAssetForm() {
 function setupNewAssetForm() {
   const submit = newAssetField("#newAssetSubmit");
   if (!submit) return;
+  populateNewAssetSuggestions();
+  newAssetField("#newAssetTicker")?.addEventListener("input", (event) => {
+    const match = findAssetLookupMatch(event.target.value, "ticker");
+    if (match) applyNewAssetLookup(match, "ticker");
+    updateNewAssetSubmitState();
+  });
+  newAssetField("#newAssetTicker")?.addEventListener("change", (event) => {
+    applyNewAssetLookup(findAssetLookupMatch(event.target.value, "ticker"), "ticker");
+  });
+  newAssetField("#newAssetName")?.addEventListener("input", (event) => {
+    const match = findAssetLookupMatch(event.target.value, "name");
+    if (match) applyNewAssetLookup(match, "name");
+    updateNewAssetSubmitState();
+  });
+  newAssetField("#newAssetName")?.addEventListener("change", (event) => {
+    applyNewAssetLookup(findAssetLookupMatch(event.target.value, "name"), "name");
+  });
   ["#newAssetTicker", "#newAssetName", "#newAssetQty", "#newAssetPrice", "#newAssetFx"].forEach((selector) => {
     newAssetField(selector)?.addEventListener("input", updateNewAssetSubmitState);
   });
@@ -1407,6 +1632,7 @@ function setupNewAssetForm() {
       return;
     }
     resetNewAssetForm();
+    populateNewAssetSuggestions();
     showToast(`${ticker} 신규 등록 및 매수가 반영되었습니다.`);
   });
   updateNewAssetFxVisibility();
