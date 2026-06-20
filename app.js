@@ -377,7 +377,7 @@ function renderCryptoLogo(symbol) {
   const logo = CRYPTO_LOGOS[symbol];
   const text = symbol.slice(0, 3);
   return logo
-    ? `<i class="stock-logo-frame crypto-logo-frame"><img src="${logo}" alt="" loading="lazy" onerror="this.remove()" /><b>${text}</b></i>`
+    ? `<i class="stock-logo-frame crypto-logo-frame"><img src="${logo}" alt="${symbol}" loading="lazy" /></i>`
     : `<i class="stock-logo-frame stock-logo-text crypto-logo-frame"><b>${text}</b></i>`;
 }
 
