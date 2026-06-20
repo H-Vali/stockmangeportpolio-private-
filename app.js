@@ -49,6 +49,7 @@ const allocationColors = {
   채권: "#E8B339",
   예수금: "#5A5A68"
 };
+const ALLOCATION_ORDER = ["주식", "ETF", "코인", "채권", "예수금"];
 const fallbackColors = ["#7c5cfc", "#b69cff", "#3bb5a6", "#e8b339", "#5a5a68"];
 const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 let previousAllocationRatios = loadAllocationRatios();
@@ -59,6 +60,7 @@ let previousRealtimeValues = {
   investors: {},
   index: {}
 };
+let holdingsTypeFilter = null;
 
 const seedState = {
   schemaVersion: SCHEMA_VERSION,
@@ -646,86 +648,174 @@ function renderDashboard() {
 }
 
 function renderAllocation() {
-  const groups = groupedByType();
-  const donut = document.querySelector("#allocationDonut");
-  const total = Math.max(summarize().totalValue, 1);
+  const ownerId = visibleOwnerId();
+  const holdings = replayHoldings(ownerId);
+  const summary = summarize(ownerId);
+  const totalValue = summary.totalValue;
+  const totals = {};
+
+  holdings.forEach((item) => {
+    totals[item.type] = (totals[item.type] || 0) + item.valueKrw;
+  });
+  if (summary.cash > 0) totals["예수금"] = summary.cash;
+
+  const slices = ALLOCATION_ORDER
+    .filter((key) => totals[key] > 0)
+    .map((key) => ({
+      key,
+      amount: totals[key],
+      pct: totalValue > 0 ? (totals[key] / totalValue) * 100 : 0,
+      color: allocationColors[key] || fallbackColors[0]
+    }));
+
+  renderAllocationDonut(slices, totalValue);
+  renderAllocationLegend(slices);
+  renderAllocationInvestorBreakdown();
+  wireAllocationInteractions(slices, totalValue);
+}
+
+function renderAllocationDonut(slices, totalValue) {
+  const svg = document.querySelector("#allocationDonut");
+  if (!svg) return;
+  const r = 40;
+  const circumference = 2 * Math.PI * r;
   let cursor = 0;
-  const segments = groups
-    .map((group, index) => {
-      const value = Math.max(group.value, 0);
-      const size = (value / total) * 100;
-      const color = allocationColors[group.type] || fallbackColors[index % fallbackColors.length];
-      const segment = { ...group, color, size, offset: cursor };
-      cursor += size;
-      return segment;
+  const segmentsSvg = slices
+    .map((slice) => {
+      const length = (slice.pct / 100) * circumference;
+      const dasharray = `${length.toFixed(2)} ${(circumference - length).toFixed(2)}`;
+      const rotate = -90 + (cursor / 100) * 360;
+      cursor += slice.pct;
+      return `<circle class="donut-seg" data-key="${slice.key}" data-amt="${Math.round(slice.amount)}" data-pct="${slice.pct.toFixed(3)}" stroke="${slice.color}" cx="50" cy="50" r="${r}" fill="none" stroke-width="16" stroke-dasharray="${dasharray}" transform="rotate(${rotate.toFixed(2)} 50 50)"></circle>`;
     })
-    .filter((group) => group.size > 0);
+    .join("");
+  svg.innerHTML = `<circle cx="50" cy="50" r="${r}" fill="none" stroke="#1C1C25" stroke-width="16"></circle>${segmentsSvg}`;
 
-  donut.classList.toggle("is-empty", !segments.length);
-  donut.innerHTML = `
-    <svg class="allocation-svg" viewBox="0 0 220 220" role="img" aria-label="자산 배분 원형 그래프">
-      <circle class="allocation-track" cx="110" cy="110" r="78"></circle>
-      ${segments.map((segment) => `
-        <circle
-          class="allocation-segment"
-          cx="110"
-          cy="110"
-          r="78"
-          pathLength="100"
-          stroke="${segment.color}"
-          stroke-dasharray="${segment.size} ${Math.max(0, 100 - segment.size)}"
-          stroke-dashoffset="${-segment.offset}"
-          data-label="${segment.type}"
-          data-percent="${pct(segment.actual)}"
-        ></circle>
-      `).join("")}
-    </svg>
-    <div class="donut-center" aria-hidden="true">
-      <span id="allocationCenterLabel">Allocation</span>
-      <strong id="allocationCenterValue">${segments.length ? pct(Math.max(...segments.map((segment) => segment.actual))) : "0.000%"}</strong>
-    </div>
-  `;
+  const centerAmt = document.querySelector("#allocationCenterAmt");
+  const centerPct = document.querySelector("#allocationCenterPct");
+  const centerLabel = document.querySelector("#allocationCenterLabel");
+  if (centerLabel) centerLabel.textContent = "전체";
+  if (centerPct) centerPct.textContent = totalValue > 0 ? "100.0%" : "0.0%";
+  if (centerAmt) centerAmt.textContent = money(totalValue);
+}
 
-  donut.querySelectorAll(".allocation-segment").forEach((segment) => {
-    segment.addEventListener("mouseenter", () => {
-      donut.querySelector("#allocationCenterLabel").textContent = segment.dataset.label;
-      donut.querySelector("#allocationCenterValue").textContent = segment.dataset.percent;
-    });
-    segment.addEventListener("mouseleave", () => {
-      donut.querySelector("#allocationCenterLabel").textContent = "Allocation";
-      donut.querySelector("#allocationCenterValue").textContent = segments.length ? pct(Math.max(...segments.map((item) => item.actual))) : "0.000%";
-    });
-  });
-
-  const currentRatios = {};
-  groups.forEach((group) => {
-    currentRatios[group.type] = group.actual;
-  });
-
+function renderAllocationLegend(slices) {
   const legend = document.querySelector("#allocationLegend");
-  legend.innerHTML = "";
-  groups.forEach((group, index) => {
-    const color = allocationColors[group.type] || fallbackColors[index % fallbackColors.length];
-    const previous = previousAllocationRatios[group.type];
-    const diff = typeof previous === "number" ? group.actual - previous : 0;
-    const trendClass = diff > 0.001 ? "positive" : diff < -0.001 ? "negative" : "neutral-text";
-    const trendLabel = diff > 0.001 ? "상승" : diff < -0.001 ? "하락" : "변동 없음";
-    const trendMark = diff > 0.001 ? "▲" : diff < -0.001 ? "▼" : "—";
-    const trendValue = Math.abs(diff) > 0.001 ? `${diff >= 0 ? "+" : ""}${diff.toFixed(3)}%p` : "0.000%p";
-    const row = document.createElement("div");
-    row.className = "legend-row";
-    row.innerHTML = `
-      <span><i class="swatch" style="background:${color}"></i>${group.type}</span>
-      <strong class="allocation-ratio ${group.value < 0 ? "negative" : ""}">
-        <span>${pct(group.actual)}</span>
-        <em class="allocation-trend ${trendClass}" title="이전 비율 대비 ${trendLabel}">${trendMark} ${trendValue}</em>
-      </strong>
-    `;
-    legend.appendChild(row);
-  });
+  if (!legend) return;
+  legend.innerHTML = slices
+    .map((slice) => `
+      <div class="leg-row" data-key="${slice.key}">
+        <span class="leg-label">
+          <i class="swatch" style="background:${slice.color}"></i>${slice.key}
+        </span>
+        <span class="leg-value">${slice.pct.toFixed(3)}%</span>
+      </div>
+    `)
+    .join("");
+}
 
-  previousAllocationRatios = currentRatios;
-  localStorage.setItem(ALLOCATION_RATIOS_KEY, JSON.stringify(currentRatios));
+function renderAllocationInvestorBreakdown() {
+  const container = document.querySelector("#allocationInvestorBreakdown");
+  if (!container) return;
+  container.innerHTML = state.investors
+    .map((investor) => {
+      const myHoldings = replayHoldings(investor.id);
+      const mySummary = summarize(investor.id);
+      const myTotals = {};
+      myHoldings.forEach((item) => {
+        myTotals[item.type] = (myTotals[item.type] || 0) + item.valueKrw;
+      });
+      if (mySummary.cash > 0) myTotals["예수금"] = mySummary.cash;
+      const segments = ALLOCATION_ORDER
+        .filter((key) => myTotals[key] > 0)
+        .map((key) => {
+          const ratio = mySummary.totalValue > 0 ? (myTotals[key] / mySummary.totalValue) * 100 : 0;
+          return `<div class="ibar-seg" style="width:${ratio.toFixed(2)}%;background:${allocationColors[key] || fallbackColors[0]}" title="${key} ${ratio.toFixed(1)}%"></div>`;
+        })
+        .join("");
+      return `
+        <div class="investor-bar-row">
+          <div class="investor-bar-head"><span style="font-weight:600">${investor.name}</span><span class="muted">${money(mySummary.totalValue)}</span></div>
+          <div class="investor-bar-track">${segments}</div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function wireAllocationInteractions(slices, totalValue) {
+  const segments = document.querySelectorAll("#allocationDonut .donut-seg");
+  const rows = document.querySelectorAll("#allocationLegend .leg-row");
+  const centerLabel = document.querySelector("#allocationCenterLabel");
+  const centerPct = document.querySelector("#allocationCenterPct");
+  const centerAmt = document.querySelector("#allocationCenterAmt");
+
+  function setCenter(key) {
+    if (!centerLabel || !centerPct || !centerAmt) return;
+    if (!key) {
+      centerLabel.textContent = "전체";
+      centerPct.textContent = totalValue > 0 ? "100.0%" : "0.0%";
+      centerAmt.textContent = money(totalValue);
+      return;
+    }
+    const slice = slices.find((item) => item.key === key);
+    if (!slice) return;
+    centerLabel.textContent = slice.key;
+    centerPct.textContent = `${slice.pct.toFixed(1)}%`;
+    centerAmt.textContent = money(slice.amount);
+  }
+
+  function highlight(key) {
+    segments.forEach((segment) => {
+      const active = segment.dataset.key === key;
+      segment.style.strokeWidth = active ? "19" : "16";
+      segment.style.opacity = key && !active ? "0.35" : "1";
+      segment.style.filter = active ? "drop-shadow(0 0 9px rgba(157, 123, 255, 0.36))" : "";
+    });
+    rows.forEach((row) => row.classList.toggle("hl", row.dataset.key === key));
+    setCenter(key);
+  }
+
+  segments.forEach((segment) => {
+    segment.addEventListener("mouseenter", () => highlight(segment.dataset.key));
+    segment.addEventListener("mouseleave", () => highlight(null));
+    segment.addEventListener("click", () => filterHoldingsByType(segment.dataset.key));
+  });
+  rows.forEach((row) => {
+    row.addEventListener("mouseenter", () => highlight(row.dataset.key));
+    row.addEventListener("mouseleave", () => highlight(null));
+    row.addEventListener("click", () => filterHoldingsByType(row.dataset.key));
+  });
+}
+
+function filterHoldingsByType(type) {
+  const table = document.querySelector("#holdingsTable");
+  if (!table) return;
+  holdingsTypeFilter = type;
+  ledgerExpanded = true;
+  renderView();
+  table.querySelectorAll("tr").forEach((row) => {
+    if (row.dataset.type) row.style.display = row.dataset.type === type ? "" : "none";
+  });
+  const banner = document.querySelector("#holdingsFilterBanner");
+  if (banner) {
+    banner.classList.add("active");
+    const label = banner.querySelector("#holdingsFilterLabel");
+    if (label) label.textContent = `${type} 종목만 표시 중`;
+  }
+  document.querySelector("#holdings")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function clearHoldingsFilter() {
+  holdingsTypeFilter = null;
+  const table = document.querySelector("#holdingsTable");
+  if (table) {
+    table.querySelectorAll("tr").forEach((row) => {
+      row.style.display = "";
+    });
+  }
+  const banner = document.querySelector("#holdingsFilterBanner");
+  if (banner) banner.classList.remove("active");
 }
 
 function renderMarket() {
@@ -878,6 +968,8 @@ function renderHoldings() {
   for (const item of replayHoldings(visibleOwnerId())) {
     const owner = investorById(item.ownerId);
     const row = document.createElement("tr");
+    row.dataset.type = item.type;
+    if (holdingsTypeFilter && item.type !== holdingsTypeFilter) row.style.display = "none";
     row.innerHTML = `
       <td><span class="asset-name"><strong>${item.ticker}</strong><small>${item.name}</small></span></td>
       <td><span class="owner-label">${owner.name}</span></td>
@@ -1551,6 +1643,8 @@ document.querySelector("#collapseLedgerButton").addEventListener("click", () => 
   ledgerExpanded = false;
   renderView();
 });
+
+document.querySelector("#clearHoldingsFilterButton").addEventListener("click", clearHoldingsFilter);
 
 document.querySelector("#investorTabs").addEventListener("click", (event) => {
   const button = event.target.closest("[data-investor-id]");
