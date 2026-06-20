@@ -294,6 +294,13 @@ function setMoneyElement(selector, value) {
   element.innerHTML = `<span class="currency-prefix">${parts.symbol}</span>${parts.amount}`;
 }
 
+function setSignedMoneyElement(selector, value) {
+  const element = document.querySelector(selector);
+  const sign = value >= 0 ? "+" : "-";
+  const parts = moneyParts(Math.abs(value));
+  element.innerHTML = `<span class="currency-prefix">${sign}${parts.symbol}</span>${parts.amount}`;
+}
+
 function pct(value) {
   return `${percentFormatter.format(value || 0)}%`;
 }
@@ -1096,18 +1103,18 @@ function renderInvestorSheet() {
   const investor = investorById(state.selectedInvestorId);
   const summary = summarize(investor.id);
   document.querySelector("#selectedInvestorLabel").textContent = `${investor.name}님의 평가금액`;
-  document.querySelector("#investorValue").textContent = money(summary.totalValue);
+  setMoneyElement("#investorValue", summary.totalValue);
   document.querySelector("#investorProfit").textContent = signedMoney(summary.profit);
   document.querySelector("#investorProfit").className = summary.profit >= 0 ? "positive" : "negative";
   document.querySelector("#investorReturn").textContent = `수익률 ${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}`;
   document.querySelector("#investorHoldingsCount").textContent = `${summary.holdings.length}개 종목`;
-  document.querySelector("#investorPrincipal").textContent = money(summary.principal);
-  document.querySelector("#investorStatProfit").textContent = signedMoney(summary.profit);
+  setMoneyElement("#investorPrincipal", summary.principal);
+  setSignedMoneyElement("#investorStatProfit", summary.profit);
   document.querySelector("#investorStatProfit").className = summary.profit >= 0 ? "positive" : "negative";
   document.querySelector("#investorReturnRate").textContent = `${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}`;
-  document.querySelector("#investorDividendAfterTax").textContent = money(summary.dividendAfterTax);
+  setMoneyElement("#investorDividendAfterTax", summary.dividendAfterTax);
   document.querySelector("#investorDividendDetail").textContent = `세전 ${money(summary.dividend)} · 세금 ${money(summary.tax)}`;
-  document.querySelector("#investorCash").textContent = money(summary.cash);
+  setMoneyElement("#investorCash", summary.cash);
   document.querySelector("#deleteInvestorButton").disabled = state.investors.length <= 1;
   renderDeleteConfirm();
   renderInvestorAllocation();

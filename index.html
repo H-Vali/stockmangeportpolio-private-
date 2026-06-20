@@ -18,7 +18,7 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260620-investor-layout-quick-trade" />
+    <link rel="stylesheet" href="./styles.css?v=20260620-investor-swap-number-font" />
   </head>
   <body>
     <div class="app-shell">
@@ -265,6 +265,24 @@
                   </div>
                 </div>
 
+                <div class="panel investor-income-panel">
+                  <p class="eyebrow">Dividend</p>
+                  <h2>다가오는 배당</h2>
+                  <div id="investorUpcomingDividend"></div>
+                  <div class="quick-trade-divider"></div>
+                  <p class="eyebrow">Profit</p>
+                  <h2>손익 분해</h2>
+                  <div id="investorProfitBreakdown"></div>
+                </div>
+
+                <div class="panel investor-activity-panel">
+                  <p class="eyebrow">Activity</p>
+                  <h2>최근 활동</h2>
+                  <div id="investorActivity"></div>
+                </div>
+              </div>
+
+              <div class="investor-col investor-col-right">
                 <div class="panel investor-holdings-panel">
                   <div class="panel-header compact-head">
                     <div>
@@ -291,24 +309,6 @@
                     <div class="quick-trade-preview" id="quickTradePreview" hidden></div>
                     <p class="quick-trade-hint">새 종목은 <a href="#" id="openTradeModalLink">거래 입력 모달</a>에서 추가하세요</p>
                   </div>
-                </div>
-              </div>
-
-              <div class="investor-col investor-col-right">
-                <div class="panel investor-income-panel">
-                  <p class="eyebrow">Dividend</p>
-                  <h2>다가오는 배당</h2>
-                  <div id="investorUpcomingDividend"></div>
-                  <div class="quick-trade-divider"></div>
-                  <p class="eyebrow">Profit</p>
-                  <h2>손익 분해</h2>
-                  <div id="investorProfitBreakdown"></div>
-                </div>
-
-                <div class="panel investor-activity-panel">
-                  <p class="eyebrow">Activity</p>
-                  <h2>최근 활동</h2>
-                  <div id="investorActivity"></div>
                 </div>
               </div>
             </div>
@@ -564,6 +564,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260620-investor-layout-quick-trade"></script>
+    <script src="./app.js?v=20260620-investor-swap-number-font"></script>
   </body>
 </html>

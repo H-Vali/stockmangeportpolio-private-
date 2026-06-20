@@ -371,7 +371,7 @@ a.ghost-button {
 .hero-value {
   display: block;
   margin: 8px 0 10px;
-  font-family: Pretendard, Inter, "Space Grotesk", sans-serif;
+  font-family: "Space Grotesk", Pretendard, sans-serif;
   font-size: clamp(38px, 4.5vw, 58px);
   font-weight: 700;
   line-height: 0.98;
@@ -518,7 +518,7 @@ a.ghost-button {
 .metric-card strong {
   display: block;
   margin: 8px 0 7px;
-  font-family: Pretendard, Inter, "Space Grotesk", sans-serif;
+  font-family: "Space Grotesk", Pretendard, sans-serif;
   font-size: 30px;
   line-height: 1.05;
 }
