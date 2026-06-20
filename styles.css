@@ -1393,8 +1393,16 @@ tbody tr:hover {
   justify-content: center;
   max-width: 120px;
   margin: 0 auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   text-align: center;
   pointer-events: none;
+}
+
+.donut-center .eyebrow {
+  margin: 0;
+  font-size: 10px;
 }
 
 .donut-center-pct {
@@ -1420,16 +1428,42 @@ tbody tr:hover {
   gap: 2px;
 }
 
+#allocation .allocation-area .legend {
+  flex: 0 0 126px;
+  width: 126px;
+}
+
 .leg-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 30px;
+  gap: 6px;
+  min-height: 28px;
   border-radius: 8px;
-  padding: 7px 8px;
+  padding: 6px 4px;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
+}
+
+.leg-label,
+.leg-value {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.leg-label {
+  gap: 6px;
+  min-width: 42px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.leg-value {
+  color: var(--ink);
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .leg-row:hover,
