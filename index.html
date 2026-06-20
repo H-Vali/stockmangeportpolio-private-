@@ -18,7 +18,7 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260620-sidebar-fx-rates" />
+    <link rel="stylesheet" href="./styles.css?v=20260620-new-asset-quick-trade" />
   </head>
   <body>
     <div class="app-shell">
@@ -303,23 +303,60 @@
                   <div class="market-list" id="investorHoldingsPreview"></div>
                   <div class="quick-trade" id="quickTrade">
                     <div class="quick-trade-divider"></div>
-                    <p class="eyebrow">빠른 매수·매도</p>
-                    <select id="quickTradeTicker"></select>
-                    <div class="quick-trade-side">
-                      <button type="button" id="quickTradeBuy" class="side-btn active buy">매수</button>
-                      <button type="button" id="quickTradeSell" class="side-btn">매도</button>
+                    <p class="eyebrow">빠른 매수·매도 / 신규 자산 등록</p>
+                    <div class="quick-trade-split">
+                      <div class="quick-trade-half">
+                        <div class="quick-trade-half-label">신규 자산 등록</div>
+                        <div class="quick-trade-fields">
+                          <div class="quick-trade-row">
+                            <input type="text" id="newAssetTicker" placeholder="티커 (예: QQQ)" autocomplete="off" />
+                            <input type="text" id="newAssetName" placeholder="종목명" autocomplete="off" />
+                          </div>
+                          <div class="quick-trade-row">
+                            <select id="newAssetType">
+                              <option value="주식">주식</option>
+                              <option value="ETF">ETF</option>
+                              <option value="코인">코인</option>
+                              <option value="채권">채권</option>
+                            </select>
+                            <select id="newAssetCurrency">
+                              <option value="USD">USD</option>
+                              <option value="KRW">KRW</option>
+                            </select>
+                          </div>
+                          <div class="quick-trade-row">
+                            <input type="number" id="newAssetQty" placeholder="수량" min="0" step="any" />
+                            <input type="number" id="newAssetPrice" placeholder="체결가" min="0" step="any" />
+                          </div>
+                          <div class="fx-wrap" id="newAssetFxWrap">
+                            <span class="fx-label">매입환율</span>
+                            <input type="number" id="newAssetFx" placeholder="1380" min="0" step="any" />
+                          </div>
+                          <button type="button" id="newAssetSubmit" class="new-asset-submit">신규 종목 등록</button>
+                        </div>
+                        <p class="quick-trade-hint">새 종목은 등록 즉시 선택 투자자의 매수 거래로 반영됩니다.</p>
+                      </div>
+
+                      <div class="quick-trade-half quick-trade-half-bordered">
+                        <div class="quick-trade-half-label">보유 종목 거래</div>
+                        <select id="quickTradeTicker"></select>
+                        <div class="quick-trade-side">
+                          <button type="button" id="quickTradeBuy" class="side-btn active buy">매수</button>
+                          <button type="button" id="quickTradeSell" class="side-btn">매도</button>
+                        </div>
+                        <div class="quick-trade-row">
+                          <input type="number" id="quickTradeQty" placeholder="수량" min="0" step="any" />
+                          <input type="number" id="quickTradePrice" placeholder="체결가" min="0" step="any" />
+                        </div>
+                        <div class="fx-wrap" id="quickTradeFxRow">
+                          <span class="fx-label" id="quickTradeFxLabel">매입환율</span>
+                          <input type="number" id="quickTradeFx" placeholder="환율" min="0" step="any" />
+                        </div>
+                        <button type="button" id="quickTradeSubmit" class="primary-button">추가</button>
+                        <div class="quick-trade-preview" id="quickTradePreview" hidden></div>
+                        <p class="quick-trade-hint">상세 입력은 <a href="#" id="openTradeModalLink">거래 입력 모달</a>에서 진행하세요.</p>
+                      </div>
                     </div>
-                    <div class="quick-trade-row">
-                      <input type="number" id="quickTradeQty" placeholder="수량" min="0" step="any" />
-                      <input type="number" id="quickTradePrice" placeholder="체결가" min="0" step="any" />
-                    </div>
-                    <div class="quick-trade-fx-row" id="quickTradeFxRow">
-                      <span class="quick-trade-fixed-cell" id="quickTradeFxLabel">매입환율</span>
-                      <input type="number" id="quickTradeFx" placeholder="환율" min="0" step="any" />
-                    </div>
-                    <button type="button" id="quickTradeSubmit" class="primary-button">추가</button>
-                    <div class="quick-trade-preview" id="quickTradePreview" hidden></div>
-                    <p class="quick-trade-hint">새 종목은 <a href="#" id="openTradeModalLink">거래 입력 모달</a>에서 추가하세요</p>
                   </div>
                 </div>
               </div>
@@ -576,6 +613,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260620-sidebar-fx-rates"></script>
+    <script src="./app.js?v=20260620-new-asset-quick-trade"></script>
   </body>
 </html>

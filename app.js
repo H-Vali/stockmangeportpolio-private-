@@ -1274,7 +1274,108 @@ function quickTradeAsset() {
 }
 
 function shouldShowQuickTradeFx(asset) {
-  return asset?.currency === "USD" && asset?.type !== "코인";
+  return asset?.currency === "USD";
+}
+
+function newAssetField(selector) {
+  return document.querySelector(selector);
+}
+
+function isNewAssetFormValid() {
+  const ticker = newAssetField("#newAssetTicker")?.value.trim();
+  const name = newAssetField("#newAssetName")?.value.trim();
+  const currency = newAssetField("#newAssetCurrency")?.value;
+  const quantity = Number(newAssetField("#newAssetQty")?.value);
+  const price = Number(newAssetField("#newAssetPrice")?.value);
+  const fx = Number(newAssetField("#newAssetFx")?.value);
+  if (!ticker || !name || !quantity || quantity <= 0 || !price || price <= 0) return false;
+  if (currency === "USD" && (!fx || fx <= 0)) return false;
+  return true;
+}
+
+function updateNewAssetSubmitState() {
+  const button = newAssetField("#newAssetSubmit");
+  if (!button) return;
+  button.classList.toggle("enabled", isNewAssetFormValid());
+}
+
+function updateNewAssetFxVisibility() {
+  const currency = newAssetField("#newAssetCurrency")?.value;
+  const fxWrap = newAssetField("#newAssetFxWrap");
+  const fxInput = newAssetField("#newAssetFx");
+  if (fxWrap) fxWrap.style.display = currency === "USD" ? "" : "none";
+  if (currency === "KRW" && fxInput) fxInput.value = 1;
+  if (currency === "USD" && fxInput && !fxInput.value) fxInput.value = Math.round(currentUsdKrw());
+  updateNewAssetSubmitState();
+}
+
+function resetNewAssetForm() {
+  ["#newAssetTicker", "#newAssetName", "#newAssetQty", "#newAssetPrice", "#newAssetFx"].forEach((selector) => {
+    const field = newAssetField(selector);
+    if (field) field.value = "";
+  });
+  updateNewAssetFxVisibility();
+}
+
+function setupNewAssetForm() {
+  const submit = newAssetField("#newAssetSubmit");
+  if (!submit) return;
+  ["#newAssetTicker", "#newAssetName", "#newAssetQty", "#newAssetPrice", "#newAssetFx"].forEach((selector) => {
+    newAssetField(selector)?.addEventListener("input", updateNewAssetSubmitState);
+  });
+  newAssetField("#newAssetCurrency")?.addEventListener("change", updateNewAssetFxVisibility);
+  newAssetField("#newAssetType")?.addEventListener("change", updateNewAssetSubmitState);
+  submit.addEventListener("click", () => {
+    if (!isNewAssetFormValid()) {
+      showToast("필수 항목을 모두 입력하세요.", "error");
+      return;
+    }
+    const ticker = newAssetField("#newAssetTicker").value.trim().toUpperCase();
+    const name = newAssetField("#newAssetName").value.trim();
+    const type = newAssetField("#newAssetType").value;
+    const currency = newAssetField("#newAssetCurrency").value;
+    const quantity = Number(newAssetField("#newAssetQty").value);
+    const price = Number(newAssetField("#newAssetPrice").value);
+    const fx = currency === "USD" ? Number(newAssetField("#newAssetFx").value) : 1;
+    const currentFx = currency === "USD" ? fx : 1;
+
+    const hadAsset = Boolean(state.assetCatalog[ticker]);
+    if (!hadAsset) {
+      state.assetCatalog[ticker] = {
+        ticker,
+        name,
+        type,
+        currency,
+        currentPrice: price,
+        currentFx,
+        annualDividend: 0
+      };
+    }
+
+    const result = commitTrade({
+      ownerId: state.selectedInvestorId,
+      side: "buy",
+      ticker,
+      name,
+      type,
+      currency,
+      quantity,
+      price,
+      fx,
+      currentPrice: price,
+      currentFx,
+      date: new Date().toISOString().slice(0, 10),
+      memo: "신규 자산 등록"
+    });
+    if (!result.ok) {
+      if (!hadAsset) delete state.assetCatalog[ticker];
+      showToast(result.message, "error");
+      return;
+    }
+    resetNewAssetForm();
+    showToast(`${ticker} 신규 등록 및 매수가 반영되었습니다.`);
+  });
+  updateNewAssetFxVisibility();
 }
 
 function populateQuickTradeTicker() {
@@ -2423,6 +2524,7 @@ document.querySelector("#targetMonthlyDividend").addEventListener("input", rende
 document.querySelector("#calendarTargetSelect").addEventListener("change", renderDividendCalendar);
 
 document.querySelector("#cashflowForm").elements.date.valueAsDate = new Date();
+setupNewAssetForm();
 setupQuickTrade();
 recordSnapshot();
 render();
