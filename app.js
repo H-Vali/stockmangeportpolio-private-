@@ -1217,8 +1217,8 @@ function renderCryptoChangeChip(label, value) {
   return `<span class="crypto-change-chip ${tone}"><b>${label}</b>${change >= 0 ? "+" : ""}${pct(change)}</span>`;
 }
 
-function shouldShowCryptoChangeEffect(symbol, domesticDiff, globalDiff) {
-  const magnitude = Math.max(Math.abs(domesticDiff || 0), Math.abs(globalDiff || 0));
+function shouldShowCryptoChangeEffect(symbol, domesticDiff) {
+  const magnitude = Math.abs(domesticDiff || 0);
   if (magnitude < CRYPTO_CHANGE_EFFECT_THRESHOLD_PP) return false;
   const now = Date.now();
   const lastAt = cryptoChangeEffectAt[symbol] || 0;
@@ -1259,10 +1259,8 @@ function renderMarket() {
     const previous = previousRealtimeValues.market[item.symbol];
     if (previous && typeof previous.domestic === "number") {
       const domesticDiff = domesticChange - previous.domestic;
-      const globalDiff = globalChange - Number(previous.global || 0);
-      const effectDiff = Math.abs(domesticDiff) >= Math.abs(globalDiff) ? domesticDiff : globalDiff;
-      if (shouldShowCryptoChangeEffect(item.symbol, domesticDiff, globalDiff)) {
-        markRealtimeChange(row, effectDiff, (value) => `${value >= 0 ? "+" : ""}${pct(value)}p`);
+      if (shouldShowCryptoChangeEffect(item.symbol, domesticDiff)) {
+        markRealtimeChange(row, domesticDiff, (value) => `${value >= 0 ? "+" : ""}${pct(value)}p`);
       }
     }
   });
