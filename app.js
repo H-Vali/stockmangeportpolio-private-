@@ -370,6 +370,13 @@ let importRollbackState = null;
 let toastTimer = null;
 let pollingTimer = null;
 let fxTimer = null;
+let cryptoSocket = null;
+let cryptoDomesticTimer = null;
+let cryptoRenderTimer = null;
+let cryptoReconnectTimer = null;
+let cryptoReconnectAttempts = 0;
+let cryptoSocketShouldReconnect = false;
+let cryptoRealtimeSymbolKey = "";
 let dividendDetailOpen = false;
 let ledgerExpanded = false;
 
@@ -1184,6 +1191,7 @@ function clearHoldingsFilter() {
 }
 
 function overseasPriceSourceLabel() {
+  if (state.overseasPriceSource === "binance-stream") return "Binance 실시간";
   if (state.overseasPriceSource === "binance") return "Binance 기준";
   if (state.overseasPriceSource === "mixed") return "Binance+CoinGecko 기준";
   if (state.overseasPriceSource === "coingecko") return "CoinGecko 기준(폴백)";
@@ -2339,6 +2347,83 @@ function openDialog(dialog) {
   if (typeof dialog.showModal === "function") dialog.showModal();
 }
 
+function cryptoTrackingSymbols() {
+  const coinHoldings = replayHoldings().filter((holding) => holding.type === "코인");
+  const indicatorSymbols = (state.marketIndicators || [])
+    .map((item) => item.symbol?.toUpperCase())
+    .filter((symbol) => BINANCE_SYMBOLS[symbol] || COINGECKO_IDS[symbol]);
+  return [...new Set([
+    ...coinHoldings.map((holding) => holding.ticker.toUpperCase()),
+    ...indicatorSymbols
+  ])];
+}
+
+function cryptoIndicatorFor(symbol) {
+  const upper = symbol.toUpperCase();
+  let index = state.marketIndicators.findIndex((item) => item.symbol === upper);
+  if (index < 0) {
+    state.marketIndicators.push({
+      symbol: upper,
+      domestic: 0,
+      globalKrw: 0,
+      domesticChange: 0,
+      globalChange: 0,
+      updatedAt: null
+    });
+    index = state.marketIndicators.length - 1;
+  }
+  return state.marketIndicators[index];
+}
+
+function applyCryptoOverseasQuote(symbol, price, change, updatedAt = new Date().toISOString()) {
+  const upper = symbol.toUpperCase();
+  const quoteFx = Number(state.cryptoQuoteFx?.rate || currentUsdKrw());
+  const usdPrice = Number(price);
+  if (!usdPrice) return;
+  const asset = state.assetCatalog[upper];
+  if (asset) {
+    asset.currentPrice = usdPrice;
+    asset.currentFx = quoteFx;
+  }
+  const indicator = cryptoIndicatorFor(upper);
+  indicator.globalKrw = usdPrice * quoteFx;
+  indicator.globalChange = Number(change || indicator.globalChange || 0);
+  indicator.quoteFx = quoteFx;
+  indicator.quoteFxSource = state.cryptoQuoteFx?.source || "USDT/KRW";
+  indicator.updatedAt = updatedAt;
+}
+
+function applyCryptoDomesticQuote(symbol, price, change, updatedAt = new Date().toISOString()) {
+  const krwPrice = Number(price);
+  if (!krwPrice) return;
+  const indicator = cryptoIndicatorFor(symbol);
+  indicator.domestic = krwPrice;
+  indicator.domesticChange = Number(change || 0);
+  indicator.updatedAt = updatedAt;
+}
+
+function scheduleCryptoRealtimeRender() {
+  if (cryptoRenderTimer) return;
+  cryptoRenderTimer = setTimeout(() => {
+    cryptoRenderTimer = null;
+    renderDashboard();
+    renderAllocation();
+    renderMarket();
+    renderInvestorComparison();
+    renderInvestorSheet();
+    renderHoldings();
+    renderHoldingsPreview();
+    renderTrend();
+    renderFx();
+  }, 1000);
+}
+
+async function refreshCryptoQuoteFxIfStale(maxAgeMs = 30000) {
+  const updatedAt = state.cryptoQuoteFx?.updatedAt ? new Date(state.cryptoQuoteFx.updatedAt).getTime() : 0;
+  if (Date.now() - updatedAt < maxAgeMs && Number(state.cryptoQuoteFx?.rate || 0)) return state.cryptoQuoteFx;
+  return fetchCryptoQuoteFx();
+}
+
 async function fetchOverseasPricesBinance(symbols) {
   const overseas = {};
   for (const symbol of symbols) {
@@ -2419,14 +2504,7 @@ async function fetchCryptoQuoteFx() {
 }
 
 async function updateCoinQuotes() {
-  const coinHoldings = replayHoldings().filter((holding) => holding.type === "코인");
-  const indicatorSymbols = (state.marketIndicators || [])
-    .map((item) => item.symbol?.toUpperCase())
-    .filter((symbol) => BINANCE_SYMBOLS[symbol] || COINGECKO_IDS[symbol]);
-  const symbols = [...new Set([
-    ...coinHoldings.map((holding) => holding.ticker.toUpperCase()),
-    ...indicatorSymbols
-  ])];
+  const symbols = cryptoTrackingSymbols();
   if (!symbols.length) return;
   const overseas = await fetchOverseasPrices(symbols);
   const quoteFx = await fetchCryptoQuoteFx();
@@ -2441,11 +2519,7 @@ async function updateCoinQuotes() {
       const overseasQuote = overseas[symbol];
       const globalUsd = typeof overseasQuote === "number" ? overseasQuote : overseasQuote?.price;
       const globalChange = typeof overseasQuote === "number" ? 0 : Number(overseasQuote?.change || 0);
-      const asset = state.assetCatalog[symbol];
-      if (asset && globalUsd) {
-        asset.currentPrice = globalUsd;
-        asset.currentFx = quoteFx.rate;
-      }
+      if (globalUsd) applyCryptoOverseasQuote(symbol, globalUsd, globalChange);
       if (domestic && globalUsd) {
         const globalKrw = globalUsd * quoteFx.rate;
         const next = {
@@ -2465,6 +2539,95 @@ async function updateCoinQuotes() {
     } catch (error) {
       console.warn("국내 코인 시세 조회를 건너뜁니다.", error);
     }
+  }
+}
+
+async function updateDomesticCoinQuotesRealtime() {
+  const symbols = cryptoTrackingSymbols().filter((symbol) => BINANCE_SYMBOLS[symbol] || COINGECKO_IDS[symbol]);
+  if (!symbols.length) return;
+  try {
+    await refreshCryptoQuoteFxIfStale();
+  } catch (error) {
+    console.warn("USDT/KRW 실시간 보강 갱신을 건너뜁니다.", error);
+  }
+  await Promise.allSettled(symbols.map(async (symbol) => {
+    const response = await fetch(`https://api.bithumb.com/public/ticker/${symbol}_KRW`);
+    if (!response.ok) throw new Error(`빗썸 시세를 가져오지 못했습니다: ${symbol}`);
+    const data = await response.json();
+    const domestic = Number(data?.data?.closing_price);
+    const domesticChange = Number(data?.data?.fluctate_rate_24H || data?.data?.fluctate_rate_24h || 0);
+    applyCryptoDomesticQuote(symbol, domestic, domesticChange);
+  }));
+  scheduleCryptoRealtimeRender();
+}
+
+function binanceSymbolToAssetSymbol(binanceSymbol) {
+  return Object.keys(BINANCE_SYMBOLS).find((symbol) => BINANCE_SYMBOLS[symbol] === binanceSymbol) || null;
+}
+
+function startBinanceCryptoSocket(symbols) {
+  if (!window.WebSocket) return;
+  const streams = symbols
+    .map((symbol) => BINANCE_SYMBOLS[symbol])
+    .filter(Boolean)
+    .map((symbol) => `${symbol.toLowerCase()}@ticker`);
+  if (!streams.length) return;
+
+  cryptoSocketShouldReconnect = true;
+  clearTimeout(cryptoReconnectTimer);
+  if (cryptoSocket) {
+    const previousSocket = cryptoSocket;
+    cryptoSocket = null;
+    cryptoSocketShouldReconnect = false;
+    previousSocket.close();
+    cryptoSocketShouldReconnect = true;
+  }
+
+  const socket = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams.join("/")}`);
+  cryptoSocket = socket;
+  socket.addEventListener("open", () => {
+    cryptoReconnectAttempts = 0;
+    state.overseasPriceSource = "binance-stream";
+    renderMarket();
+  });
+  socket.addEventListener("message", (event) => {
+    try {
+      const payload = JSON.parse(event.data);
+      const data = payload.data || payload;
+      const symbol = binanceSymbolToAssetSymbol(data.s);
+      const price = Number(data.c);
+      if (!symbol || !price) return;
+      state.overseasPriceSource = "binance-stream";
+      applyCryptoOverseasQuote(symbol, price, Number(data.P || 0), new Date(Number(data.E) || Date.now()).toISOString());
+      scheduleCryptoRealtimeRender();
+    } catch (error) {
+      console.warn("Binance WebSocket 메시지를 처리하지 못했습니다.", error);
+    }
+  });
+  socket.addEventListener("close", () => {
+    if (cryptoSocket !== socket || !cryptoSocketShouldReconnect) return;
+    cryptoReconnectAttempts += 1;
+    const delay = Math.min(30000, 1500 * (2 ** Math.min(cryptoReconnectAttempts, 5)));
+    cryptoReconnectTimer = setTimeout(() => startCryptoRealtime(), delay);
+  });
+  socket.addEventListener("error", () => {
+    socket.close();
+  });
+}
+
+function startDomesticCryptoPolling() {
+  clearInterval(cryptoDomesticTimer);
+  updateDomesticCoinQuotesRealtime();
+  cryptoDomesticTimer = setInterval(updateDomesticCoinQuotesRealtime, 5000);
+}
+
+function startCryptoRealtime() {
+  const symbols = cryptoTrackingSymbols().filter((symbol) => BINANCE_SYMBOLS[symbol] || COINGECKO_IDS[symbol]);
+  const symbolKey = symbols.slice().sort().join("|");
+  startDomesticCryptoPolling();
+  if (symbolKey && symbolKey !== cryptoRealtimeSymbolKey) {
+    cryptoRealtimeSymbolKey = symbolKey;
+    startBinanceCryptoSocket(symbols);
   }
 }
 
@@ -2518,6 +2681,7 @@ async function refreshQuotes() {
       error: null
     };
     saveState({ snapshot: true });
+    startCryptoRealtime();
     render();
   } catch (error) {
     state.market.failedAt = new Date().toISOString();
@@ -2601,6 +2765,7 @@ async function refreshFxRate() {
 function startPolling() {
   refreshFxRate();
   refreshQuotes();
+  startCryptoRealtime();
   clearInterval(pollingTimer);
   clearInterval(fxTimer);
   pollingTimer = setInterval(refreshQuotes, 60000);
