@@ -527,14 +527,80 @@ function moneyParts(value) {
   };
 }
 
+const _animatingElements = new Map();
+
+function animateNumberTo(element, targetValue, duration = 420) {
+  if (!element) return;
+  const key = element;
+  const existing = _animatingElements.get(key);
+  const startValue = existing ? existing.current : (parseFloat(element.dataset.animValue) || 0);
+  if (existing) cancelAnimationFrame(existing.raf);
+  if (Math.abs(startValue - targetValue) < 0.5) {
+    _animatingElements.delete(key);
+    element.dataset.animValue = targetValue;
+    return targetValue;
+  }
+  const startTime = performance.now();
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+  function tick(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = easeOutCubic(progress);
+    const current = startValue + (targetValue - startValue) * eased;
+    const entry = _animatingElements.get(key);
+    if (entry) entry.current = current;
+    element.dataset.animValue = current;
+    if (progress < 1) {
+      const raf = requestAnimationFrame(tick);
+      if (entry) entry.raf = raf;
+    } else {
+      _animatingElements.delete(key);
+      element.dataset.animValue = targetValue;
+    }
+    return current;
+  }
+  const state = { current: startValue, raf: requestAnimationFrame(tick) };
+  _animatingElements.set(key, state);
+  return startValue;
+}
+
 function setMoneyElement(selector, value) {
   const element = document.querySelector(selector);
+  if (!element) return;
+  const prev = parseFloat(element.dataset.animValue) || 0;
   const parts = moneyParts(value);
-  element.innerHTML = `<span class="currency-prefix">${parts.symbol}</span>${parts.amount}`;
+  if (Math.abs(prev - value) < 0.5) {
+    element.innerHTML = `<span class="currency-prefix">${parts.symbol}</span>${parts.amount}`;
+    element.dataset.animValue = value;
+    return;
+  }
+  const duration = 420;
+  const startTime = performance.now();
+  const existing = _animatingElements.get(element);
+  if (existing) cancelAnimationFrame(existing.raf);
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+  function tick(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const current = prev + (value - prev) * easeOutCubic(progress);
+    const p = moneyParts(current);
+    element.innerHTML = `<span class="currency-prefix">${p.symbol}</span>${p.amount}`;
+    element.dataset.animValue = current;
+    if (progress < 1) {
+      const raf = requestAnimationFrame(tick);
+      const entry = _animatingElements.get(element);
+      if (entry) entry.raf = raf;
+    } else {
+      _animatingElements.delete(element);
+      element.dataset.animValue = value;
+    }
+  }
+  _animatingElements.set(element, { current: prev, raf: requestAnimationFrame(tick) });
 }
 
 function setSignedMoneyElement(selector, value) {
   const element = document.querySelector(selector);
+  if (!element) return;
   const sign = value >= 0 ? "+" : "-";
   const parts = moneyParts(Math.abs(value));
   element.innerHTML = `<span class="currency-prefix">${sign}${parts.symbol}</span>${parts.amount}`;
@@ -559,9 +625,13 @@ function signedUsd(value) {
 function markRealtimeChange(card, diff, formatter = signedMoney) {
   if (!card || !Number.isFinite(diff) || Math.abs(diff) < 0.000001) return;
   const direction = diff >= 0 ? "up" : "down";
+  const flashClass = direction === "up" ? "realtime-flash-up" : "realtime-flash-down";
   card.classList.remove("realtime-flash-up", "realtime-flash-down");
+  void card.offsetWidth;
   requestAnimationFrame(() => {
-    card.classList.add(direction === "up" ? "realtime-flash-up" : "realtime-flash-down");
+    requestAnimationFrame(() => {
+      card.classList.add(flashClass);
+    });
   });
   card.querySelectorAll(".metric-change-badge").forEach((existingBadge) => {
     existingBadge.classList.add("fading");
@@ -1000,17 +1070,36 @@ function getAllocationSlices(ownerId) {
   return { slices, totalValue: summary.totalValue };
 }
 
+function smoothTextUpdate(selector, newText) {
+  const el = document.querySelector(selector);
+  if (!el || el.textContent === newText) return;
+  el.style.transition = "opacity 180ms ease";
+  el.style.opacity = "0.4";
+  requestAnimationFrame(() => {
+    el.textContent = newText;
+    requestAnimationFrame(() => { el.style.opacity = "1"; });
+  });
+}
+
 function renderDashboard() {
   const summary = summarize();
   const totalProfit = document.querySelector("#totalProfit");
   setMoneyElement("#totalValue", summary.totalValue);
   setMoneyElement("#totalPrincipal", summary.principal);
-  totalProfit.textContent = signedMoney(summary.profit);
-  totalProfit.className = summary.profit >= 0 ? "positive" : "negative";
-  document.querySelector("#profitRate").textContent = `수익률 ${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}`;
-  document.querySelector("#totalDividend").textContent = `총배당 ${money(summary.dividend)}`;
+  const profitText = signedMoney(summary.profit);
+  if (totalProfit.textContent !== profitText) {
+    totalProfit.style.transition = "opacity 180ms ease";
+    totalProfit.style.opacity = "0.4";
+    requestAnimationFrame(() => {
+      totalProfit.textContent = profitText;
+      totalProfit.className = summary.profit >= 0 ? "positive" : "negative";
+      requestAnimationFrame(() => { totalProfit.style.opacity = "1"; });
+    });
+  }
+  smoothTextUpdate("#profitRate", `수익률 ${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}`);
+  smoothTextUpdate("#totalDividend", `총배당 ${money(summary.dividend)}`);
   setMoneyElement("#cashAmount", summary.cash);
-  document.querySelector("#cashRatio").textContent = `평가금액 포함 · ${pct(summary.totalValue ? (summary.cash / summary.totalValue) * 100 : 0)}`;
+  smoothTextUpdate("#cashRatio", `평가금액 포함 · ${pct(summary.totalValue ? (summary.cash / summary.totalValue) * 100 : 0)}`);
 }
 
 function renderAllocation() {
@@ -1229,7 +1318,6 @@ function shouldShowCryptoChangeEffect(symbol, domesticDiff) {
 
 function renderMarket() {
   const list = document.querySelector("#marketList");
-  list.innerHTML = "";
   const sourceLabel = overseasPriceSourceLabel();
   const ratePill = document.querySelector("#cryptoRatePill");
   if (ratePill) {
@@ -1239,29 +1327,50 @@ function renderMarket() {
     ratePill.textContent = rate ? `${source} ${fxFormatter.format(rate)} · ${updatedAt}` : `${source} 대기 중`;
   }
   const nextValues = {};
+  const existingCards = list.querySelectorAll(".market-card[data-symbol]");
+  const existingMap = new Map();
+  existingCards.forEach((card) => existingMap.set(card.dataset.symbol, card));
+  const activeSymbols = new Set();
   state.marketIndicators.forEach((item) => {
     const domesticChange = Number(item.domesticChange || 0);
     const globalChange = Number(item.globalChange || 0);
     nextValues[item.symbol] = { domestic: domesticChange, global: globalChange };
-    const row = document.createElement("div");
-    row.className = "market-card";
-    row.innerHTML = `
-      <div class="market-title-row">
-        ${renderCryptoLogo(item.symbol)}
-        <div>${renderMetricTitle(item.symbol)}<small>국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)} · ${sourceLabel}</small></div>
-      </div>
-      <div class="crypto-change-stack">
-        ${renderCryptoChangeChip("국내", domesticChange)}
-        ${renderCryptoChangeChip("해외", globalChange)}
-      </div>
-    `;
-    list.appendChild(row);
+    activeSymbols.add(item.symbol);
+    let row = existingMap.get(item.symbol);
+    if (row) {
+      const detail = row.querySelector("small");
+      if (detail) detail.textContent = `국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)} · ${sourceLabel}`;
+      const stack = row.querySelector(".crypto-change-stack");
+      if (stack) stack.innerHTML = `${renderCryptoChangeChip("국내", domesticChange)}${renderCryptoChangeChip("해외", globalChange)}`;
+    } else {
+      row = document.createElement("div");
+      row.className = "market-card";
+      row.dataset.symbol = item.symbol;
+      row.innerHTML = `
+        <div class="market-title-row">
+          ${renderCryptoLogo(item.symbol)}
+          <div>${renderMetricTitle(item.symbol)}<small>국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)} · ${sourceLabel}</small></div>
+        </div>
+        <div class="crypto-change-stack">
+          ${renderCryptoChangeChip("국내", domesticChange)}
+          ${renderCryptoChangeChip("해외", globalChange)}
+        </div>
+      `;
+      list.appendChild(row);
+    }
     const previous = previousRealtimeValues.market[item.symbol];
     if (previous && typeof previous.domestic === "number") {
       const domesticDiff = domesticChange - previous.domestic;
       if (shouldShowCryptoChangeEffect(item.symbol, domesticDiff)) {
         markRealtimeChange(row, domesticDiff, (value) => `${value >= 0 ? "+" : ""}${pct(value)}p`);
       }
+    }
+  });
+  existingMap.forEach((card, symbol) => {
+    if (!activeSymbols.has(symbol)) {
+      card.style.opacity = "0";
+      card.style.transform = "scale(0.95)";
+      setTimeout(() => card.remove(), 300);
     }
   });
   previousRealtimeValues.market = nextValues;
@@ -2347,26 +2456,31 @@ function renderDividendCalendar() {
   });
 }
 
+let _renderRafId = null;
 function render() {
-  renderView();
-  renderDashboard();
-  renderAllocation();
-  renderMarket();
-  renderIndexMonitor();
-  renderInvestorComparison();
-  renderInvestorTabs();
-  renderInvestorSheet();
-  renderHoldings();
-  renderHoldingsPreview();
-  renderTransactions();
-  renderLedgerPreview();
-  renderTrend();
-  renderFx();
-  renderMarketStatus();
-  populateOwnerSelects();
-  renderDividendSimulation();
-  renderDividendCalendar();
-  document.querySelector("#undoImportButton").classList.toggle("hidden", !importRollbackState);
+  if (_renderRafId) return;
+  _renderRafId = requestAnimationFrame(() => {
+    _renderRafId = null;
+    renderView();
+    renderDashboard();
+    renderAllocation();
+    renderMarket();
+    renderIndexMonitor();
+    renderInvestorComparison();
+    renderInvestorTabs();
+    renderInvestorSheet();
+    renderHoldings();
+    renderHoldingsPreview();
+    renderTransactions();
+    renderLedgerPreview();
+    renderTrend();
+    renderFx();
+    renderMarketStatus();
+    populateOwnerSelects();
+    renderDividendSimulation();
+    renderDividendCalendar();
+    document.querySelector("#undoImportButton").classList.toggle("hidden", !importRollbackState);
+  });
 }
 
 function openDialog(dialog) {

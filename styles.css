@@ -570,7 +570,7 @@ a.ghost-button {
   overflow: hidden;
   padding: 18px;
   background: linear-gradient(180deg, rgba(28, 28, 37, 0.78), var(--surface));
-  transition: border-color 180ms ease;
+  transition: border-color 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   transform: translateZ(0);
 }
 
@@ -586,6 +586,7 @@ a.ghost-button {
   content: "";
   pointer-events: none;
   will-change: opacity;
+  transition: opacity 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .metric-card span,
@@ -633,38 +634,42 @@ a.ghost-button {
   line-height: 1;
   white-space: nowrap;
   opacity: 0;
-  transform: translateY(6px);
-  animation: metricBadgeIn 220ms ease-out forwards;
-  transition: opacity 650ms ease, transform 650ms ease;
+  transform: translateY(8px) scale(0.92);
+  animation: metricBadgeIn 320ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transition: opacity 800ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 800ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   will-change: opacity, transform;
 }
 
 .metric-change-badge.fading {
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(-8px) scale(0.92);
 }
 
 .realtime-flash-up {
-  border-color: rgba(246, 70, 93, 0.5);
+  border-color: rgba(246, 70, 93, 0.45);
+  box-shadow: inset 0 0 24px rgba(246, 70, 93, 0.06);
 }
 
 .realtime-flash-down {
-  border-color: rgba(70, 145, 255, 0.5);
+  border-color: rgba(70, 145, 255, 0.45);
+  box-shadow: inset 0 0 24px rgba(70, 145, 255, 0.06);
 }
 
 .realtime-flash-up::after {
-  background: linear-gradient(180deg, rgba(246, 70, 93, 0.16), rgba(246, 70, 93, 0.03));
-  animation: metricFlashOverlay 1.4s ease-out;
+  background: linear-gradient(180deg, rgba(246, 70, 93, 0.12), rgba(246, 70, 93, 0.02));
+  animation: metricFlashOverlay 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .realtime-flash-down::after {
-  background: linear-gradient(180deg, rgba(70, 145, 255, 0.16), rgba(70, 145, 255, 0.03));
-  animation: metricFlashOverlay 1.4s ease-out;
+  background: linear-gradient(180deg, rgba(70, 145, 255, 0.12), rgba(70, 145, 255, 0.02));
+  animation: metricFlashOverlay 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 @keyframes metricFlashOverlay {
-  0%,
-  12% {
+  0% {
+    opacity: 0;
+  }
+  8% {
     opacity: 1;
   }
   100% {
@@ -675,8 +680,16 @@ a.ghost-button {
 @keyframes metricBadgeIn {
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
+}
+
+.market-card {
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+.metric-card strong {
+  transition: color 300ms ease;
 }
 
 @keyframes sparkPointGlow {
@@ -1320,7 +1333,7 @@ tbody tr:hover {
   overflow: hidden;
   border-color: rgba(124, 92, 252, 0.26);
   scroll-snap-align: start;
-  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  transition: border-color 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 180ms ease;
 }
 
 .stock-index-card {
@@ -1393,6 +1406,7 @@ tbody tr:hover {
   inset: 0;
   opacity: 0.12;
   pointer-events: none;
+  transition: background 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .index-card:hover {
