@@ -556,8 +556,9 @@ function markRealtimeChange(card, diff, formatter = signedMoney) {
   if (!card || !Number.isFinite(diff) || Math.abs(diff) < 0.000001) return;
   const direction = diff >= 0 ? "up" : "down";
   card.classList.remove("realtime-flash-up", "realtime-flash-down");
-  void card.offsetWidth;
-  card.classList.add(direction === "up" ? "realtime-flash-up" : "realtime-flash-down");
+  requestAnimationFrame(() => {
+    card.classList.add(direction === "up" ? "realtime-flash-up" : "realtime-flash-down");
+  });
   card.querySelector(".metric-change-badge")?.remove();
   const badge = document.createElement("b");
   badge.className = `metric-change-badge ${direction === "up" ? "positive" : "negative"}`;
