@@ -8,6 +8,8 @@ const PROXY_STORAGE_KEY = "assetpilot-proxy-base-url";
 const FX_API_PRIMARY_URL = "https://api.frankfurter.app/latest?from=USD&to=KRW";
 const FX_API_FALLBACK_URL = "https://open.er-api.com/v6/latest/USD";
 const CRYPTO_REALTIME_RENDER_INTERVAL_MS = 3000;
+const CRYPTO_CHANGE_EFFECT_THRESHOLD_PP = 0.05;
+const CRYPTO_CHANGE_EFFECT_MIN_INTERVAL_MS = 9000;
 const REALTIME_CHANGE_BADGE_DURATION_MS = 3000;
 const REALTIME_CHANGE_BADGE_FADE_MS = 650;
 const ALLOCATION_RATIOS_KEY = "assetpilot-allocation-ratios-v1";
@@ -380,6 +382,7 @@ let cryptoReconnectTimer = null;
 let cryptoReconnectAttempts = 0;
 let cryptoSocketShouldReconnect = false;
 let cryptoRealtimeSymbolKey = "";
+let cryptoChangeEffectAt = {};
 let dividendDetailOpen = false;
 let ledgerExpanded = false;
 
@@ -1214,6 +1217,16 @@ function renderCryptoChangeChip(label, value) {
   return `<span class="crypto-change-chip ${tone}"><b>${label}</b>${change >= 0 ? "+" : ""}${pct(change)}</span>`;
 }
 
+function shouldShowCryptoChangeEffect(symbol, domesticDiff, globalDiff) {
+  const magnitude = Math.max(Math.abs(domesticDiff || 0), Math.abs(globalDiff || 0));
+  if (magnitude < CRYPTO_CHANGE_EFFECT_THRESHOLD_PP) return false;
+  const now = Date.now();
+  const lastAt = cryptoChangeEffectAt[symbol] || 0;
+  if (now - lastAt < CRYPTO_CHANGE_EFFECT_MIN_INTERVAL_MS) return false;
+  cryptoChangeEffectAt[symbol] = now;
+  return true;
+}
+
 function renderMarket() {
   const list = document.querySelector("#marketList");
   list.innerHTML = "";
@@ -1245,7 +1258,12 @@ function renderMarket() {
     list.appendChild(row);
     const previous = previousRealtimeValues.market[item.symbol];
     if (previous && typeof previous.domestic === "number") {
-      markRealtimeChange(row, domesticChange - previous.domestic, (value) => `${value >= 0 ? "+" : ""}${pct(value)}p`);
+      const domesticDiff = domesticChange - previous.domestic;
+      const globalDiff = globalChange - Number(previous.global || 0);
+      const effectDiff = Math.abs(domesticDiff) >= Math.abs(globalDiff) ? domesticDiff : globalDiff;
+      if (shouldShowCryptoChangeEffect(item.symbol, domesticDiff, globalDiff)) {
+        markRealtimeChange(row, effectDiff, (value) => `${value >= 0 ? "+" : ""}${pct(value)}p`);
+      }
     }
   });
   previousRealtimeValues.market = nextValues;
