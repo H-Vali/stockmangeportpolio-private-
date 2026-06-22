@@ -336,11 +336,11 @@ const seedState = {
   },
   indexQuotes: {},
   marketIndicators: [
-    { symbol: "BTC", domestic: 52000000, globalKrw: 50420000, updatedAt: null },
-    { symbol: "ETH", domestic: 3300000, globalKrw: 3244000, updatedAt: null },
-    { symbol: "SOL", domestic: 224000, globalKrw: 216800, updatedAt: null },
-    { symbol: "BNB", domestic: 978000, globalKrw: 951000, updatedAt: null },
-    { symbol: "XRP", domestic: 3500, globalKrw: 3370, updatedAt: null }
+    { symbol: "BTC", domestic: 52000000, globalKrw: 50420000, domesticChange: 0, globalChange: 0, updatedAt: null },
+    { symbol: "ETH", domestic: 3300000, globalKrw: 3244000, domesticChange: 0, globalChange: 0, updatedAt: null },
+    { symbol: "SOL", domestic: 224000, globalKrw: 216800, domesticChange: 0, globalChange: 0, updatedAt: null },
+    { symbol: "BNB", domestic: 978000, globalKrw: 951000, domesticChange: 0, globalChange: 0, updatedAt: null },
+    { symbol: "XRP", domestic: 3500, globalKrw: 3370, domesticChange: 0, globalChange: 0, updatedAt: null }
   ],
   cashflows: [
     { id: crypto.randomUUID(), ownerId: "kim", date: "2026-06-01", type: "deposit", amount: 3000000, memo: "초기 입금" },
@@ -1190,6 +1190,12 @@ function overseasPriceSourceLabel() {
   return "시드 데이터";
 }
 
+function renderCryptoChangeChip(label, value) {
+  const change = Number(value || 0);
+  const tone = change >= 0 ? "positive" : "negative";
+  return `<span class="crypto-change-chip ${tone}"><b>${label}</b>${change >= 0 ? "+" : ""}${pct(change)}</span>`;
+}
+
 function renderMarket() {
   const list = document.querySelector("#marketList");
   list.innerHTML = "";
@@ -1203,8 +1209,9 @@ function renderMarket() {
   }
   const nextValues = {};
   state.marketIndicators.forEach((item) => {
-    const premium = item.globalKrw ? ((item.domestic / item.globalKrw) - 1) * 100 : 0;
-    nextValues[item.symbol] = premium;
+    const domesticChange = Number(item.domesticChange || 0);
+    const globalChange = Number(item.globalChange || 0);
+    nextValues[item.symbol] = { domestic: domesticChange, global: globalChange };
     const row = document.createElement("div");
     row.className = "market-card";
     row.innerHTML = `
@@ -1212,11 +1219,16 @@ function renderMarket() {
         ${renderCryptoLogo(item.symbol)}
         <div>${renderMetricTitle(item.symbol)}<small>국내 ${money(item.domestic)} · 해외환산 ${money(item.globalKrw)} · ${sourceLabel}</small></div>
       </div>
-      <span class="${premium >= 0 ? "positive" : "negative"}">${premium >= 0 ? "+" : ""}${pct(premium)}</span>
+      <div class="crypto-change-stack">
+        ${renderCryptoChangeChip("국내", domesticChange)}
+        ${renderCryptoChangeChip("해외", globalChange)}
+      </div>
     `;
     list.appendChild(row);
     const previous = previousRealtimeValues.market[item.symbol];
-    if (typeof previous === "number") markRealtimeChange(row, premium - previous, signedPercentChange);
+    if (previous && typeof previous.domestic === "number") {
+      markRealtimeChange(row, domesticChange - previous.domestic, (value) => `${value >= 0 ? "+" : ""}${pct(value)}p`);
+    }
   });
   previousRealtimeValues.market = nextValues;
 }
@@ -2332,10 +2344,16 @@ async function fetchOverseasPricesBinance(symbols) {
   for (const symbol of symbols) {
     const binanceSymbol = BINANCE_SYMBOLS[symbol];
     if (!binanceSymbol) continue;
-    const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${binanceSymbol}`);
+    const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`);
     if (!response.ok) throw new Error(`Binance 시세를 가져오지 못했습니다: ${symbol}`);
     const data = await response.json();
-    if (data.price) overseas[symbol] = Number(data.price);
+    const price = Number(data.lastPrice || data.price);
+    if (price) {
+      overseas[symbol] = {
+        price,
+        change: Number(data.priceChangePercent || 0)
+      };
+    }
   }
   return overseas;
 }
@@ -2343,14 +2361,19 @@ async function fetchOverseasPricesBinance(symbols) {
 async function fetchOverseasPricesCoinGecko(symbols) {
   const coingeckoIds = symbols.map((symbol) => COINGECKO_IDS[symbol]).filter(Boolean);
   if (!coingeckoIds.length) return {};
-  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoIds.join(",")}&vs_currencies=usd`;
+  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoIds.join(",")}&vs_currencies=usd&include_24hr_change=true`;
   const response = await fetch(url);
   if (!response.ok) throw new Error("CoinGecko 시세를 가져오지 못했습니다.");
   const data = await response.json();
   const overseas = {};
   symbols.forEach((symbol) => {
     const id = COINGECKO_IDS[symbol];
-    if (data[id]?.usd) overseas[symbol] = data[id].usd;
+    if (data[id]?.usd) {
+      overseas[symbol] = {
+        price: Number(data[id].usd),
+        change: Number(data[id].usd_24h_change || 0)
+      };
+    }
   });
   return overseas;
 }
@@ -2358,7 +2381,7 @@ async function fetchOverseasPricesCoinGecko(symbols) {
 async function fetchOverseasPrices(symbols) {
   try {
     const result = await fetchOverseasPricesBinance(symbols);
-    const missing = symbols.filter((symbol) => !result[symbol]);
+    const missing = symbols.filter((symbol) => !result[symbol]?.price);
     if (!missing.length) {
       state.overseasPriceSource = "binance";
       return result;
@@ -2414,7 +2437,10 @@ async function updateCoinQuotes() {
       if (!bithumbResponse.ok) throw new Error(`빗썸 시세를 가져오지 못했습니다: ${symbol}`);
       const bithumb = await bithumbResponse.json();
       const domestic = Number(bithumb?.data?.closing_price);
-      const globalUsd = overseas[symbol];
+      const domesticChange = Number(bithumb?.data?.fluctate_rate_24H || bithumb?.data?.fluctate_rate_24h || 0);
+      const overseasQuote = overseas[symbol];
+      const globalUsd = typeof overseasQuote === "number" ? overseasQuote : overseasQuote?.price;
+      const globalChange = typeof overseasQuote === "number" ? 0 : Number(overseasQuote?.change || 0);
       const asset = state.assetCatalog[symbol];
       if (asset && globalUsd) {
         asset.currentPrice = globalUsd;
@@ -2426,6 +2452,8 @@ async function updateCoinQuotes() {
           symbol,
           domestic,
           globalKrw,
+          domesticChange,
+          globalChange,
           quoteFx: quoteFx.rate,
           quoteFxSource: quoteFx.source,
           updatedAt: new Date().toISOString()

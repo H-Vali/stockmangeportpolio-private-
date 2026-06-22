@@ -2160,6 +2160,33 @@ tbody tr:hover {
   height: 16px;
 }
 
+.crypto-change-stack {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.crypto-change-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 104px;
+  padding: 4px 9px;
+  border: 1px solid rgba(124, 92, 252, 0.22);
+  border-radius: 999px;
+  background: rgba(28, 28, 37, 0.72);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.crypto-change-chip b {
+  color: var(--muted);
+  font-family: Pretendard, Inter, sans-serif;
+  font-size: 11px;
+}
+
 .market-card span,
 .investor-card span {
   font-family: "Space Grotesk", Pretendard, sans-serif;
