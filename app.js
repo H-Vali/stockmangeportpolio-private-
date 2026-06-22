@@ -1493,15 +1493,6 @@ function normalizeAssetSearch(value) {
   return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function escapeOptionText(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 function assetLookupEntries() {
   const merged = new Map();
   ASSET_DICTIONARY.forEach((asset) => {
@@ -1552,15 +1543,6 @@ function applyNewAssetLookup(asset, sourceField) {
   updateNewAssetSubmitState();
 }
 
-function populateNewAssetSuggestions() {
-  const tickerList = document.querySelector("#newAssetTickerSuggestions");
-  const nameList = document.querySelector("#newAssetNameSuggestions");
-  if (!tickerList || !nameList) return;
-  const entries = assetLookupEntries();
-  tickerList.innerHTML = entries.map((asset) => `<option value="${escapeOptionText(asset.ticker)}">${escapeOptionText(asset.name)}</option>`).join("");
-  nameList.innerHTML = entries.map((asset) => `<option value="${escapeOptionText(asset.name)}">${escapeOptionText(asset.ticker)}</option>`).join("");
-}
-
 function isNewAssetFormValid() {
   const ticker = newAssetField("#newAssetTicker")?.value.trim();
   const name = newAssetField("#newAssetName")?.value.trim();
@@ -1600,7 +1582,6 @@ function resetNewAssetForm() {
 function setupNewAssetForm() {
   const submit = newAssetField("#newAssetSubmit");
   if (!submit) return;
-  populateNewAssetSuggestions();
   newAssetField("#newAssetTicker")?.addEventListener("input", (event) => {
     const match = findAssetLookupMatch(event.target.value, "ticker");
     if (match) applyNewAssetLookup(match, "ticker");
@@ -1670,7 +1651,6 @@ function setupNewAssetForm() {
       return;
     }
     resetNewAssetForm();
-    populateNewAssetSuggestions();
     showToast(`${ticker} 신규 등록 및 매수가 반영되었습니다.`);
   });
   updateNewAssetFxVisibility();
