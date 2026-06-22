@@ -2438,20 +2438,78 @@ function renderDividendCalendar() {
   const ownerId = document.querySelector("#calendarTargetSelect").value || null;
   const holdings = replayHoldings(ownerId).filter((holding) => holding.annualDividend > 0);
   const grid = document.querySelector("#dividendCalendar");
+  const summaryEl = document.querySelector("#calendarSummary");
   grid.innerHTML = "";
+
+  const now = new Date();
+  const kstParts = getKstNowParts(now);
+  const currentMonth = Number(kstParts.dateKey.split("-")[1]);
+
+  const monthlyTotals = new Array(12).fill(0);
+  const monthlyItems = Array.from({ length: 12 }, () => []);
+
+  holdings.forEach((holding) => {
+    const months = DIVIDEND_MONTHS[holding.ticker] || [3, 6, 9, 12];
+    const perPayout = (holding.annualDividend / months.length) * (1 - DIVIDEND_TAX_RATE);
+    months.forEach((m) => {
+      monthlyTotals[m - 1] += perPayout;
+      monthlyItems[m - 1].push({ ticker: holding.ticker, amount: perPayout });
+    });
+  });
+
+  const annualTotal = monthlyTotals.reduce((s, v) => s + v, 0);
+  const monthlyAvg = annualTotal / 12;
+  const maxMonthly = Math.max(...monthlyTotals, 1);
+  const activeMonths = monthlyTotals.filter((v) => v > 0).length;
+
+  if (summaryEl) {
+    summaryEl.innerHTML = `
+      <div class="cal-summary-card cal-summary-total">
+        <span>연간 예상 배당 (세후)</span>
+        <strong>${money(annualTotal)}</strong>
+      </div>
+      <div class="cal-summary-card">
+        <span>월 평균</span>
+        <strong>${money(monthlyAvg)}</strong>
+      </div>
+      <div class="cal-summary-card">
+        <span>배당 수령 월</span>
+        <strong>${activeMonths}개월 / 12개월</strong>
+      </div>
+      <div class="cal-summary-card">
+        <span>배당 종목 수</span>
+        <strong>${holdings.length}종목</strong>
+      </div>
+    `;
+  }
+
   monthNames.forEach((monthName, monthIndex) => {
     const month = monthIndex + 1;
-    const items = holdings
-      .filter((holding) => (DIVIDEND_MONTHS[holding.ticker] || [3, 6, 9, 12]).includes(month))
-      .map((holding) => {
-        const months = DIVIDEND_MONTHS[holding.ticker] || [3, 6, 9, 12];
-        const afterTax = (holding.annualDividend / months.length) * (1 - DIVIDEND_TAX_RATE);
-        return `<div class="calendar-item"><strong>${holding.ticker}</strong><span>${money(afterTax)}</span></div>`;
-      })
-      .join("");
+    const total = monthlyTotals[monthIndex];
+    const items = monthlyItems[monthIndex];
+    const isCurrent = month === currentMonth;
+    const barWidth = maxMonthly > 0 ? (total / maxMonthly) * 100 : 0;
+
+    const itemsHtml = items.length > 0
+      ? items.map((item) => {
+          const ratio = total > 0 ? ((item.amount / total) * 100).toFixed(1) : 0;
+          return `<div class="calendar-item">
+            <div class="cal-item-info"><strong>${item.ticker}</strong><span class="cal-item-ratio">${ratio}%</span></div>
+            <span class="cal-item-amount">${money(item.amount)}</span>
+          </div>`;
+        }).join("")
+      : `<div class="cal-empty"><span>배당 없음</span></div>`;
+
     const card = document.createElement("article");
-    card.className = "month-card";
-    card.innerHTML = `<h3>${monthName}</h3><div class="month-items">${items || `<span class="subtext">예정 배당 없음</span>`}</div>`;
+    card.className = `month-card${isCurrent ? " month-current" : ""}${total === 0 ? " month-empty" : ""}`;
+    card.innerHTML = `
+      <div class="month-header">
+        <h3>${monthName}${isCurrent ? '<i class="month-now-badge">NOW</i>' : ""}</h3>
+        <span class="month-total">${total > 0 ? money(total) : "—"}</span>
+      </div>
+      <div class="month-bar-track"><div class="month-bar-fill${total === maxMonthly && total > 0 ? " month-bar-peak" : ""}" style="width:${barWidth}%"></div></div>
+      <div class="month-items">${itemsHtml}</div>
+    `;
     grid.appendChild(card);
   });
 }

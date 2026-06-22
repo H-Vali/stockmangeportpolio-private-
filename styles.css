@@ -2523,21 +2523,16 @@ tbody tr:hover {
   text-transform: uppercase;
 }
 
-.distribution-row,
-.calendar-item {
+.distribution-row {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 12px;
   background: var(--surface-2);
-}
-
-.distribution-row {
   display: grid;
   gap: 4px;
 }
 
 .distribution-row span,
-.calendar-item span,
 .panel-note {
   color: var(--muted);
 }
@@ -2559,6 +2554,49 @@ tbody tr:hover {
   min-width: 180px;
 }
 
+/* ── Calendar Summary ── */
+.calendar-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cal-summary-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  background: var(--surface-2);
+}
+
+.cal-summary-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 6px;
+}
+
+.cal-summary-card strong {
+  display: block;
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.cal-summary-total {
+  border-color: rgba(124, 92, 252, 0.36);
+  background:
+    radial-gradient(circle at 10% 20%, rgba(124, 92, 252, 0.12), transparent 60%),
+    var(--surface-2);
+}
+
+.cal-summary-total strong {
+  color: var(--violet-3);
+}
+
+/* ── Calendar Grid ── */
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2566,20 +2604,153 @@ tbody tr:hover {
 }
 
 .month-card {
-  min-height: 168px;
+  min-height: 170px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 14px;
   background: var(--surface-2);
+  transition: border-color 300ms ease, box-shadow 300ms ease;
 }
 
-.month-card h3 {
+.month-card:hover {
+  border-color: rgba(124, 92, 252, 0.3);
+}
+
+.month-card.month-current {
+  border-color: rgba(124, 92, 252, 0.5);
+  box-shadow: 0 0 24px rgba(124, 92, 252, 0.1), inset 0 0 32px rgba(124, 92, 252, 0.04);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(124, 92, 252, 0.08), transparent 60%),
+    var(--surface-2);
+}
+
+.month-card.month-empty {
+  opacity: 0.55;
+}
+
+.month-card.month-empty:hover {
+  opacity: 0.75;
+}
+
+/* ── Month Header ── */
+.month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.month-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.month-now-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--violet), var(--violet-2));
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+}
+
+.month-total {
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.month-empty .month-total {
+  color: var(--faint);
+}
+
+/* ── Month Bar ── */
+.month-bar-track {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.05);
   margin-bottom: 10px;
+  overflow: hidden;
 }
 
+.month-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--violet);
+  transition: width 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.month-bar-peak {
+  background: linear-gradient(90deg, var(--violet), var(--violet-2));
+  box-shadow: 0 0 8px rgba(124, 92, 252, 0.4);
+}
+
+/* ── Month Items ── */
 .month-items {
   display: grid;
-  gap: 8px;
+  gap: 6px;
+}
+
+.calendar-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 180ms ease;
+}
+
+.calendar-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cal-item-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-item-info strong {
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cal-item-ratio {
+  font-size: 10px;
+  color: var(--faint);
+  font-weight: 600;
+}
+
+.cal-item-amount {
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--violet-3);
+}
+
+.cal-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+}
+
+.cal-empty span {
+  font-size: 11px;
+  color: var(--faint);
 }
 
 .toast {
@@ -2739,8 +2910,17 @@ menu {
   .target-dividend-card,
   .target-results,
   .calendar-grid,
+  .calendar-summary,
   .investor-columns {
     grid-template-columns: 1fr;
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .calendar-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .sim-group-card:first-child .sim-field-grid,
