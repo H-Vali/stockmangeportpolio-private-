@@ -2493,8 +2493,9 @@ function renderDividendCalendar() {
     const itemsHtml = items.length > 0
       ? items.map((item) => {
           const ratio = total > 0 ? ((item.amount / total) * 100).toFixed(1) : 0;
+          const freq = dividendFrequencyLabel(item.ticker);
           return `<div class="calendar-item">
-            <div class="cal-item-info"><strong>${item.ticker}</strong><span class="cal-item-ratio">${ratio}%</span></div>
+            <div class="cal-item-info"><strong>${item.ticker}</strong><span class="cal-item-freq">${freq}</span><span class="cal-item-ratio">${ratio}%</span></div>
             <span class="cal-item-amount">${money(item.amount)}</span>
           </div>`;
         }).join("")
@@ -2514,6 +2515,135 @@ function renderDividendCalendar() {
   });
 }
 
+function dividendFrequencyLabel(ticker) {
+  const months = DIVIDEND_MONTHS[ticker];
+  if (!months) return "분기";
+  if (months.length === 12) return "월배당";
+  if (months.length === 4) return "분기";
+  if (months.length === 2) return "반기";
+  if (months.length === 1) return "연 1회";
+  return `연 ${months.length}회`;
+}
+
+function dividendMonthsForTicker(ticker) {
+  return DIVIDEND_MONTHS[ticker] || [3, 6, 9, 12];
+}
+
+function consolidatedHoldings(ownerId, typeFilter) {
+  const all = replayHoldings(ownerId).filter((h) => h.quantity > 0.00000001);
+  if (typeFilter) return all.filter((h) => h.type === typeFilter);
+  return all;
+}
+
+function renderHoldingsView() {
+  const grid = document.querySelector("#holdingsViewGrid");
+  const summaryEl = document.querySelector("#holdingsViewSummary");
+  if (!grid) return;
+
+  const ownerSelect = document.querySelector("#holdingsViewOwnerSelect");
+  const typeSelect = document.querySelector("#holdingsViewTypeFilter");
+  const ownerId = ownerSelect?.value || null;
+  const typeFilter = typeSelect?.value || null;
+
+  if (ownerSelect && ownerSelect.options.length <= 1) {
+    state.investors.forEach((inv) => {
+      const opt = document.createElement("option");
+      opt.value = inv.id;
+      opt.textContent = inv.name;
+      ownerSelect.appendChild(opt);
+    });
+  }
+
+  const holdings = consolidatedHoldings(ownerId || null, typeFilter || null);
+  const totalValue = holdings.reduce((s, h) => s + h.valueKrw, 0);
+  const totalProfit = holdings.reduce((s, h) => s + h.profit, 0);
+  const totalDividend = holdings.reduce((s, h) => s + h.annualDividend, 0);
+  const dividendAfterTax = totalDividend * (1 - DIVIDEND_TAX_RATE);
+  const typeCounts = {};
+  holdings.forEach((h) => { typeCounts[h.type] = (typeCounts[h.type] || 0) + 1; });
+  const typeBreakdown = Object.entries(typeCounts).map(([t, c]) => `${t} ${c}`).join(" · ");
+
+  if (summaryEl) {
+    summaryEl.innerHTML = `
+      <div class="hv-summary-item">
+        <span>총 평가금액</span>
+        <strong>${money(totalValue)}</strong>
+      </div>
+      <div class="hv-summary-item">
+        <span>총 손익</span>
+        <strong class="${totalProfit >= 0 ? "positive" : "negative"}">${signedMoney(totalProfit)}</strong>
+      </div>
+      <div class="hv-summary-item">
+        <span>연간 배당 (세후)</span>
+        <strong>${money(dividendAfterTax)}</strong>
+      </div>
+      <div class="hv-summary-item">
+        <span>종목 구성</span>
+        <strong>${holdings.length}종목</strong>
+        <small>${typeBreakdown}</small>
+      </div>
+    `;
+  }
+
+  const sorted = holdings.slice().sort((a, b) => b.valueKrw - a.valueKrw);
+
+  grid.innerHTML = sorted.map((item) => {
+    const owner = investorById(item.ownerId);
+    const weight = totalValue > 0 ? ((item.valueKrw / totalValue) * 100).toFixed(1) : "0.0";
+    const returnRate = item.costKrw > 0 ? ((item.profit / item.costKrw) * 100).toFixed(2) : "0.00";
+    const profitClass = item.profit >= 0 ? "positive" : "negative";
+    const hasDividend = item.annualDividend > 0;
+    const freqLabel = hasDividend ? dividendFrequencyLabel(item.ticker) : null;
+    const divAfterTax = item.annualDividend * (1 - DIVIDEND_TAX_RATE);
+    const divYield = item.valueKrw > 0 ? ((divAfterTax / item.valueKrw) * 100).toFixed(2) : "0.00";
+
+    return `
+      <div class="hv-card" data-type="${item.type}">
+        <div class="hv-card-header">
+          <div class="hv-card-title">
+            <strong>${item.ticker}</strong>
+            <small>${item.name}</small>
+          </div>
+          <div class="hv-card-badges">
+            <span class="pill">${item.type}</span>
+            <span class="hv-owner-chip">${owner.initials}</span>
+          </div>
+        </div>
+        <div class="hv-card-value">
+          <span>${money(item.valueKrw)}</span>
+          <small>비중 ${weight}%</small>
+        </div>
+        <div class="hv-card-metrics">
+          <div>
+            <span>손익</span>
+            <strong class="${profitClass}">${signedMoney(item.profit)}</strong>
+            <small class="${profitClass}">${returnRate}%</small>
+          </div>
+          <div>
+            <span>수량</span>
+            <strong>${qty(item.quantity)}</strong>
+            <small>${item.currency} ${numberFormatter.format(item.currentPrice)}</small>
+          </div>
+          <div>
+            <span>평단가</span>
+            <strong>${money(item.avgPrice * item.avgFx)}</strong>
+            <small>현재 ${money(item.currentPrice * item.currentFx)}</small>
+          </div>
+        </div>
+        ${hasDividend ? `
+        <div class="hv-card-dividend">
+          <span class="hv-div-freq">${freqLabel}</span>
+          <span>배당 ${money(divAfterTax)}/년</span>
+          <span>수익률 ${divYield}%</span>
+        </div>` : ""}
+        <div class="hv-card-bar">
+          <div class="hv-card-bar-fill" style="width:${weight}%"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
 let _renderRafId = null;
 function render() {
   if (_renderRafId) return;
@@ -2529,6 +2659,7 @@ function render() {
     renderInvestorSheet();
     renderHoldings();
     renderHoldingsPreview();
+    renderHoldingsView();
     renderTransactions();
     renderLedgerPreview();
     renderTrend();
@@ -3242,6 +3373,9 @@ document.querySelector("#toggleDividendDetail").addEventListener("click", () => 
 });
 document.querySelector("#targetMonthlyDividend").addEventListener("input", renderDividendSimulation);
 document.querySelector("#calendarTargetSelect").addEventListener("change", renderDividendCalendar);
+
+document.querySelector("#holdingsViewOwnerSelect").addEventListener("change", renderHoldingsView);
+document.querySelector("#holdingsViewTypeFilter").addEventListener("change", renderHoldingsView);
 
 document.querySelector("#cashflowForm").elements.date.valueAsDate = new Date();
 setupNewAssetForm();

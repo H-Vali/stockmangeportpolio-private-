@@ -18,7 +18,10 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260623-dividend-calendar-redesign" />
+
+    <link rel="stylesheet" href="./styles.css?v=20260623-holdings-view" />
+
+
   </head>
   <body>
     <div class="app-shell">
@@ -36,7 +39,7 @@
           <button type="button" class="nav-item" data-view="investor">투자자별 시트</button>
           <button type="button" class="nav-item" data-view="dividend">배당 시뮬레이션</button>
           <button type="button" class="nav-item" data-view="calendar">배당 캘린더</button>
-          <a href="#holdings">보유 종목</a>
+          <button type="button" class="nav-item" data-view="holdings">보유 종목</button>
           <a href="#transactions">원장 내역</a>
         </nav>
 
@@ -485,6 +488,31 @@
           </section>
         </section>
 
+        <section id="holdingsView" class="view-panel">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">All Holdings</p>
+                <h2>통합 보유 종목</h2>
+              </div>
+              <div class="holdings-controls">
+                <select id="holdingsViewOwnerSelect" class="small-select">
+                  <option value="">전체 투자자</option>
+                </select>
+                <select id="holdingsViewTypeFilter" class="small-select">
+                  <option value="">전체 분류</option>
+                  <option value="주식">주식</option>
+                  <option value="ETF">ETF</option>
+                  <option value="코인">코인</option>
+                  <option value="채권">채권</option>
+                </select>
+              </div>
+            </div>
+            <div class="holdings-summary-strip" id="holdingsViewSummary"></div>
+            <div class="holdings-card-grid" id="holdingsViewGrid"></div>
+          </section>
+        </section>
+
         <section class="workspace lower-workspace collapsed-ledger" id="ledgerWorkspace">
           <div class="ledger-collapse-bar">
             <span>전체 보유 종목과 원장 내역</span>
@@ -614,6 +642,9 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=20260623-dividend-calendar-redesign"></script>
+
+    <script src="./app.js?v=20260623-holdings-view"></script>
+
+
   </body>
 </html>
