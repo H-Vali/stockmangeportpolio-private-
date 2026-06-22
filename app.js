@@ -8,6 +8,7 @@ const PROXY_STORAGE_KEY = "assetpilot-proxy-base-url";
 const FX_API_PRIMARY_URL = "https://api.frankfurter.app/latest?from=USD&to=KRW";
 const FX_API_FALLBACK_URL = "https://open.er-api.com/v6/latest/USD";
 const CRYPTO_REALTIME_RENDER_INTERVAL_MS = 3000;
+const REALTIME_CHANGE_BADGE_DURATION_MS = 3000;
 const ALLOCATION_RATIOS_KEY = "assetpilot-allocation-ratios-v1";
 
 function getKstNowParts(date = new Date()) {
@@ -571,7 +572,7 @@ function markRealtimeChange(card, diff, formatter = signedMoney) {
   setTimeout(() => {
     badge.remove();
     card.classList.remove("realtime-flash-up", "realtime-flash-down");
-  }, 1800);
+  }, REALTIME_CHANGE_BADGE_DURATION_MS);
 }
 
 function signedPercentChange(value) {

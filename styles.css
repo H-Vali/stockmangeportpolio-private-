@@ -617,15 +617,15 @@ a.ghost-button {
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
-  animation: metricBadgeOut 1.8s ease forwards;
+  animation: metricBadgeOut 3s ease forwards;
 }
 
 .realtime-flash-up {
-  animation: metricFlashUp 1.8s ease;
+  animation: metricFlashUp 1.4s ease;
 }
 
 .realtime-flash-down {
-  animation: metricFlashDown 1.8s ease;
+  animation: metricFlashDown 1.4s ease;
 }
 
 @keyframes metricFlashUp {
@@ -657,8 +657,8 @@ a.ghost-button {
     opacity: 0;
     transform: translateY(6px);
   }
-  18%,
-  72% {
+  15%,
+  82% {
     opacity: 1;
     transform: translateY(0);
   }
