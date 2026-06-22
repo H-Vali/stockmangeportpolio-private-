@@ -9,6 +9,7 @@ const FX_API_PRIMARY_URL = "https://api.frankfurter.app/latest?from=USD&to=KRW";
 const FX_API_FALLBACK_URL = "https://open.er-api.com/v6/latest/USD";
 const CRYPTO_REALTIME_RENDER_INTERVAL_MS = 3000;
 const REALTIME_CHANGE_BADGE_DURATION_MS = 3000;
+const REALTIME_CHANGE_BADGE_FADE_MS = 650;
 const ALLOCATION_RATIOS_KEY = "assetpilot-allocation-ratios-v1";
 
 function getKstNowParts(date = new Date()) {
@@ -559,7 +560,10 @@ function markRealtimeChange(card, diff, formatter = signedMoney) {
   requestAnimationFrame(() => {
     card.classList.add(direction === "up" ? "realtime-flash-up" : "realtime-flash-down");
   });
-  card.querySelector(".metric-change-badge")?.remove();
+  card.querySelectorAll(".metric-change-badge").forEach((existingBadge) => {
+    existingBadge.classList.add("fading");
+    setTimeout(() => existingBadge.remove(), REALTIME_CHANGE_BADGE_FADE_MS);
+  });
   const badge = document.createElement("b");
   badge.className = `metric-change-badge ${direction === "up" ? "positive" : "negative"}`;
   badge.textContent = `${formatter(diff)} ${direction === "up" ? "▲" : "▼"}`;
@@ -570,6 +574,9 @@ function markRealtimeChange(card, diff, formatter = signedMoney) {
     if (title) title.appendChild(badge);
     else card.appendChild(badge);
   }
+  setTimeout(() => {
+    badge.classList.add("fading");
+  }, Math.max(0, REALTIME_CHANGE_BADGE_DURATION_MS - REALTIME_CHANGE_BADGE_FADE_MS));
   setTimeout(() => {
     badge.remove();
     card.classList.remove("realtime-flash-up", "realtime-flash-down");
