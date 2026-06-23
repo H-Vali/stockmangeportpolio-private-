@@ -2535,6 +2535,28 @@ function consolidatedHoldings(ownerId, typeFilter) {
   return all;
 }
 
+function holdingsDisplayCurrency() {
+  return state.displayCurrency === "USD" ? "USD" : "KRW";
+}
+
+function holdingMoney(valueKrw, currency = holdingsDisplayCurrency()) {
+  const amount = Number(valueKrw || 0);
+  if (currency === "USD") return usdFormatter.format(amount / currentUsdKrw());
+  return money(amount);
+}
+
+function signedHoldingMoney(valueKrw, currency = holdingsDisplayCurrency()) {
+  const amount = Number(valueKrw || 0);
+  const sign = amount >= 0 ? "+" : "-";
+  if (currency === "USD") return `${sign}${usdFormatter.format(Math.abs(amount) / currentUsdKrw())}`;
+  return `${amount >= 0 ? "+" : ""}${money(amount)}`;
+}
+
+function nativePriceText(item, value) {
+  const prefix = item.currency === "USD" ? "$" : "KRW ";
+  return `${prefix}${numberFormatter.format(value || 0)}`;
+}
+
 function renderHoldingsView() {
   const grid = document.querySelector("#holdingsViewGrid");
   const summaryEl = document.querySelector("#holdingsViewSummary");
@@ -2542,8 +2564,12 @@ function renderHoldingsView() {
 
   const ownerSelect = document.querySelector("#holdingsViewOwnerSelect");
   const typeSelect = document.querySelector("#holdingsViewTypeFilter");
+  const sortSelect = document.querySelector("#holdingsViewSortSelect");
+  const currencyToggle = document.querySelector("#holdingsCurrencyToggle");
   const ownerId = ownerSelect?.value || null;
   const typeFilter = typeSelect?.value || null;
+  const displayCurrency = holdingsDisplayCurrency();
+  const sortMode = sortSelect?.value || "value";
 
   if (ownerSelect && ownerSelect.options.length <= 1) {
     state.investors.forEach((inv) => {
@@ -2563,19 +2589,24 @@ function renderHoldingsView() {
   holdings.forEach((h) => { typeCounts[h.type] = (typeCounts[h.type] || 0) + 1; });
   const typeBreakdown = Object.entries(typeCounts).map(([t, c]) => `${t} ${c}`).join(" · ");
 
+  if (currencyToggle) {
+    currencyToggle.textContent = `${displayCurrency} 기준`;
+    currencyToggle.setAttribute("aria-label", `${displayCurrency === "KRW" ? "달러" : "원화"} 기준으로 전환`);
+  }
+
   if (summaryEl) {
     summaryEl.innerHTML = `
       <div class="hv-summary-item">
         <span>총 평가금액</span>
-        <strong>${money(totalValue)}</strong>
+        <strong>${holdingMoney(totalValue, displayCurrency)}</strong>
       </div>
       <div class="hv-summary-item">
         <span>총 손익</span>
-        <strong class="${totalProfit >= 0 ? "positive" : "negative"}">${signedMoney(totalProfit)}</strong>
+        <strong class="${totalProfit >= 0 ? "positive" : "negative"}">${signedHoldingMoney(totalProfit, displayCurrency)}</strong>
       </div>
       <div class="hv-summary-item">
         <span>연간 배당 (세후)</span>
-        <strong>${money(dividendAfterTax)}</strong>
+        <strong>${holdingMoney(dividendAfterTax, displayCurrency)}</strong>
       </div>
       <div class="hv-summary-item">
         <span>종목 구성</span>
@@ -2585,63 +2616,94 @@ function renderHoldingsView() {
     `;
   }
 
-  const sorted = holdings.slice().sort((a, b) => b.valueKrw - a.valueKrw);
+  const enriched = holdings.map((item) => {
+    const weight = totalValue > 0 ? (item.valueKrw / totalValue) * 100 : 0;
+    const returnRate = item.costKrw > 0 ? (item.profit / item.costKrw) * 100 : 0;
+    const dividendAfterTaxItem = item.annualDividend * (1 - DIVIDEND_TAX_RATE);
+    const dividendYield = item.valueKrw > 0 ? (dividendAfterTaxItem / item.valueKrw) * 100 : 0;
+    const breakevenRise = item.profit < 0 && item.valueKrw > 0 ? ((item.costKrw / item.valueKrw) - 1) * 100 : 0;
+    return { ...item, weight, returnRate, dividendAfterTaxItem, dividendYield, breakevenRise };
+  });
 
-  grid.innerHTML = sorted.map((item) => {
+  const sorted = enriched.slice().sort((a, b) => {
+    if (sortMode === "profit") return b.profit - a.profit;
+    if (sortMode === "return") return b.returnRate - a.returnRate;
+    if (sortMode === "weight") return b.weight - a.weight;
+    if (sortMode === "dividend") return b.dividendAfterTaxItem - a.dividendAfterTaxItem;
+    if (sortMode === "type") return `${a.type}${a.ticker}`.localeCompare(`${b.type}${b.ticker}`, "ko-KR");
+    return b.valueKrw - a.valueKrw;
+  });
+
+  if (!sorted.length) {
+    grid.className = "holdings-list";
+    grid.innerHTML = `<p class="empty-hint">보유 종목이 없습니다.</p>`;
+    return;
+  }
+
+  grid.className = "holdings-list";
+  grid.innerHTML = `
+    <div class="hv-list-head" role="row">
+      <span>분류 / 투자자</span>
+      <span>티커</span>
+      <span>평가금액</span>
+      <span>비중</span>
+      <span>손익 / 수익률</span>
+      <span>수량</span>
+      <span>평단 / 현재가</span>
+      <span>배당</span>
+    </div>
+    ${sorted.map((item) => {
     const owner = investorById(item.ownerId);
-    const weight = totalValue > 0 ? ((item.valueKrw / totalValue) * 100).toFixed(1) : "0.0";
-    const returnRate = item.costKrw > 0 ? ((item.profit / item.costKrw) * 100).toFixed(2) : "0.00";
     const profitClass = item.profit >= 0 ? "positive" : "negative";
     const hasDividend = item.annualDividend > 0;
     const freqLabel = hasDividend ? dividendFrequencyLabel(item.ticker) : null;
-    const divAfterTax = item.annualDividend * (1 - DIVIDEND_TAX_RATE);
-    const divYield = item.valueKrw > 0 ? ((divAfterTax / item.valueKrw) * 100).toFixed(2) : "0.00";
+    const breakeven = item.breakevenRise > 0 ? `<small class="hv-breakeven">손익분기 +${pct(item.breakevenRise)} 필요</small>` : "";
+    const dividendText = hasDividend
+      ? `<span class="hv-div-freq">${freqLabel}</span><b>${holdingMoney(item.dividendAfterTaxItem, displayCurrency)}/년</b><small>${pct(item.dividendYield)}</small>`
+      : `<span class="hv-empty-cell">—</span>`;
 
     return `
-      <div class="hv-card" data-type="${item.type}">
-        <div class="hv-card-header">
+      <div class="hv-row" data-type="${item.type}" role="row">
+        <div class="hv-cell hv-owner-type">
+          <span class="pill">${item.type}</span>
+          <span class="hv-owner-chip">${owner.initials}</span>
+          <small>${owner.name}</small>
+        </div>
+        <div class="hv-cell hv-ticker-cell">
           <div class="hv-card-title">
             <strong>${item.ticker}</strong>
             <small>${item.name}</small>
           </div>
-          <div class="hv-card-badges">
-            <span class="pill">${item.type}</span>
-            <span class="hv-owner-chip">${owner.initials}</span>
-          </div>
         </div>
-        <div class="hv-card-value">
-          <span>${money(item.valueKrw)}</span>
-          <small>비중 ${weight}%</small>
+        <div class="hv-cell hv-money-cell">
+          <strong>${holdingMoney(item.valueKrw, displayCurrency)}</strong>
+          <small>${displayCurrency === "USD" ? money(item.valueKrw) : usdFormatter.format(item.valueKrw / currentUsdKrw())}</small>
         </div>
-        <div class="hv-card-metrics">
-          <div>
-            <span>손익</span>
-            <strong class="${profitClass}">${signedMoney(item.profit)}</strong>
-            <small class="${profitClass}">${returnRate}%</small>
-          </div>
-          <div>
-            <span>수량</span>
-            <strong>${qty(item.quantity)}</strong>
-            <small>${item.currency} ${numberFormatter.format(item.currentPrice)}</small>
-          </div>
-          <div>
-            <span>평단가</span>
-            <strong>${money(item.avgPrice * item.avgFx)}</strong>
-            <small>현재 ${money(item.currentPrice * item.currentFx)}</small>
-          </div>
+        <div class="hv-cell hv-weight-cell">
+          <strong>${pct(item.weight)}</strong>
+          <span class="hv-card-bar"><i class="hv-card-bar-fill" style="width:${Math.max(2, item.weight)}%"></i></span>
         </div>
-        ${hasDividend ? `
-        <div class="hv-card-dividend">
-          <span class="hv-div-freq">${freqLabel}</span>
-          <span>배당 ${money(divAfterTax)}/년</span>
-          <span>수익률 ${divYield}%</span>
-        </div>` : ""}
-        <div class="hv-card-bar">
-          <div class="hv-card-bar-fill" style="width:${weight}%"></div>
+        <div class="hv-cell hv-profit-cell">
+          <strong class="${profitClass}">${signedHoldingMoney(item.profit, displayCurrency)}</strong>
+          <small class="${profitClass}">${item.returnRate >= 0 ? "+" : ""}${pct(item.returnRate)}</small>
+          ${breakeven}
+        </div>
+        <div class="hv-cell hv-qty-cell">
+          <strong>${qty(item.quantity)}</strong>
+          <small>${item.currency}</small>
+        </div>
+        <div class="hv-cell hv-price-cell">
+          <strong>${holdingMoney(item.avgPrice * item.avgFx, displayCurrency)}</strong>
+          <small>현재 ${holdingMoney(item.currentPrice * item.currentFx, displayCurrency)}</small>
+          <small class="hv-native-price">${nativePriceText(item, item.avgPrice)} → ${nativePriceText(item, item.currentPrice)}</small>
+        </div>
+        <div class="hv-cell hv-dividend-cell">
+          ${dividendText}
         </div>
       </div>
     `;
-  }).join("");
+    }).join("")}
+  `;
 }
 
 let _renderRafId = null;
@@ -3376,6 +3438,12 @@ document.querySelector("#calendarTargetSelect").addEventListener("change", rende
 
 document.querySelector("#holdingsViewOwnerSelect").addEventListener("change", renderHoldingsView);
 document.querySelector("#holdingsViewTypeFilter").addEventListener("change", renderHoldingsView);
+document.querySelector("#holdingsViewSortSelect").addEventListener("change", renderHoldingsView);
+document.querySelector("#holdingsCurrencyToggle").addEventListener("click", () => {
+  state.displayCurrency = holdingsDisplayCurrency() === "KRW" ? "USD" : "KRW";
+  saveState({ snapshot: false });
+  renderHoldingsView();
+});
 
 document.querySelector("#cashflowForm").elements.date.valueAsDate = new Date();
 setupNewAssetForm();
