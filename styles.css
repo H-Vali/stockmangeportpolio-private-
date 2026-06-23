@@ -941,9 +941,47 @@ a.ghost-button {
 .investor-actions {
   position: relative;
   z-index: 1;
-  display: grid;
-  justify-items: end;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
+}
+
+.edit-investor-name-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.edit-investor-name-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 180px;
+}
+
+.edit-investor-name-form span {
+  color: var(--faint);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.edit-investor-name-form input {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(28, 28, 37, 0.78);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.edit-investor-name-form .ghost-button {
+  min-height: 36px;
+  padding: 0 12px;
 }
 
 .hero-menu {

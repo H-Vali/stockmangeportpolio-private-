@@ -782,6 +782,19 @@ function addInvestorByName(name, options = {}) {
   return investor;
 }
 
+function updateInvestorName(id, name) {
+  const clean = name.trim();
+  const investor = state.investors.find((item) => item.id === id);
+  if (!investor || !clean) return false;
+  if (investor.name === clean) return true;
+  investor.name = clean;
+  investor.initials = clean.slice(0, 1).toUpperCase();
+  saveState();
+  render();
+  showToast("투자자 이름을 저장했습니다.");
+  return true;
+}
+
 function tradeAmountKrw(trade) {
   return trade.quantity * trade.price * trade.fx;
 }
@@ -1482,6 +1495,8 @@ function renderInvestorSheet() {
   const investor = investorById(state.selectedInvestorId);
   const summary = summarize(investor.id);
   document.querySelector("#selectedInvestorLabel").textContent = `${investor.name}님의 평가금액`;
+  const editNameInput = document.querySelector("#editInvestorNameInput");
+  if (editNameInput && document.activeElement !== editNameInput) editNameInput.value = investor.name;
   setMoneyElement("#investorValue", summary.totalValue);
   document.querySelector("#investorProfit").textContent = signedMoney(summary.profit);
   document.querySelector("#investorProfit").className = summary.profit >= 0 ? "positive" : "negative";
@@ -3209,6 +3224,17 @@ document.querySelector("#dashboardAddInvestorForm").addEventListener("submit", (
   if (!input.value.trim()) return;
   addInvestorByName(input.value, { openSheet: false });
   input.value = "";
+});
+
+document.querySelector("#editInvestorNameForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const input = event.currentTarget.elements.investorName;
+  const clean = input.value.trim();
+  if (!clean) {
+    showToast("투자자 이름을 입력하세요.", "error");
+    return;
+  }
+  updateInvestorName(state.selectedInvestorId, clean);
 });
 
 document.querySelector("#heroMenuToggle").addEventListener("click", (event) => {
