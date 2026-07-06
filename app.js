@@ -5,7 +5,9 @@ const DIVIDEND_TAX_RATE = 0.15;
 const DEFAULT_USDKRW = 1380;
 const DEFAULT_PROXY_BASE_URL = "";
 const PROXY_STORAGE_KEY = "assetpilot-proxy-base-url";
-const FX_API_PRIMARY_URL = "https://api.frankfurter.app/latest?from=USD&to=KRW";
+// frankfurter는 api.frankfurter.app 도메인이 폐기되어 api.frankfurter.dev(/v1)로 이전됨.
+// 기존 .app URL은 CORS/네트워크 실패로 항상 폴백만 타던 문제가 있어 .dev로 교체.
+const FX_API_PRIMARY_URL = "https://api.frankfurter.dev/v1/latest?base=USD&symbols=KRW";
 const FX_API_FALLBACK_URL = "https://open.er-api.com/v6/latest/USD";
 const CRYPTO_REALTIME_RENDER_INTERVAL_MS = 3000;
 const CRYPTO_CHANGE_EFFECT_THRESHOLD_PP = 0.05;
