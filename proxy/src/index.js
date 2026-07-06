@@ -1,8 +1,12 @@
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type"
+  "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization"
 };
+
+// 상태 저장 크기 상한(약 4MB). KV 값 한도(25MB)보다 보수적으로 잡음.
+const MAX_STATE_BYTES = 4_000_000;
+const STATE_KEY = "state";
 
 export default {
   async fetch(request, env) {
@@ -13,10 +17,41 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/quote") return quote(url, env);
     if (url.pathname === "/fxrate") return fxrate();
+    if (url.pathname === "/state") return stateRoute(request, env);
 
     return json({ error: "not_found" }, 404);
   }
 };
+
+// 공동 운용 상태(포트폴리오 전체)를 KV에 통째로 저장/조회하는 엔드포인트.
+// GET  /state -> { state: <object|null> }
+// PUT  /state -> 본문(JSON 상태 객체)을 저장. Bearer 토큰 필요.
+async function stateRoute(request, env) {
+  if (!env.SYNC_TOKEN) return json({ error: "sync_not_configured" }, 500);
+  if (!env.ASSET_STATE) return json({ error: "kv_not_bound" }, 500);
+
+  const auth = request.headers.get("Authorization") || "";
+  if (auth !== `Bearer ${env.SYNC_TOKEN}`) return json({ error: "unauthorized" }, 401);
+
+  if (request.method === "GET") {
+    const raw = await env.ASSET_STATE.get(STATE_KEY);
+    let parsed = null;
+    if (raw) {
+      try { parsed = JSON.parse(raw); } catch { parsed = null; }
+    }
+    return json({ state: parsed }, 200);
+  }
+
+  if (request.method === "PUT") {
+    const body = await request.text();
+    if (body.length > MAX_STATE_BYTES) return json({ error: "too_large" }, 413);
+    try { JSON.parse(body); } catch { return json({ error: "invalid_json" }, 400); }
+    await env.ASSET_STATE.put(STATE_KEY, body);
+    return json({ ok: true, savedAt: new Date().toISOString() }, 200);
+  }
+
+  return json({ error: "method_not_allowed" }, 405);
+}
 
 async function quote(url, env) {
   const symbol = (url.searchParams.get("symbol") || "").trim().toUpperCase();

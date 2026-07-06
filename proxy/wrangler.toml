@@ -4,3 +4,11 @@ compatibility_date = "2026-06-19"
 
 [vars]
 # FINNHUB_API_KEY는 wrangler secret으로 등록하세요.
+# SYNC_TOKEN(상태 동기화 인증 토큰)도 wrangler secret으로 등록하세요.
+
+# 공동 운용 상태 저장용 KV 네임스페이스.
+# 최초 1회 생성: wrangler kv namespace create ASSET_STATE
+# 출력된 id를 아래 id에 넣으세요.
+[[kv_namespaces]]
+binding = "ASSET_STATE"
+id = "PUT_YOUR_KV_NAMESPACE_ID_HERE"

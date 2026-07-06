@@ -13,6 +13,10 @@ const CRYPTO_CHANGE_EFFECT_MIN_INTERVAL_MS = 9000;
 const REALTIME_CHANGE_BADGE_DURATION_MS = 3000;
 const REALTIME_CHANGE_BADGE_FADE_MS = 650;
 const ALLOCATION_RATIOS_KEY = "assetpilot-allocation-ratios-v1";
+// 다기기 동기화: 상태를 Cloudflare Worker(/state)로 저장/조회하기 위한 인증 토큰.
+// ?synckey=... 로 접속하면 이 키에 저장되고 이후 자동으로 사용됩니다.
+const SYNC_TOKEN_KEY = "assetpilot-sync-token";
+const SYNC_PUSH_DEBOUNCE_MS = 1200;
 
 function getKstNowParts(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -367,6 +371,10 @@ const requestedProxy = new URLSearchParams(window.location.search).get("proxy");
 if (requestedProxy) {
   localStorage.setItem(PROXY_STORAGE_KEY, requestedProxy.replace(/\/$/, ""));
 }
+const requestedSyncKey = new URLSearchParams(window.location.search).get("synckey");
+if (requestedSyncKey) {
+  localStorage.setItem(SYNC_TOKEN_KEY, requestedSyncKey.trim());
+}
 if (["dashboard", "investor", "dividend", "calendar"].includes(requestedView)) {
   state.selectedView = requestedView;
 }
@@ -504,8 +512,102 @@ function exportableState() {
 
 function saveState(options = {}) {
   state.schemaVersion = SCHEMA_VERSION;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  persistLocal();
+  schedulePush();
   if (options.snapshot !== false) recordSnapshot();
+}
+
+// --- 다기기 동기화 (Cloudflare Worker + KV) -------------------------------
+let syncPushTimer = null;
+let syncPushInFlight = false;
+let syncPushQueued = false;
+
+function getSyncToken() {
+  return (localStorage.getItem(SYNC_TOKEN_KEY) || "").trim();
+}
+
+// 동기화는 프록시 Worker URL과 인증 토큰이 둘 다 있을 때만 활성화됨.
+function syncEnabled() {
+  return Boolean(proxyBaseUrl() && getSyncToken());
+}
+
+// 로컬 캐시(오프라인 대비 및 즉시 첫 화면 렌더용).
+function persistLocal() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// 잦은 저장을 묶어서 서버로 한 번만 올림.
+function schedulePush() {
+  if (!syncEnabled()) return;
+  if (syncPushTimer) clearTimeout(syncPushTimer);
+  syncPushTimer = setTimeout(pushStateToServer, SYNC_PUSH_DEBOUNCE_MS);
+}
+
+async function pushStateToServer() {
+  if (!syncEnabled()) return;
+  if (syncPushInFlight) { syncPushQueued = true; return; }
+  syncPushInFlight = true;
+  try {
+    const payload = { ...state, schemaVersion: SCHEMA_VERSION, syncedAt: new Date().toISOString() };
+    const response = await fetch(`${proxyBaseUrl()}/state`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${getSyncToken()}`
+      },
+      body: JSON.stringify(payload)
+    });
+    setSyncStatus(response.ok ? "synced" : "error", response.ok ? null : `저장 실패 (${response.status})`);
+  } catch (error) {
+    setSyncStatus("offline", "서버에 연결할 수 없어 로컬에만 저장했습니다.");
+  } finally {
+    syncPushInFlight = false;
+    if (syncPushQueued) {
+      syncPushQueued = false;
+      schedulePush();
+    }
+  }
+}
+
+// 부팅 시: 서버(공유 원본)에 저장된 상태가 있으면 그걸 정본으로 채택.
+// 서버가 비어 있으면 현재 로컬 상태를 서버에 최초 업로드.
+async function hydrateFromServer() {
+  if (!syncEnabled()) return;
+  try {
+    const response = await fetch(`${proxyBaseUrl()}/state`, {
+      headers: { "Authorization": `Bearer ${getSyncToken()}` }
+    });
+    if (!response.ok) {
+      setSyncStatus("error", `동기화 불러오기 실패 (${response.status})`);
+      return;
+    }
+    const data = await response.json();
+    if (!data || data.state == null) {
+      // 서버가 비어 있음 -> 현재 로컬 상태를 최초 업로드.
+      await pushStateToServer();
+      return;
+    }
+    const errors = validateImportState(data.state);
+    if (errors.length) {
+      setSyncStatus("error", "서버 데이터 형식 오류로 로컬 상태를 유지합니다.");
+      return;
+    }
+    state = normalizeState(data.state);
+    persistLocal();
+    setSyncStatus("synced");
+    render();
+  } catch (error) {
+    setSyncStatus("offline", "서버에 연결할 수 없어 로컬 데이터로 시작합니다.");
+  }
+}
+
+let lastSyncStatus = null;
+function setSyncStatus(status, message) {
+  // 상태가 바뀔 때만 토스트로 알림(성공은 조용히, 실패/오프라인은 안내).
+  if (status !== lastSyncStatus && message) {
+    showToast(message, status === "error" || status === "offline" ? "error" : "info");
+  }
+  lastSyncStatus = status;
 }
 
 function loadAllocationRatios() {
@@ -1039,7 +1141,8 @@ function recordSnapshot() {
   next.push({ date: today, totalValue });
   next.sort((a, b) => a.date.localeCompare(b.date));
   state.snapshots = next;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  persistLocal();
+  schedulePush();
 }
 
 function visibleOwnerId() {
@@ -3476,5 +3579,6 @@ setupNewAssetForm();
 setupQuickTrade();
 recordSnapshot();
 render();
+hydrateFromServer();
 startPolling();
 startRealtimeDemoLoop();
