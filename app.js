@@ -1946,16 +1946,60 @@ function assetLookupEntries() {
   return [...merged.values()].sort((a, b) => a.ticker.localeCompare(b.ticker));
 }
 
+// 전체 미국 상장 종목(개별주+ETF) DB. 초기 로딩을 막지 않도록 지연 로딩한다.
+let usSymbols = null;
+let usSymbolTickerMap = null;
+let usSymbolsLoading = null;
+
+function loadUsSymbols() {
+  if (usSymbols) return Promise.resolve(usSymbols);
+  if (usSymbolsLoading) return usSymbolsLoading;
+  usSymbolsLoading = fetch("./data/us-symbols.json")
+    .then((response) => (response.ok ? response.json() : []))
+    .then((rows) => {
+      usSymbols = Array.isArray(rows) ? rows : [];
+      usSymbolTickerMap = new Map(usSymbols.map((row) => [row[0], row]));
+      return usSymbols;
+    })
+    .catch(() => {
+      usSymbols = [];
+      usSymbolTickerMap = new Map();
+      return usSymbols;
+    });
+  return usSymbolsLoading;
+}
+
+function symbolRowToAsset(row) {
+  return { ticker: row[0], name: row[1], type: row[2] === 1 ? "ETF" : "주식", currency: "USD" };
+}
+
+function usSymbolByTicker(ticker) {
+  const row = usSymbolTickerMap && usSymbolTickerMap.get(String(ticker).trim().toUpperCase());
+  return row ? symbolRowToAsset(row) : null;
+}
+
+function usSymbolByName(query) {
+  if (!usSymbols || query.length < 2) return null;
+  const exact = usSymbols.find((row) => normalizeAssetSearch(row[1]) === query);
+  if (exact) return symbolRowToAsset(exact);
+  if (query.length >= 3) {
+    const prefix = usSymbols.find((row) => normalizeAssetSearch(row[1]).startsWith(query));
+    if (prefix) return symbolRowToAsset(prefix);
+  }
+  return null;
+}
+
 function findAssetLookupMatch(value, mode) {
   const query = normalizeAssetSearch(value);
   if (!query) return null;
   const entries = assetLookupEntries();
   if (mode === "ticker") {
     const upper = value.trim().toUpperCase();
-    return entries.find((asset) => asset.ticker === upper) || null;
+    return entries.find((asset) => asset.ticker === upper) || usSymbolByTicker(upper) || null;
   }
   return entries.find((asset) => normalizeAssetSearch(asset.name) === query)
     || (query.length >= 3 ? entries.find((asset) => normalizeAssetSearch(asset.name).startsWith(query)) : null)
+    || usSymbolByName(query)
     || null;
 }
 
@@ -2017,6 +2061,9 @@ function resetNewAssetForm() {
 function setupNewAssetForm() {
   const submit = newAssetField("#newAssetSubmit");
   if (!submit) return;
+  ["#newAssetTicker", "#newAssetName"].forEach((selector) => {
+    newAssetField(selector)?.addEventListener("focus", loadUsSymbols, { once: true });
+  });
   newAssetField("#newAssetTicker")?.addEventListener("input", (event) => {
     const match = findAssetLookupMatch(event.target.value, "ticker");
     if (match) applyNewAssetLookup(match, "ticker");
@@ -2516,14 +2563,15 @@ function populateOwnerSelects() {
 }
 
 function updateAssetFieldsFromTicker(ticker) {
-  const asset = state.assetCatalog[ticker.trim().toUpperCase()];
+  const upper = ticker.trim().toUpperCase();
+  const asset = state.assetCatalog[upper] || usSymbolByTicker(upper);
   if (!asset) return;
   const form = document.querySelector("#tradeForm");
   form.elements.name.value = asset.name;
   form.elements.type.value = asset.type;
-  form.elements.currency.value = asset.currency;
-  form.elements.currentPrice.value = asset.currentPrice;
-  form.elements.currentFx.value = asset.currentFx;
+  if (asset.currency) form.elements.currency.value = asset.currency;
+  if (asset.currentPrice != null) form.elements.currentPrice.value = asset.currentPrice;
+  if (asset.currentFx != null) form.elements.currentFx.value = asset.currentFx;
 }
 
 function tradePreviewData() {
@@ -3593,6 +3641,7 @@ document.querySelector("#cashflowForm").addEventListener("submit", (event) => {
 });
 
 document.querySelector("#openTradeForm").addEventListener("click", () => {
+  loadUsSymbols();
   const form = document.querySelector("#tradeForm");
   form.reset();
   setTradeDialogMode("add");
@@ -3828,5 +3877,6 @@ setupQuickTrade();
 recordSnapshot();
 render();
 hydrateFromServer();
+setTimeout(loadUsSymbols, 1500);
 startPolling();
 startRealtimeDemoLoop();
