@@ -981,7 +981,8 @@ function commitTrade(data) {
   const existing = replayHoldings(data.ownerId).find((holding) => holding.ticker === ticker);
 
   if (!ticker || !quantity || !price) return { ok: false, message: "종목, 수량, 체결가를 입력하세요." };
-  if (data.side === "buy" && cashBalance(data.ownerId) < amount) {
+  const registerHeld = data.registerHeld === true && data.side === "buy";
+  if (data.side === "buy" && !registerHeld && cashBalance(data.ownerId) < amount) {
     return { ok: false, field: "quantity", message: "매수금액이 예수금을 초과합니다." };
   }
   if (data.side === "sell" && (!existing || existing.quantity < quantity)) {
@@ -1005,6 +1006,16 @@ function commitTrade(data) {
   ensureAssetFromTrade({ ...trade, price: currentPrice, fx: currentFx });
   state.assetCatalog[ticker].currentPrice = currentPrice;
   state.assetCatalog[ticker].currentFx = currentFx;
+  if (registerHeld && amount > 0) {
+    state.cashflows.push({
+      id: crypto.randomUUID(),
+      ownerId: data.ownerId,
+      date: trade.date,
+      type: "deposit",
+      amount: Math.round(amount),
+      memo: "보유 등록 자동 입금"
+    });
+  }
   state.trades.push(trade);
   saveState();
   render();
@@ -1653,24 +1664,46 @@ function renderInvestorAllocation() {
 function renderInvestorHoldingsPreview() {
   const list = document.querySelector("#investorHoldingsPreview");
   if (!list) return;
-  const top = replayHoldings(state.selectedInvestorId)
+  const holdings = replayHoldings(state.selectedInvestorId)
     .slice()
-    .sort((a, b) => b.valueKrw - a.valueKrw)
-    .slice(0, 3);
-  if (!top.length) {
+    .sort((a, b) => b.valueKrw - a.valueKrw);
+  if (!holdings.length) {
     list.innerHTML = `<p class="empty-hint">보유 종목이 없습니다.</p>`;
     return;
   }
-  list.innerHTML = top
-    .map(
-      (item) => `
-        <div class="market-card">
-          <div><strong>${item.ticker}</strong><small>${item.type} · ${money(item.valueKrw)}</small></div>
-          <span class="${item.profit >= 0 ? "positive" : "negative"}">${signedMoney(item.profit)}</span>
-        </div>
-      `
-    )
+  const nativePrice = (currency, value) =>
+    currency === "USD"
+      ? `$${Number(value).toLocaleString("en-US", { maximumFractionDigits: 2 })}`
+      : `${Math.round(value).toLocaleString("ko-KR")}원`;
+  const rows = holdings
+    .map((item) => {
+      const cost = item.costKrw || item.valueKrw - item.profit;
+      const ret = cost ? (item.profit / cost) * 100 : 0;
+      const tone = item.profit >= 0 ? "up" : "down";
+      const qty = Number(item.quantity).toLocaleString("en-US", { maximumFractionDigits: 8 });
+      return `
+        <tr>
+          <td class="ih-name"><strong>${item.ticker}</strong><small>${item.type} · ${item.currency}</small></td>
+          <td class="ih-num">${qty}</td>
+          <td class="ih-num">${nativePrice(item.currency, item.avgPrice)}<small>→ ${nativePrice(item.currency, item.currentPrice)}</small></td>
+          <td class="ih-num">${money(item.valueKrw)}</td>
+          <td class="ih-num ${tone}">${signedMoney(item.profit)}<small class="${tone}">${ret >= 0 ? "+" : ""}${ret.toFixed(1)}%</small></td>
+        </tr>`;
+    })
     .join("");
+  list.innerHTML = `
+    <table class="inv-holdings-table">
+      <thead>
+        <tr>
+          <th>종목</th>
+          <th class="ih-num">수량</th>
+          <th class="ih-num">평단 → 현재가</th>
+          <th class="ih-num">평가금액</th>
+          <th class="ih-num">손익 / 수익률</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 function renderUpcomingDividend() {
@@ -1891,6 +1924,7 @@ function setupNewAssetForm() {
     const price = Number(newAssetField("#newAssetPrice").value);
     const fx = currency === "USD" ? Number(newAssetField("#newAssetFx").value) : 1;
     const currentFx = currency === "USD" ? fx : 1;
+    const registerHeld = newAssetField("#newAssetRegisterHeld")?.checked === true;
 
     const hadAsset = Boolean(state.assetCatalog[ticker]);
     if (!hadAsset) {
@@ -1917,8 +1951,9 @@ function setupNewAssetForm() {
       fx,
       currentPrice: price,
       currentFx,
+      registerHeld,
       date: new Date().toISOString().slice(0, 10),
-      memo: "신규 자산 등록"
+      memo: registerHeld ? "보유 종목 등록" : "신규 자산 등록"
     });
     if (!result.ok) {
       if (!hadAsset) delete state.assetCatalog[ticker];
@@ -1926,7 +1961,7 @@ function setupNewAssetForm() {
       return;
     }
     resetNewAssetForm();
-    showToast(`${ticker} 신규 등록 및 매수가 반영되었습니다.`);
+    showToast(registerHeld ? `${ticker} 보유분을 등록했습니다 (예수금 유지).` : `${ticker} 신규 등록 및 매수가 반영되었습니다.`);
   });
   updateNewAssetFxVisibility();
 }

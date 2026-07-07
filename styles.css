@@ -3416,3 +3416,87 @@ menu {
     flex-basis: min(82vw, 300px);
   }
 }
+
+.inv-holdings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.inv-holdings-table th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 10px 10px;
+  white-space: nowrap;
+}
+
+.inv-holdings-table th.ih-num,
+.inv-holdings-table td.ih-num {
+  text-align: right;
+}
+
+.inv-holdings-table td {
+  padding: 11px 10px;
+  border-top: 1px solid var(--line);
+  vertical-align: middle;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.inv-holdings-table tbody tr:first-child td {
+  border-top: 0;
+}
+
+.inv-holdings-table td small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.inv-holdings-table .ih-name strong {
+  font-weight: 600;
+}
+
+.inv-holdings-table td.up,
+.inv-holdings-table td small.up {
+  color: var(--up);
+}
+
+.inv-holdings-table td.down,
+.inv-holdings-table td small.down {
+  color: var(--down);
+}
+
+.register-held-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: rgba(124, 92, 252, 0.12);
+  border: 1px solid rgba(124, 92, 252, 0.28);
+  margin: 4px 0 8px;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.register-held-toggle input {
+  margin-top: 1px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--violet);
+  flex-shrink: 0;
+}
+
+.register-held-toggle small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
