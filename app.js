@@ -2037,7 +2037,15 @@ function setupNewAssetForm() {
     newAssetField(selector)?.addEventListener("input", updateNewAssetSubmitState);
   });
   newAssetField("#newAssetCurrency")?.addEventListener("change", updateNewAssetFxVisibility);
-  newAssetField("#newAssetType")?.addEventListener("change", updateNewAssetSubmitState);
+  newAssetField("#newAssetType")?.addEventListener("change", () => {
+    // 코인은 빗썸(원화) 거래가 기본 — 통화를 KRW로 맞춰준다.
+    const currencyField = newAssetField("#newAssetCurrency");
+    if (newAssetField("#newAssetType")?.value === "코인" && currencyField) {
+      currencyField.value = "KRW";
+      updateNewAssetFxVisibility();
+    }
+    updateNewAssetSubmitState();
+  });
   submit.addEventListener("click", () => {
     if (!isNewAssetFormValid()) {
       showToast("필수 항목을 모두 입력하세요.", "error");
@@ -3055,7 +3063,9 @@ function applyCryptoOverseasQuote(symbol, price, change, updatedAt = new Date().
   const usdPrice = Number(price);
   if (!usdPrice) return;
   const asset = state.assetCatalog[upper];
-  if (asset) {
+  if (asset && asset.currency !== "KRW") {
+    // USD 기준으로 보유한 코인만 해외(USD) 시세로 현재가를 갱신.
+    // 빗썸(KRW) 기준 코인은 applyCryptoDomesticQuote가 원화가로 갱신한다.
     asset.currentPrice = usdPrice;
     asset.currentFx = quoteFx;
   }
@@ -3070,10 +3080,17 @@ function applyCryptoOverseasQuote(symbol, price, change, updatedAt = new Date().
 function applyCryptoDomesticQuote(symbol, price, change, updatedAt = new Date().toISOString()) {
   const krwPrice = Number(price);
   if (!krwPrice) return;
-  const indicator = cryptoIndicatorFor(symbol);
+  const upper = symbol.toUpperCase();
+  const indicator = cryptoIndicatorFor(upper);
   indicator.domestic = krwPrice;
   indicator.domesticChange = Number(change || 0);
   indicator.updatedAt = updatedAt;
+  const asset = state.assetCatalog[upper];
+  if (asset && asset.currency === "KRW") {
+    // 빗썸(원화) 기준 코인은 국내 원화가를 현재가로 사용, 환율은 1.
+    asset.currentPrice = krwPrice;
+    asset.currentFx = 1;
+  }
 }
 
 function scheduleCryptoRealtimeRender() {
