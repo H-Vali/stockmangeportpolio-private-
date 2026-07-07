@@ -293,6 +293,14 @@ let previousRealtimeValues = {
 let holdingsTypeFilter = null;
 let quickTradeSide = "buy";
 
+const DEFAULT_MARKET_INDICATORS = [
+  { symbol: "BTC", domestic: 52000000, globalKrw: 50420000, domesticChange: 0, globalChange: 0, updatedAt: null },
+  { symbol: "ETH", domestic: 3300000, globalKrw: 3244000, domesticChange: 0, globalChange: 0, updatedAt: null },
+  { symbol: "SOL", domestic: 224000, globalKrw: 216800, domesticChange: 0, globalChange: 0, updatedAt: null },
+  { symbol: "BNB", domestic: 978000, globalKrw: 951000, domesticChange: 0, globalChange: 0, updatedAt: null },
+  { symbol: "XRP", domestic: 3500, globalKrw: 3370, domesticChange: 0, globalChange: 0, updatedAt: null }
+];
+
 const seedState = {
   schemaVersion: SCHEMA_VERSION,
   selectedView: "dashboard",
@@ -324,7 +332,7 @@ const seedState = {
   investors: [],
   assetCatalog: {},
   indexQuotes: {},
-  marketIndicators: [],
+  marketIndicators: DEFAULT_MARKET_INDICATORS,
   cashflows: [],
   trades: []
 };
@@ -416,6 +424,30 @@ function normalizeState(input) {
   };
 }
 
+function clearPortfolioData(input) {
+  const next = normalizeState(input);
+  next.schemaVersion = SCHEMA_VERSION;
+  next.selectedInvestorId = next.investors?.[0]?.id || null;
+  next.pendingDeleteInvestorId = null;
+  next.snapshots = [];
+  next.cashflows = [];
+  next.trades = [];
+  return next;
+}
+
+function isOverClearedState(input) {
+  return (
+    Array.isArray(input?.investors) &&
+    input.investors.length === 0 &&
+    Array.isArray(input?.cashflows) &&
+    input.cashflows.length === 0 &&
+    Array.isArray(input?.trades) &&
+    input.trades.length === 0 &&
+    Array.isArray(input?.marketIndicators) &&
+    input.marketIndicators.length === 0
+  );
+}
+
 function validateImportState(candidate) {
   const errors = [];
   const isArray = (key) => {
@@ -455,12 +487,19 @@ function validateImportState(candidate) {
 
 function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return structuredClone(seedState);
+  const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
   try {
-    const parsed = JSON.parse(raw);
-    const errors = validateImportState(parsed);
-    if (errors.length) return structuredClone(seedState);
-    return normalizeState(parsed);
+    const legacyParsed = legacyRaw ? JSON.parse(legacyRaw) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const errors = validateImportState(parsed);
+      if (errors.length) return legacyParsed ? clearPortfolioData(legacyParsed) : structuredClone(seedState);
+      const normalized = normalizeState(parsed);
+      if (isOverClearedState(normalized) && legacyParsed) return clearPortfolioData(legacyParsed);
+      return normalized;
+    }
+    if (legacyParsed) return clearPortfolioData(legacyParsed);
+    return structuredClone(seedState);
   } catch {
     return structuredClone(seedState);
   }
@@ -556,12 +595,18 @@ async function hydrateFromServer() {
       setSyncStatus("synced");
       return;
     }
+    const serverState = normalizeState(data.state);
+    if (isOverClearedState(serverState) && !isOverClearedState(state)) {
+      await pushStateToServer();
+      setSyncStatus("synced");
+      return;
+    }
     const errors = validateImportState(data.state);
     if (errors.length) {
       setSyncStatus("error", "서버 데이터 형식 오류로 로컬 상태를 유지합니다.");
       return;
     }
-    state = normalizeState(data.state);
+    state = serverState;
     persistLocal();
     setSyncStatus("synced");
     render();
@@ -3731,10 +3776,10 @@ document.querySelector("#tradeForm").addEventListener("submit", (event) => {
 });
 
 document.querySelector("#seedButton").addEventListener("click", () => {
-  state = structuredClone(seedState);
+  state = clearPortfolioData(state);
   saveState();
   render();
-  showToast("\uC804\uCCB4 \uB370\uC774\uD130\uB97C \uCD08\uAE30\uD654\uD588\uC2B5\uB2C8\uB2E4.");
+  showToast("\uBCF4\uC720/\uC6D0\uC7A5 \uB370\uC774\uD130\uB97C \uCD08\uAE30\uD654\uD588\uC2B5\uB2C8\uB2E4.");
 });
 
 document.querySelector("#demoChangeButton").addEventListener("click", triggerDashboardChangeDemo);
