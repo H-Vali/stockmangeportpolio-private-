@@ -3419,19 +3419,27 @@ menu {
 
 .inv-holdings-table {
   width: 100%;
+  min-width: 0;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12px;
+  table-layout: auto;
 }
 
 .inv-holdings-table th {
   text-align: left;
   font-weight: 500;
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--muted);
-  padding: 0 10px 10px;
+  padding: 0 6px 9px;
   white-space: nowrap;
+}
+
+.inv-holdings-table th small {
+  font-size: 9px;
+  margin-left: 3px;
+  opacity: 0.75;
 }
 
 .inv-holdings-table th.ih-num,
@@ -3440,11 +3448,15 @@ menu {
 }
 
 .inv-holdings-table td {
-  padding: 11px 10px;
+  padding: 9px 6px;
   border-top: 1px solid var(--line);
   vertical-align: middle;
   color: var(--ink);
+}
+
+.inv-holdings-table td.ih-num {
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .inv-holdings-table tbody tr:first-child td {
@@ -3499,4 +3511,75 @@ menu {
   font-size: 11px;
   color: var(--muted);
   margin-top: 2px;
+}
+
+.inv-holdings-table th.ih-edit,
+.inv-holdings-table td.ih-edit {
+  text-align: right;
+  width: 1%;
+  white-space: nowrap;
+}
+
+.ih-edit-btn {
+  background: var(--surface-3);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 4px 9px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.ih-edit-btn:hover {
+  color: var(--ink);
+  border-color: var(--violet);
+}
+
+.danger-text-button {
+  background: transparent;
+  color: var(--up);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-right: auto;
+}
+
+.danger-text-button:hover {
+  border-color: var(--up);
+}
+
+.holding-trades-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.holding-trade-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.holding-trade-row strong {
+  margin-right: 8px;
+}
+
+.holding-trade-row small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.holding-trade-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }

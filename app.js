@@ -1013,13 +1013,137 @@ function commitTrade(data) {
       date: trade.date,
       type: "deposit",
       amount: Math.round(amount),
-      memo: "보유 등록 자동 입금"
+      memo: "보유 등록 자동 입금",
+      autoFor: trade.id
     });
   }
   state.trades.push(trade);
   saveState();
   render();
   return { ok: true, trade };
+}
+
+let editingTradeId = null;
+
+function tradeById(id) {
+  return state.trades.find((trade) => trade.id === id);
+}
+
+// 거래 수정 모달을 기존 거래 값으로 채워 연다.
+function openTradeEditor(tradeId) {
+  const trade = tradeById(tradeId);
+  if (!trade) return;
+  editingTradeId = tradeId;
+  const form = document.querySelector("#tradeForm");
+  populateOwnerSelects();
+  form.elements.ownerId.value = trade.ownerId;
+  form.elements.date.value = trade.date;
+  form.elements.side.value = trade.side;
+  form.elements.currency.value = trade.currency;
+  form.elements.ticker.value = trade.ticker;
+  form.elements.name.value = trade.name || "";
+  form.elements.type.value = trade.type || "주식";
+  form.elements.quantity.value = trade.quantity;
+  form.elements.price.value = trade.price;
+  form.elements.fx.value = trade.fx;
+  const asset = state.assetCatalog[trade.ticker] || {};
+  form.elements.currentPrice.value = asset.currentPrice ?? trade.price;
+  form.elements.currentFx.value = trade.currency === "KRW" ? 1 : (asset.currentFx ?? trade.fx);
+  form.elements.memo.value = trade.memo || "";
+  setTradeDialogMode("edit");
+  renderTradePreview();
+  openDialog(document.querySelector("#tradeDialog"));
+}
+
+function setTradeDialogMode(mode) {
+  const title = document.querySelector("#tradeDialogTitle");
+  const del = document.querySelector("#deleteTradeButton");
+  if (title) title.textContent = mode === "edit" ? "거래 수정" : "매수·매도 입력";
+  if (del) del.hidden = mode !== "edit";
+  if (mode !== "edit") editingTradeId = null;
+}
+
+// 기존 거래를 수정. 연결된 '보유 등록 자동 입금'도 함께 동기화한다.
+function updateTrade(id, data) {
+  const trade = tradeById(id);
+  if (!trade) return { ok: false, message: "거래를 찾을 수 없습니다." };
+  const ticker = (data.ticker || "").trim().toUpperCase();
+  const quantity = Number(data.quantity) || 0;
+  const price = Number(data.price) || 0;
+  if (!ticker || !quantity || !price) return { ok: false, field: "ticker", message: "종목, 수량, 체결가를 입력하세요." };
+  const currency = data.currency;
+  const fx = currency === "KRW" ? 1 : Number(data.fx) || 1;
+  Object.assign(trade, {
+    ownerId: data.ownerId,
+    date: data.date || trade.date,
+    side: data.side,
+    ticker,
+    name: (data.name || "").trim() || ticker,
+    type: data.type,
+    currency,
+    quantity,
+    price,
+    fx,
+    memo: (data.memo || "").trim()
+  });
+  const currentPrice = Number(data.currentPrice) || price;
+  const currentFx = currency === "KRW" ? 1 : Number(data.currentFx) || fx;
+  ensureAssetFromTrade({ ...trade, price: currentPrice, fx: currentFx });
+  state.assetCatalog[ticker].currentPrice = currentPrice;
+  state.assetCatalog[ticker].currentFx = currentFx;
+  const auto = state.cashflows.find((flow) => flow.autoFor === id);
+  if (auto) {
+    if (trade.side === "buy") {
+      auto.amount = Math.round(quantity * price * fx);
+      auto.date = trade.date;
+      auto.ownerId = trade.ownerId;
+    } else {
+      state.cashflows = state.cashflows.filter((flow) => flow.autoFor !== id);
+    }
+  }
+  saveState();
+  render();
+  return { ok: true };
+}
+
+function deleteTrade(id) {
+  state.trades = state.trades.filter((trade) => trade.id !== id);
+  state.cashflows = state.cashflows.filter((flow) => flow.autoFor !== id);
+  editingTradeId = null;
+  saveState();
+  render();
+}
+
+// 한 종목이 여러 거래로 구성된 경우, 거래 목록에서 수정/삭제할 항목을 고른다.
+function openHoldingTrades(ownerId, ticker) {
+  const trades = state.trades
+    .filter((trade) => trade.ownerId === ownerId && trade.ticker === ticker)
+    .slice()
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (trades.length === 1) {
+    openTradeEditor(trades[0].id);
+    return;
+  }
+  const list = document.querySelector("#holdingTradesList");
+  const titleEl = document.querySelector("#holdingTradesTitle");
+  if (!list) return;
+  if (titleEl) titleEl.textContent = `${ticker} 거래 내역`;
+  list.innerHTML = trades
+    .map((trade) => {
+      const label = trade.side === "buy" ? "매수" : "매도";
+      const tone = trade.side === "buy" ? "buy" : "sell";
+      const nat = trade.currency === "USD" ? `$${trade.price}` : `${Math.round(trade.price).toLocaleString("ko-KR")}원`;
+      return `
+        <div class="holding-trade-row">
+          <div><i class="activity-badge ${tone}">${label}</i><strong>${trade.date}</strong><small>${trade.quantity} × ${nat}${trade.currency === "USD" ? ` · 환율 ${trade.fx}` : ""}</small></div>
+          <div class="holding-trade-actions">
+            <button type="button" class="ghost-button" data-edit-trade="${trade.id}">수정</button>
+            <button type="button" class="danger-text-button" data-delete-trade="${trade.id}">삭제</button>
+          </div>
+        </div>`;
+    })
+    .join("");
+  openDialog(document.querySelector("#holdingTradesDialog"));
 }
 
 function replayHoldings(ownerId) {
@@ -1675,6 +1799,7 @@ function renderInvestorHoldingsPreview() {
     currency === "USD"
       ? `$${Number(value).toLocaleString("en-US", { maximumFractionDigits: 2 })}`
       : `${Math.round(value).toLocaleString("ko-KR")}원`;
+  const krw = (value) => Math.round(value).toLocaleString("ko-KR");
   const rows = holdings
     .map((item) => {
       const cost = item.costKrw || item.valueKrw - item.profit;
@@ -1686,8 +1811,9 @@ function renderInvestorHoldingsPreview() {
           <td class="ih-name"><strong>${item.ticker}</strong><small>${item.type} · ${item.currency}</small></td>
           <td class="ih-num">${qty}</td>
           <td class="ih-num">${nativePrice(item.currency, item.avgPrice)}<small>→ ${nativePrice(item.currency, item.currentPrice)}</small></td>
-          <td class="ih-num">${money(item.valueKrw)}</td>
-          <td class="ih-num ${tone}">${signedMoney(item.profit)}<small class="${tone}">${ret >= 0 ? "+" : ""}${ret.toFixed(1)}%</small></td>
+          <td class="ih-num">${krw(item.valueKrw)}</td>
+          <td class="ih-num ${tone}">${item.profit >= 0 ? "+" : "-"}${krw(Math.abs(item.profit))}<small class="${tone}">${ret >= 0 ? "+" : ""}${ret.toFixed(1)}%</small></td>
+          <td class="ih-edit"><button type="button" class="ih-edit-btn" data-edit-holding="${item.ticker}" title="거래 수정" aria-label="${item.ticker} 거래 수정">수정</button></td>
         </tr>`;
     })
     .join("");
@@ -1698,8 +1824,9 @@ function renderInvestorHoldingsPreview() {
           <th>종목</th>
           <th class="ih-num">수량</th>
           <th class="ih-num">평단 → 현재가</th>
-          <th class="ih-num">평가금액</th>
+          <th class="ih-num">평가금액<small>KRW</small></th>
           <th class="ih-num">손익 / 수익률</th>
+          <th class="ih-edit" aria-label="수정"></th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -2102,6 +2229,7 @@ function setupQuickTrade() {
     event.preventDefault();
     const form = document.querySelector("#tradeForm");
     form.reset();
+    setTradeDialogMode("add");
     populateOwnerSelects();
     form.elements.ownerId.value = state.selectedInvestorId;
     form.elements.date.valueAsDate = new Date();
@@ -3450,12 +3578,49 @@ document.querySelector("#cashflowForm").addEventListener("submit", (event) => {
 document.querySelector("#openTradeForm").addEventListener("click", () => {
   const form = document.querySelector("#tradeForm");
   form.reset();
+  setTradeDialogMode("add");
   form.elements.date.valueAsDate = new Date();
   form.elements.fx.value = currentUsdKrw();
   form.elements.currentFx.value = currentUsdKrw();
   populateOwnerSelects();
   renderTradePreview();
   openDialog(document.querySelector("#tradeDialog"));
+});
+
+document.querySelector("#deleteTradeButton").addEventListener("click", () => {
+  const button = document.querySelector("#deleteTradeButton");
+  if (button.dataset.confirm !== "1") {
+    button.dataset.confirm = "1";
+    button.textContent = "삭제 확인";
+    return;
+  }
+  const id = editingTradeId;
+  button.dataset.confirm = "";
+  button.textContent = "삭제";
+  if (id) {
+    deleteTrade(id);
+    document.querySelector("#tradeDialog").close();
+    showToast("거래를 삭제했습니다.");
+  }
+});
+
+document.querySelector("#holdingTradesList").addEventListener("click", (event) => {
+  const editBtn = event.target.closest("[data-edit-trade]");
+  const delBtn = event.target.closest("[data-delete-trade]");
+  if (editBtn) {
+    document.querySelector("#holdingTradesDialog").close();
+    openTradeEditor(editBtn.dataset.editTrade);
+  } else if (delBtn) {
+    deleteTrade(delBtn.dataset.deleteTrade);
+    showToast("거래를 삭제했습니다.");
+    document.querySelector("#holdingTradesDialog").close();
+  }
+});
+
+document.querySelector("#investorHoldingsPreview").addEventListener("click", (event) => {
+  const editBtn = event.target.closest("[data-edit-holding]");
+  if (!editBtn) return;
+  openHoldingTrades(state.selectedInvestorId, editBtn.dataset.editHolding);
 });
 
 document.querySelectorAll("[data-close-dialog]").forEach((button) => {
@@ -3474,6 +3639,35 @@ document.querySelector("#tradeForm").addEventListener("input", (event) => {
 document.querySelector("#tradeForm").addEventListener("submit", (event) => {
   event.preventDefault();
   const form = event.currentTarget;
+  const payload = {
+    ownerId: form.elements.ownerId.value,
+    date: form.elements.date.value,
+    side: form.elements.side.value,
+    ticker: form.elements.ticker.value,
+    name: form.elements.name.value.trim(),
+    type: form.elements.type.value,
+    currency: form.elements.currency.value,
+    quantity: Number(form.elements.quantity.value) || 0,
+    price: Number(form.elements.price.value) || 0,
+    fx: Number(form.elements.fx.value) || 1,
+    currentPrice: Number(form.elements.currentPrice.value) || Number(form.elements.price.value) || 0,
+    currentFx: form.elements.currency.value === "KRW" ? 1 : Number(form.elements.currentFx.value) || Number(form.elements.fx.value) || 1,
+    memo: form.elements.memo.value.trim()
+  };
+  if (editingTradeId) {
+    const result = updateTrade(editingTradeId, payload);
+    if (!result.ok) {
+      const field = form.elements[result.field || "ticker"];
+      field.setCustomValidity(result.message);
+      form.reportValidity();
+      field.setCustomValidity("");
+      return;
+    }
+    setTradeDialogMode("add");
+    form.closest("dialog").close();
+    showToast("거래를 수정했습니다.");
+    return;
+  }
   const result = commitTrade({
     ownerId: form.elements.ownerId.value,
     date: form.elements.date.value,
