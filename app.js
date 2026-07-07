@@ -1,6 +1,6 @@
-const STORAGE_KEY = "assetpilot-ledger-state-v2";
-const LEGACY_STORAGE_KEY = "assetpilot-ledger-state-v1";
-const SCHEMA_VERSION = 2;
+const STORAGE_KEY = "assetpilot-ledger-state-v3";
+const LEGACY_STORAGE_KEY = "assetpilot-ledger-state-v2";
+const SCHEMA_VERSION = 3;
 const DIVIDEND_TAX_RATE = 0.15;
 const DEFAULT_USDKRW = 1380;
 const DEFAULT_PROXY_BASE_URL = "";
@@ -296,7 +296,7 @@ let quickTradeSide = "buy";
 const seedState = {
   schemaVersion: SCHEMA_VERSION,
   selectedView: "dashboard",
-  selectedInvestorId: "kim",
+  selectedInvestorId: null,
   pendingDeleteInvestorId: null,
   displayCurrency: "KRW",
   fx: {
@@ -314,57 +314,19 @@ const seedState = {
     lastSuccessAt: null,
     error: null
   },
-  overseasPriceSource: "seed",
+  overseasPriceSource: "empty",
   cryptoQuoteFx: {
     rate: null,
     source: null,
     updatedAt: null
   },
   snapshots: [],
-  investors: [
-    { id: "kim", name: "김지훈", initials: "김" },
-    { id: "lee", name: "이서연", initials: "이" }
-  ],
-  assetCatalog: {
-    SCHD: { ticker: "SCHD", name: "SCHD", type: "주식", currency: "USD", currentPrice: 29.5, currentFx: DEFAULT_USDKRW, annualDividend: 9881 },
-    O: { ticker: "O", name: "Realty Income", type: "주식", currency: "USD", currentPrice: 58, currentFx: DEFAULT_USDKRW, annualDividend: 8200 },
-    BTC: { ticker: "BTC", name: "Bitcoin", type: "코인", currency: "USD", currentPrice: 38000, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    ETH: { ticker: "ETH", name: "Ethereum", type: "코인", currency: "USD", currentPrice: 2391, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    "360750": { ticker: "360750", name: "TIGER 미국S&P500", type: "ETF", currency: "KRW", currentPrice: 19640, currentFx: 1, annualDividend: 4600 },
-    KR3Y: { ticker: "KR3Y", name: "국고채 3년", type: "채권", currency: "KRW", currentPrice: 100400, currentFx: 1, annualDividend: 36000 },
-    XRP: { ticker: "XRP", name: "XRP", type: "코인", currency: "USD", currentPrice: 2.44, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    QQQ: { ticker: "QQQ", name: "Invesco QQQ Trust", type: "주식", currency: "USD", currentPrice: 740.62, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    SPY: { ticker: "SPY", name: "SPDR S&P 500 ETF", type: "주식", currency: "USD", currentPrice: 746.74, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    IWM: { ticker: "IWM", name: "iShares Russell 2000 ETF", type: "주식", currency: "USD", currentPrice: 295.59, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    SOXX: { ticker: "SOXX", name: "iShares Semiconductor ETF", type: "주식", currency: "USD", currentPrice: 639.45, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    AAPL: { ticker: "AAPL", name: "Apple", type: "주식", currency: "USD", currentPrice: 298.01, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    MSFT: { ticker: "MSFT", name: "Microsoft", type: "주식", currency: "USD", currentPrice: 379.4, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    GOOGL: { ticker: "GOOGL", name: "Alphabet", type: "주식", currency: "USD", currentPrice: 368.03, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    AMZN: { ticker: "AMZN", name: "Amazon", type: "주식", currency: "USD", currentPrice: 244.39, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    NVDA: { ticker: "NVDA", name: "NVIDIA", type: "주식", currency: "USD", currentPrice: 210.69, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    META: { ticker: "META", name: "Meta", type: "주식", currency: "USD", currentPrice: 577.22, currentFx: DEFAULT_USDKRW, annualDividend: 0 },
-    TSLA: { ticker: "TSLA", name: "Tesla", type: "주식", currency: "USD", currentPrice: 400.49, currentFx: DEFAULT_USDKRW, annualDividend: 0 }
-  },
+  investors: [],
+  assetCatalog: {},
   indexQuotes: {},
-  marketIndicators: [
-    { symbol: "BTC", domestic: 52000000, globalKrw: 50420000, domesticChange: 0, globalChange: 0, updatedAt: null },
-    { symbol: "ETH", domestic: 3300000, globalKrw: 3244000, domesticChange: 0, globalChange: 0, updatedAt: null },
-    { symbol: "SOL", domestic: 224000, globalKrw: 216800, domesticChange: 0, globalChange: 0, updatedAt: null },
-    { symbol: "BNB", domestic: 978000, globalKrw: 951000, domesticChange: 0, globalChange: 0, updatedAt: null },
-    { symbol: "XRP", domestic: 3500, globalKrw: 3370, domesticChange: 0, globalChange: 0, updatedAt: null }
-  ],
-  cashflows: [
-    { id: crypto.randomUUID(), ownerId: "kim", date: "2026-06-01", type: "deposit", amount: 3000000, memo: "초기 입금" },
-    { id: crypto.randomUUID(), ownerId: "lee", date: "2026-06-01", type: "deposit", amount: 3400000, memo: "초기 입금" }
-  ],
-  trades: [
-    { id: crypto.randomUUID(), ownerId: "kim", date: "2026-06-03", side: "buy", ticker: "SCHD", name: "SCHD", type: "주식", currency: "USD", quantity: 20, price: 25, fx: 1360 },
-    { id: crypto.randomUUID(), ownerId: "kim", date: "2026-06-04", side: "buy", ticker: "O", name: "Realty Income", type: "주식", currency: "USD", quantity: 15, price: 54, fx: 1370 },
-    { id: crypto.randomUUID(), ownerId: "kim", date: "2026-06-08", side: "buy", ticker: "BTC", name: "Bitcoin", type: "코인", currency: "USD", quantity: 0.005, price: 29000, fx: DEFAULT_USDKRW },
-    { id: crypto.randomUUID(), ownerId: "lee", date: "2026-06-05", side: "buy", ticker: "360750", name: "TIGER 미국S&P500", type: "ETF", currency: "KRW", quantity: 58, price: 17250, fx: 1 },
-    { id: crypto.randomUUID(), ownerId: "lee", date: "2026-06-10", side: "buy", ticker: "ETH", name: "Ethereum", type: "코인", currency: "USD", quantity: 0.42, price: 2094, fx: DEFAULT_USDKRW },
-    { id: crypto.randomUUID(), ownerId: "lee", date: "2026-06-12", side: "buy", ticker: "KR3Y", name: "국고채 3년", type: "채권", currency: "KRW", quantity: 12, price: 101000, fx: 1 }
-  ]
+  marketIndicators: [],
+  cashflows: [],
+  trades: []
 };
 
 let state = loadState();
@@ -492,7 +454,7 @@ function validateImportState(candidate) {
 }
 
 function loadState() {
-  const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+  const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return structuredClone(seedState);
   try {
     const parsed = JSON.parse(raw);
@@ -587,6 +549,11 @@ async function hydrateFromServer() {
     if (!data || data.state == null) {
       // 서버가 비어 있음 -> 현재 로컬 상태를 최초 업로드.
       await pushStateToServer();
+      return;
+    }
+    if (Number(data.state?.schemaVersion || 0) < SCHEMA_VERSION) {
+      await pushStateToServer();
+      setSyncStatus("synced");
       return;
     }
     const errors = validateImportState(data.state);
@@ -860,7 +827,11 @@ function showToast(message, variant = "info") {
 }
 
 function investorById(id) {
-  return state.investors.find((investor) => investor.id === id) || state.investors[0];
+  return state.investors.find((investor) => investor.id === id) || state.investors[0] || {
+    id: null,
+    name: "투자자 없음",
+    initials: "-"
+  };
 }
 
 function makeInvestor(name) {
@@ -3763,7 +3734,7 @@ document.querySelector("#seedButton").addEventListener("click", () => {
   state = structuredClone(seedState);
   saveState();
   render();
-  showToast("데모 데이터를 초기화했습니다.");
+  showToast("\uC804\uCCB4 \uB370\uC774\uD130\uB97C \uCD08\uAE30\uD654\uD588\uC2B5\uB2C8\uB2E4.");
 });
 
 document.querySelector("#demoChangeButton").addEventListener("click", triggerDashboardChangeDemo);
