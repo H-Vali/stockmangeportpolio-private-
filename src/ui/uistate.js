@@ -22,6 +22,8 @@ export const uiState = {
   holdingsTypeFilter: null,
   // 빠른 매매 입력 폼의 매수/매도 토글
   quickTradeSide: "buy",
+  // 투자자 시트 거래입력 영역의 신규등록/보유거래 탭
+  quickTradeTab: "new",
   // 가져오기 확인 대기 중인 상태 / 되돌리기용 직전 상태
   pendingImportState: null,
   importRollbackState: null,

@@ -26,9 +26,20 @@ document.querySelectorAll("[data-view]").forEach((button) => {
 });
 
 document.querySelectorAll("[data-expand-ledger]").forEach((link) => {
-  link.addEventListener("click", () => {
+  link.addEventListener("click", (event) => {
+    const isNavShortcut = link.dataset.navExpandLedger !== undefined;
+    if (isNavShortcut) {
+      event.preventDefault();
+      if (!["dashboard", "investor"].includes(state.selectedView)) {
+        state.selectedView = "dashboard";
+        saveState({ snapshot: false });
+      }
+    }
     uiState.ledgerExpanded = true;
     renderView();
+    if (isNavShortcut) {
+      document.querySelector("#transactions")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   });
 });
 
@@ -36,6 +47,28 @@ document.querySelector("#collapseLedgerButton").addEventListener("click", () => 
   uiState.ledgerExpanded = false;
   renderView();
 });
+
+// 투자자 시트 "신규 자산 등록" / "보유 종목 거래" 탭. 두 폼을 동시에 노출하면
+// 필드가 12개 넘게 한 화면에 쌓여 입력 흐름이 헷갈려서 탭으로 분리했다.
+function applyQuickTradeTab() {
+  document.querySelectorAll("[data-quick-trade-tab]").forEach((tab) => {
+    const active = tab.dataset.quickTradeTab === uiState.quickTradeTab;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+  });
+  document.querySelectorAll("[data-quick-trade-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.quickTradePanel !== uiState.quickTradeTab;
+  });
+}
+
+document.querySelectorAll("[data-quick-trade-tab]").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    uiState.quickTradeTab = tab.dataset.quickTradeTab;
+    applyQuickTradeTab();
+  });
+});
+
+applyQuickTradeTab();
 
 document.querySelector("#clearHoldingsFilterButton").addEventListener("click", clearHoldingsFilter);
 

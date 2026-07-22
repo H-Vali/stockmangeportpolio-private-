@@ -804,8 +804,37 @@ a.ghost-button {
 
 .inline-form {
   display: grid;
-  grid-template-columns: 160px 150px minmax(140px, 1fr) minmax(160px, 1.4fr) auto auto;
+  grid-template-columns: 160px 150px minmax(140px, 1fr) minmax(160px, 1.4fr) auto;
   gap: 10px;
+}
+
+.cashflow-side {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.cashflow-side .side-btn {
+  min-width: 64px;
+}
+
+.side-btn.deposit {
+  color: var(--violet-3);
+}
+
+.side-btn.deposit:hover {
+  background: rgba(124, 92, 252, 0.18);
+  color: #fff;
+}
+
+.side-btn.withdraw {
+  color: var(--up);
+}
+
+.side-btn.withdraw:hover {
+  background: rgba(246, 70, 93, 0.18);
+  color: #fff;
 }
 
 .cashflow-list {
@@ -1939,32 +1968,54 @@ tbody tr:hover {
   gap: 8px;
 }
 
-.quick-trade-split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
+.quick-trade-tabs {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin-bottom: 4px;
 }
 
-.quick-trade-half,
+.tab-btn {
+  flex: 1;
+  min-height: 34px;
+  border: 0;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tab-btn:hover {
+  color: var(--ink);
+}
+
+.tab-btn.active {
+  background: var(--violet);
+  color: #fff;
+}
+
+.quick-trade-panel,
 .quick-trade-fields {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.quick-trade-half-bordered {
-  border-left: 1px solid var(--line);
-  padding-left: 16px;
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
-.quick-trade-half-label {
-  margin-bottom: 4px;
+.field-label {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .quick-trade select,
@@ -2111,19 +2162,6 @@ tbody tr:hover {
   color: var(--violet-3);
   font-weight: 800;
   text-decoration: none;
-}
-
-@media (max-width: 700px) {
-  .quick-trade-split {
-    grid-template-columns: 1fr;
-  }
-
-  .quick-trade-half-bordered {
-    border-top: 1px solid var(--line);
-    border-left: 0;
-    padding-top: 16px;
-    padding-left: 0;
-  }
 }
 
 .holdings-filter-banner.active {
@@ -3221,6 +3259,55 @@ select:focus {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.trade-advanced {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 14px;
+  background: var(--surface-2);
+}
+
+.trade-advanced[open] {
+  padding-bottom: 14px;
+}
+
+.trade-advanced summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.trade-advanced summary::-webkit-details-marker {
+  display: none;
+}
+
+.trade-advanced summary::before {
+  content: "▸";
+  margin-right: 6px;
+  color: var(--violet-3);
+}
+
+.trade-advanced[open] summary::before {
+  content: "▾";
+}
+
+.trade-advanced summary small {
+  margin-left: 16px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.trade-advanced > label,
+.trade-advanced > .form-grid {
+  margin-top: 12px;
 }
 
 .trade-preview {
