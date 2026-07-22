@@ -332,6 +332,28 @@ menu {
   font-weight: 800;
 }
 
+.clock-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--violet);
+  flex-shrink: 0;
+  animation: clock-live-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes clock-live-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(124, 92, 252, 0.55);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.7);
+    box-shadow: 0 0 0 4px rgba(124, 92, 252, 0);
+  }
+}
+
 .hidden {
   display: none !important;
 }
