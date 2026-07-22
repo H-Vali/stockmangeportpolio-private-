@@ -11,9 +11,11 @@
 - 매수/매도 입력: 종목, 수량, 체결가, 매입 환율, 현재가, 현재 환율 입력
 - 물타기 미리보기: 기존 보유 종목 추가 매수 시 새 평단, 평균환율, 예상손익 표시
 - 보유 종목 원장 재생: 매수/매도 거래를 재생해 수량, 평단, 평균환율 자동 산출
-- 손익 분해: 주가손익과 환차손익을 원화로 분리 표시
+- 손익 분해: 주가손익과 환차손익을 원화로 분리 표시 (원장 표 + 보유 종목 뷰 양쪽)
+- 환율 분리: 매입시점 환율은 거래별로 보존해 환차손익 기준으로 쓰고, 평가 환율만 최신으로 동기화 (코인은 USDT/KRW 별도)
 - 브라우저 `localStorage` 저장 및 JSON 내보내기/가져오기
 - 다기기 동기화(선택): Cloudflare Worker `/state` + KV로 여러 PC에서 같은 데이터 공유 (`proxy/README.md` 참고)
+- 동시 편집 보호: 개정 번호(rev) 기반 낙관적 잠금. 다른 기기가 먼저 저장했으면 덮어쓰지 않고 알림
 - 가져오기 검증: 투자자/입출금/거래 배열과 필수 필드 타입 확인, 가져오기 1회 되돌리기 지원
 - 총자산 추이: 거래/입출금/시세 갱신 시 일별 스냅샷 저장
 - 코인 시세 자동 갱신: 빗썸 KRW + Binance/CoinGecko USD 기준 국내/해외 24시간 가격 변동률 표시
@@ -43,9 +45,33 @@
 - `fx`: USD/KRW 자동/수동 환율 상태
 - `market`: 시세 갱신 성공/실패 메타데이터
 
+## 배포
+
+Cloudflare Pages(웹앱) + Cloudflare Worker/KV(원장 저장소) 조합으로 무료 운영할 수 있습니다.
+여러 PC에서 내보내기/가져오기 없이 같은 데이터를 씁니다. 절차와 무료 한도는 [DEPLOY.md](DEPLOY.md)를 참고하세요.
+
+## 코드 구조
+
+`app.js` 단일 파일에서 `src/` 하위 ES 모듈(설정 / 코어 / 상태 / 도메인 / 네트워크 / UI)로 분해했습니다.
+계층 구분과 상태 취급 규칙은 [ARCHITECTURE.md](ARCHITECTURE.md)를 참고하세요.
+
 ## 로컬 실행
 
-별도 빌드 과정 없이 `index.html`을 브라우저에서 열면 됩니다.
+```bash
+npm run dev
+```
+
+`http://localhost:4173` 에서 열립니다. ES 모듈은 `file://`에서 import가 막히므로
+`index.html` 더블클릭은 더 이상 동작하지 않습니다. 배포는 여전히 빌드 없는 정적 호스팅입니다.
+
+## 검증
+
+```bash
+npm run check
+```
+
+import 그래프 정적 검사 + 단위 테스트(도메인 계산, 스키마/마이그레이션, 저장소·HTTP·로거)를 함께 돌립니다.
+Node 20 이상이 필요합니다.
 
 ## 백업
 
@@ -55,9 +81,9 @@
 
 - 코인: 브라우저에서 빗썸 공개 API와 CoinGecko 공개 API를 직접 호출합니다.
 - 미국주식/환율: API 키 노출과 서버 측 HTML 파싱 문제 때문에 `/proxy`의 Cloudflare Workers 프록시를 사용합니다.
-- Worker 배포 후 `app.js`의 `PROXY_BASE_URL`에 Worker URL을 입력하면 미국주식 `/quote`, 환율 `/fxrate` 호출이 활성화됩니다.
-- 코드 수정 없이 연결하려면 Pages URL에 `?proxy=https://YOUR-WORKER.workers.dev`를 한 번 붙여 접속하세요. 앱이 해당 URL을 `localStorage`에 저장하고 이후 1분 폴링에 사용합니다.
-- Finnhub API key는 프론트 코드에 넣지 말고 `wrangler secret put FINNHUB_API_KEY`로 등록하세요.
+- 연결 방법: Pages URL에 `?proxy=https://YOUR-WORKER.workers.dev`를 한 번 붙여 접속하세요. 앱이 해당 URL을 `localStorage`에 저장하고 이후 폴링에 사용합니다. 코드 수정은 필요 없습니다.
+  (기본값을 코드에 박아두려면 `src/config/constants.js`의 `DEFAULT_PROXY_BASE_URL`)
+- Finnhub API key는 프론트 코드에 넣지 말고 Worker 시크릿으로 등록하세요. 절차는 [DEPLOY.md](DEPLOY.md) 참고.
 
 ## GitHub Pages
 
