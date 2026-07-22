@@ -90,7 +90,10 @@ async function quote(url, env) {
     headers: {
       ...CORS_HEADERS,
       "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "public, max-age=60"
+      // 성공 응답만 클라이언트 쪽에 캐시시킨다. Finnhub 요청 한도 초과(429) 같은
+      // 일시적 실패까지 60초씩 캐시하면, 한도가 풀린 뒤에도 Cloudflare 엣지가
+      // 낡은 실패 응답을 계속 돌려줘 문제가 실제보다 오래 지속되는 것처럼 보인다.
+      "Cache-Control": response.ok ? "public, max-age=60" : "no-store"
     }
   });
 }

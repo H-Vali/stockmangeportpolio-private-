@@ -314,7 +314,8 @@ assetpilotLogs()
 | 다른 PC에 데이터가 안 보임 | `?proxy=` `&synckey=` 로 연결했는지, 토큰이 정확한지 |
 | "저장 실패 (401)" | `SYNC_TOKEN` 과 `synckey` 값이 다름 |
 | "저장 실패 (500)" | KV 네임스페이스 id가 `wrangler.toml` 에 안 들어감, 또는 시크릿이 다른 이름의 Worker 에 등록됨 |
-| 미국주식 시세만 안 붙음 | `FINNHUB_API_KEY` 미등록 (다른 기능은 정상) |
+| 미국주식 시세만 안 붙음 | `FINNHUB_API_KEY` 미등록 (다른 기능은 정상) — `curl .../quote?symbol=AAPL` 이 `missing_finnhub_key` 를 반환하면 이 경우 |
+| 미국주식 시세가 간헐적으로 안 붙음, `curl` 하면 `429 Too Many Requests` (nginx) | **Finnhub 무료 요청 한도 초과.** 키 문제가 아니라 요청이 너무 많은 것. 탭을 여러 개(예: 동기화 테스트용 시크릿 탭) 열어두면 60초 폴링이 곱절로 나가 한도를 넘기기 쉽다. 안 쓰는 탭을 닫고 1분 정도 기다리면 보통 풀린다 |
 | 충돌 알림이 뜸 | 다른 기기가 먼저 저장함. 새로고침 |
 
 Worker 상태는 토큰 없이도 한 줄로 진단할 수 있습니다.
