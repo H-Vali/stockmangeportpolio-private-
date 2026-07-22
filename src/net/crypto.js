@@ -1,7 +1,7 @@
 import { BINANCE_SYMBOLS, COINGECKO_IDS } from "../config/catalog.js";
 import { CRYPTO_REALTIME_RENDER_INTERVAL_MS } from "../config/constants.js";
 import { replayHoldings } from "../domain/portfolio.js";
-import { currentUsdKrw, state } from "../state/store.js";
+import { currentUsdKrw, saveState, state } from "../state/store.js";
 import { renderAllocation, renderDashboard } from "../ui/render/dashboard.js";
 import { renderHoldings, renderHoldingsPreview } from "../ui/render/holdings.js";
 import { renderInvestorSheet } from "../ui/render/investor.js";
@@ -219,6 +219,27 @@ export async function updateCoinQuotes() {
     } catch (error) {
       console.warn("국내 코인 시세 조회를 건너뜁니다.", error);
     }
+  }
+}
+
+// 코인은 Finnhub 예산과 무관하므로 보유주식/지수의 실패 백오프에 얽매이지 않고
+// 독자적인 주기로 갱신한다. 해외(Binance WS)·국내(빗썸 5초 폴링)는 이미 실시간으로
+// 도는 중이라, 이 함수는 그 사이 놓칠 수 있는 값을 보정하는 전체 재동기화다.
+export async function refreshCoinQuotes() {
+  try {
+    await updateCoinQuotes();
+    saveState({ snapshot: true, sync: false });
+    renderDashboard();
+    renderAllocation();
+    renderMarket();
+    renderInvestorComparison();
+    renderInvestorSheet();
+    renderHoldings();
+    renderHoldingsPreview();
+    renderTrend();
+    renderFx();
+  } catch (error) {
+    console.warn("코인 시세 전체 동기화 실패(실시간 스트림은 별도로 계속 동작합니다)", error);
   }
 }
 

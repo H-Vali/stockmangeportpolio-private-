@@ -34,18 +34,11 @@ export const DIVIDEND_MONTHS = {
   "360750": [1, 4, 7, 10],
   KR3Y: [3, 6, 9, 12]
 };
+// Finnhub 요청 예산을 보유종목에 더 쓰기 위해 참고용 지수 3개로 한정한다(M7 개별주 제거).
 export const INDEX_MONITOR_LIST = [
   { ticker: "QQQ", label: "나스닥", group: "ETF", logoText: "Q" },
   { ticker: "SPY", label: "S&P500", group: "ETF", logoText: "S&P" },
-  { ticker: "IWM", label: "러셀2000", group: "ETF", logoText: "R2K" },
-  { ticker: "SOXX", label: "필라델피아 반도체", group: "ETF", logoText: "SOX" },
-  { ticker: "AAPL", label: "Apple", group: "M7", logo: "https://cdn.simpleicons.org/apple/f3f3f7" },
-  { ticker: "MSFT", label: "Microsoft", group: "M7", logo: "https://cdn.simpleicons.org/microsoft/f3f3f7" },
-  { ticker: "GOOGL", label: "Alphabet", group: "M7", logo: "https://cdn.simpleicons.org/google/f3f3f7" },
-  { ticker: "AMZN", label: "Amazon", group: "M7", logo: "https://cdn.simpleicons.org/amazon/f3f3f7" },
-  { ticker: "NVDA", label: "NVIDIA", group: "M7", logo: "https://cdn.simpleicons.org/nvidia/f3f3f7" },
-  { ticker: "META", label: "Meta", group: "M7", logo: "https://cdn.simpleicons.org/meta/f3f3f7" },
-  { ticker: "TSLA", label: "Tesla", group: "M7", logo: "https://cdn.simpleicons.org/tesla/f3f3f7" }
+  { ticker: "IWM", label: "러셀2000", group: "ETF", logoText: "R2K" }
 ];
 export const ASSET_DICTIONARY = [
   { ticker: "AAPL", name: "Apple", type: "주식", currency: "USD" },
