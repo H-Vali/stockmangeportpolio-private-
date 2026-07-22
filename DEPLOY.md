@@ -151,6 +151,32 @@ curl -i https://<name>.<계정 서브도메인>.workers.dev/state
 | `500 {"error":"sync_not_configured"}` | 시크릿 미인식 (이름 불일치 가능성) |
 | `500 {"error":"kv_not_bound"}` | KV 바인딩 누락 (배포 경로 `/proxy` 확인) |
 | `404 {"error":"not_found"}` | 다른 스크립트가 배포됨 |
+| **`302` → `...cloudflareaccess.com/cdn-cgi/access/login/...`** | **Cloudflare Access 가 앞단을 막고 있음 (아래 참고)** |
+
+### Cloudflare Access 는 반드시 꺼야 합니다
+
+Worker 생성 과정에서 Access(Zero Trust) 보호가 켜지는 경우가 있습니다. 그러면
+모든 요청이 로그인 페이지로 302 되고 **Worker 코드가 아예 실행되지 않습니다.**
+JSON 대신 HTML 이 돌아오므로 앱에서는 동기화·시세가 통째로 실패합니다.
+
+브라우저로 열면 로그인 후 정상으로 보이지만, 앱의 `fetch()` 는 다릅니다.
+
+- 다른 출처(Pages)에서 부르는 요청에는 Access 세션 쿠키가 실리지 않습니다.
+- 이 Worker 는 `Access-Control-Allow-Origin: *` 를 쓰는데, 이는 쿠키를 실어
+  보내는 요청(credentials)과 함께 쓸 수 없습니다.
+- CORS preflight(`OPTIONS`)도 Access 에 막혀 `403` 이 됩니다.
+
+**끄는 법** — Zero Trust 대시보드 → **Access → Applications** 에서 도메인이
+`<name>.<계정>.workers.dev` 인 애플리케이션을 찾아 **삭제**합니다.
+(정책을 Bypass / Everyone 으로 바꿔도 되지만, 이 엔드포인트는 자체 Bearer 토큰
+인증이 있으므로 삭제가 깔끔합니다.)
+
+Worker 쪽 **Settings → Domains & Routes** 에도 Access 보호 스위치가 있으면 끕니다.
+
+Access 를 끈 뒤 `/state` 는 여전히 `SYNC_TOKEN` 없이는 접근할 수 없습니다.
+`/quote` 와 `/fxrate` 는 공개가 되는데, 남이 Finnhub 무료 할당량을 대신 쓰는 게
+신경 쓰이면 `proxy/src/index.js` 의 `Access-Control-Allow-Origin` 을 `*` 대신
+본인 Pages 주소로 좁히면 됩니다.
 
 401 을 확인한 뒤 토큰을 넣어 최종 확인합니다.
 
@@ -284,8 +310,18 @@ assetpilotLogs()
 
 | 증상 | 확인할 것 |
 |---|---|
+| 동기화·시세가 전부 실패, 응답이 JSON 이 아니라 HTML | **Cloudflare Access 가 켜져 있음.** 1-4 참고 |
 | 다른 PC에 데이터가 안 보임 | `?proxy=` `&synckey=` 로 연결했는지, 토큰이 정확한지 |
 | "저장 실패 (401)" | `SYNC_TOKEN` 과 `synckey` 값이 다름 |
-| "저장 실패 (500)" | KV 네임스페이스 id가 `wrangler.toml` 에 안 들어감 |
+| "저장 실패 (500)" | KV 네임스페이스 id가 `wrangler.toml` 에 안 들어감, 또는 시크릿이 다른 이름의 Worker 에 등록됨 |
 | 미국주식 시세만 안 붙음 | `FINNHUB_API_KEY` 미등록 (다른 기능은 정상) |
 | 충돌 알림이 뜸 | 다른 기기가 먼저 저장함. 새로고침 |
+
+Worker 상태는 토큰 없이도 한 줄로 진단할 수 있습니다.
+
+```bash
+curl -i https://<name>.<계정>.workers.dev/state
+```
+
+`302 → cloudflareaccess.com` 이면 Access, `500` 이면 설정 누락,
+`401` 이면 정상입니다.
