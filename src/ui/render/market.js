@@ -4,7 +4,7 @@ import { fxFormatter, money, numberFormatter, pct, signedMoney } from "../../cor
 import { formatClock } from "../../core/time.js";
 import { summarize } from "../../domain/portfolio.js";
 import { cryptoChangeEffectAt } from "../../net/crypto.js";
-import { proxyBaseUrl, state } from "../../state/store.js";
+import { state } from "../../state/store.js";
 import { markRealtimeChange, renderCryptoLogo, renderMetricTitle } from "../dom.js";
 import { uiState } from "../uistate.js";
 
@@ -95,7 +95,6 @@ export function renderMarket() {
 export function renderIndexMonitor() {
   const list = document.querySelector("#indexMonitorList");
   if (!list) return;
-  const connected = Boolean(proxyBaseUrl());
   const nextValues = {};
   const snapshots = INDEX_MONITOR_LIST.map((idx) => {
     const asset = state.assetCatalog[idx.ticker];
@@ -106,7 +105,7 @@ export function renderIndexMonitor() {
     nextValues[idx.ticker] = change;
     const glow = change > 0 ? "positive-glow" : change < 0 ? "negative-glow" : "neutral-glow";
     const changeClass = change > 0 ? "positive" : change < 0 ? "negative" : "neutral-text";
-    const status = quote ? `실시간 · ${formatClock(quote.updatedAt)}` : (connected ? "갱신 대기" : "프록시 연결 대기");
+    const status = quote ? `실시간 · ${formatClock(quote.updatedAt)}` : "갱신 대기";
     const changeLabel = hasQuote ? `${change > 0 ? "+" : ""}${change.toFixed(2)}%` : "—";
     const logoText = idx.logoText || idx.ticker.slice(0, 2);
     const logo = idx.logo

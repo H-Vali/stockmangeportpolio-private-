@@ -1,6 +1,6 @@
 import { FX_API_FALLBACK_URL, FX_API_PRIMARY_URL } from "../config/constants.js";
 import { currentFxSlot, getKstNowParts } from "../core/time.js";
-import { proxyBaseUrl, saveState, state, syncUsdAssetFx } from "../state/store.js";
+import { saveState, state, syncUsdAssetFx } from "../state/store.js";
 import { render } from "../ui/render/index.js";
 
 export async function fetchFxRateFrankfurter() {
@@ -36,24 +36,20 @@ export async function refreshFxRate() {
   if (!slot) return;
   if (state.fx.lastAutoFetchDate === dateKey && state.fx.lastAutoFetchSlot === slot) return;
 
-  const baseUrl = proxyBaseUrl();
   let usdkrw = null;
   let source = null;
   let updatedAt = new Date().toISOString();
 
-  if (baseUrl) {
-    try {
-      const response = await fetch(`${baseUrl}/fxrate`);
-      if (!response.ok) throw new Error("환율을 가져오지 못했습니다.");
-      const data = await response.json();
-      usdkrw = Number(data.usdkrw);
-      if (!usdkrw) throw new Error("환율 응답이 올바르지 않습니다.");
-      source = data.source === "fallback" ? "fallback" : "hana";
-      updatedAt = data.updatedAt || updatedAt;
-    } catch (error) {
-      console.warn("프록시 환율 갱신 실패", error);
-    }
-  } else {
+  try {
+    const response = await fetch("/fxrate");
+    if (!response.ok) throw new Error("환율을 가져오지 못했습니다.");
+    const data = await response.json();
+    usdkrw = Number(data.usdkrw);
+    if (!usdkrw) throw new Error("환율 응답이 올바르지 않습니다.");
+    source = data.source === "fallback" ? "fallback" : "hana";
+    updatedAt = data.updatedAt || updatedAt;
+  } catch (error) {
+    console.warn("Functions 환율 갱신 실패, 직접 조회로 폴백", error);
     try {
       usdkrw = await fetchFxRateFrankfurter();
       source = "frankfurter";

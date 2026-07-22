@@ -1,4 +1,4 @@
-import { DEFAULT_PROXY_BASE_URL, DEFAULT_USDKRW, LEGACY_STORAGE_KEY, PROXY_STORAGE_KEY, SCHEMA_VERSION, STORAGE_KEY } from "../config/constants.js";
+import { DEFAULT_USDKRW, LEGACY_STORAGE_KEY, SCHEMA_VERSION, STORAGE_KEY } from "../config/constants.js";
 import { summarize } from "../domain/portfolio.js";
 import { storage } from "./persistence.js";
 import { clearPortfolioData, isOverClearedState, normalizeState, seedState } from "./schema.js";
@@ -109,10 +109,6 @@ export function saveState(options = {}) {
 
 export function currentUsdKrw() {
   return state.fx.mode === "manual" ? Number(state.fx.manualUsdkrw || DEFAULT_USDKRW) : Number(state.fx.usdkrw || DEFAULT_USDKRW);
-}
-
-export function proxyBaseUrl() {
-  return (storage.getItem(PROXY_STORAGE_KEY) || DEFAULT_PROXY_BASE_URL).replace(/\/$/, "");
 }
 
 /**

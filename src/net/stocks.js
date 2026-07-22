@@ -1,17 +1,15 @@
 import { INDEX_MONITOR_LIST } from "../config/catalog.js";
 import { replayHoldings } from "../domain/portfolio.js";
 import { startCryptoRealtime, updateCoinQuotes } from "./crypto.js";
-import { currentUsdKrw, proxyBaseUrl, saveState, state } from "../state/store.js";
+import { currentUsdKrw, saveState, state } from "../state/store.js";
 import { render } from "../ui/render/index.js";
 import { renderMarketStatus } from "../ui/render/status.js";
 
 export async function updateStockQuotes() {
-  const baseUrl = proxyBaseUrl();
-  if (!baseUrl) return;
   const holdings = replayHoldings().filter((holding) => holding.type === "주식" && holding.currency === "USD");
   const symbols = [...new Set(holdings.map((holding) => holding.ticker))];
   for (const symbol of symbols) {
-    const response = await fetch(`${baseUrl}/quote?symbol=${encodeURIComponent(symbol)}`);
+    const response = await fetch(`/quote?symbol=${encodeURIComponent(symbol)}`);
     if (!response.ok) throw new Error("미국주식 시세를 가져오지 못했습니다.");
     const quote = await response.json();
     if (quote.c && state.assetCatalog[symbol]) {
@@ -23,11 +21,9 @@ export async function updateStockQuotes() {
 }
 
 export async function updateIndexQuotes() {
-  const baseUrl = proxyBaseUrl();
-  if (!baseUrl) return;
   state.indexQuotes = state.indexQuotes || {};
   for (const idx of INDEX_MONITOR_LIST) {
-    const response = await fetch(`${baseUrl}/quote?symbol=${encodeURIComponent(idx.ticker)}`);
+    const response = await fetch(`/quote?symbol=${encodeURIComponent(idx.ticker)}`);
     if (!response.ok) throw new Error("주요 지수 시세를 가져오지 못했습니다.");
     const quote = await response.json();
     const price = Number(quote.c || 0);

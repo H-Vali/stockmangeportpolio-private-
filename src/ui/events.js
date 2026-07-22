@@ -1,10 +1,12 @@
-import { SCHEMA_VERSION } from "../config/constants.js";
+import { SCHEMA_VERSION, SYNC_TOKEN_KEY } from "../config/constants.js";
 import { dateFormatter } from "../core/format.js";
 import { addInvestorByName, commitTrade, deleteTrade, updateInvestorName, updateTrade } from "../domain/actions.js";
 import { refreshFxRate } from "../net/fx.js";
 import { loadUsSymbols } from "../net/symbols.js";
 import { clearPortfolioData, normalizeState } from "../state/schema.js";
+import { storage } from "../state/persistence.js";
 import { currentUsdKrw, exportableState, saveState, setState, state, syncUsdAssetFx } from "../state/store.js";
+import { getSyncToken, hydrateFromServer } from "../state/sync.js";
 import { validateImportState } from "../state/validate.js";
 import { triggerDashboardChangeDemo } from "./demo.js";
 import { showToast } from "./dom.js";
@@ -300,6 +302,30 @@ document.querySelector("#seedButton").addEventListener("click", () => {
   saveState();
   render();
   showToast("\uBCF4\uC720/\uC6D0\uC7A5 \uB370\uC774\uD130\uB97C \uCD08\uAE30\uD654\uD588\uC2B5\uB2C8\uB2E4.");
+});
+
+document.querySelector("#syncSettingsButton").addEventListener("click", () => {
+  document.querySelector("#syncTokenInput").value = getSyncToken();
+  openDialog(document.querySelector("#syncSettingsDialog"));
+});
+
+document.querySelector("#saveSyncTokenButton").addEventListener("click", () => {
+  const token = document.querySelector("#syncTokenInput").value.trim();
+  if (token) {
+    storage.setItem(SYNC_TOKEN_KEY, token);
+    showToast("\uB3D9\uAE30\uD654 \uD1A0\uD070\uC744 \uC800\uC7A5\uD588\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uC11C\uBC84 \uB370\uC774\uD130\uC640 \uB3D9\uAE30\uD654\uD569\uB2C8\uB2E4.");
+    hydrateFromServer();
+  } else {
+    storage.removeItem(SYNC_TOKEN_KEY);
+  }
+  document.querySelector("#syncSettingsDialog").close();
+});
+
+document.querySelector("#clearSyncTokenButton").addEventListener("click", () => {
+  storage.removeItem(SYNC_TOKEN_KEY);
+  document.querySelector("#syncTokenInput").value = "";
+  showToast("\uB3D9\uAE30\uD654\uB97C \uD574\uC81C\uD588\uC2B5\uB2C8\uB2E4. \uC774 \uAE30\uAE30\uB294 \uB85C\uCEEC \uB370\uC774\uD130\uB9CC \uC0AC\uC6A9\uD569\uB2C8\uB2E4.");
+  document.querySelector("#syncSettingsDialog").close();
 });
 
 document.querySelector("#demoChangeButton").addEventListener("click", triggerDashboardChangeDemo);

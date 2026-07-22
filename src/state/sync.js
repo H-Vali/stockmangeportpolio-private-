@@ -3,12 +3,12 @@ import { logger } from "../core/logger.js";
 import { storage } from "./persistence.js";
 import { migrate } from "./migrate.js";
 import { isOverClearedState, normalizeState } from "./schema.js";
-import { proxyBaseUrl, setState, state } from "./store.js";
+import { setState, state } from "./store.js";
 import { validateImportState } from "./validate.js";
 import { showToast } from "../ui/dom.js";
 import { render } from "../ui/render/index.js";
 
-// --- 다기기 동기화 (Cloudflare Worker + KV) -------------------------------
+// --- 다기기 동기화 (Cloudflare Pages Functions + KV) -----------------------
 //
 // 이전 구조는 저장할 때마다 상태 전체를 무조건 PUT 했다. 두 기기가 같은 시간대에
 // 입력하면 나중에 저장한 쪽이 앞사람 입력을 통째로 지웠다(last-write-wins).
@@ -30,9 +30,9 @@ export function getSyncToken() {
   return (storage.getItem(SYNC_TOKEN_KEY) || "").trim();
 }
 
-// 동기화는 프록시 Worker URL과 인증 토큰이 둘 다 있을 때만 활성화됨.
+// 동기화는 인증 토큰이 설정되어 있을 때만 활성화됨(같은 오리진의 /state Functions 사용).
 export function syncEnabled() {
-  return Boolean(proxyBaseUrl() && getSyncToken());
+  return Boolean(getSyncToken());
 }
 
 // 로컬 캐시(오프라인 대비 및 즉시 첫 화면 렌더용).
@@ -53,7 +53,7 @@ export async function pushStateToServer() {
   syncPushInFlight = true;
   try {
     const payload = { ...state, schemaVersion: SCHEMA_VERSION, syncedAt: new Date().toISOString() };
-    const response = await fetch(`${proxyBaseUrl()}/state`, {
+    const response = await fetch("/state", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -97,7 +97,7 @@ export async function pushStateToServer() {
 export async function hydrateFromServer() {
   if (!syncEnabled()) return;
   try {
-    const response = await fetch(`${proxyBaseUrl()}/state`, {
+    const response = await fetch("/state", {
       headers: { "Authorization": `Bearer ${getSyncToken()}` }
     });
     if (!response.ok) {

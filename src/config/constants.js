@@ -5,8 +5,6 @@ export const LEGACY_STORAGE_KEY = "assetpilot-ledger-state-v2";
 export const SCHEMA_VERSION = 4;
 export const DIVIDEND_TAX_RATE = 0.15;
 export const DEFAULT_USDKRW = 1380;
-export const DEFAULT_PROXY_BASE_URL = "";
-export const PROXY_STORAGE_KEY = "assetpilot-proxy-base-url";
 // frankfurter는 api.frankfurter.app 도메인이 폐기되어 api.frankfurter.dev(/v1)로 이전됨.
 // 기존 .app URL은 CORS/네트워크 실패로 항상 폴백만 타던 문제가 있어 .dev로 교체.
 export const FX_API_PRIMARY_URL = "https://api.frankfurter.dev/v1/latest?base=USD&symbols=KRW";
@@ -25,8 +23,8 @@ export const ALLOCATION_RATIOS_KEY = "assetpilot-allocation-ratios-v1";
 // 사용자가 보는 숫자가 사실이 아니게 되므로 기본값을 false 로 둔다.
 // 시연용으로 켜려면 true 로 바꾸거나 상단 '변동 테스트' 버튼을 쓰면 된다.
 export const ENABLE_AUTO_REALTIME_DEMO = false;
-// 다기기 동기화: 상태를 Cloudflare Worker(/state)로 저장/조회하기 위한 인증 토큰.
-// ?synckey=... 로 접속하면 이 키에 저장되고 이후 자동으로 사용됩니다.
+// 다기기 동기화: 상태를 Cloudflare Pages Functions(/state)로 저장/조회하기 위한 인증 토큰.
+// 상단 "동기화 설정"에서 입력하거나 ?synckey=... 로 접속하면 저장되고 이후 자동으로 사용됩니다.
 export const SYNC_TOKEN_KEY = "assetpilot-sync-token";
 export const SYNC_PUSH_DEBOUNCE_MS = 1200;
 

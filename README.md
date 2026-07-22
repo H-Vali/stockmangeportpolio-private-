@@ -14,15 +14,15 @@
 - 손익 분해: 주가손익과 환차손익을 원화로 분리 표시 (원장 표 + 보유 종목 뷰 양쪽)
 - 환율 분리: 매입시점 환율은 거래별로 보존해 환차손익 기준으로 쓰고, 평가 환율만 최신으로 동기화 (코인은 USDT/KRW 별도)
 - 브라우저 `localStorage` 저장 및 JSON 내보내기/가져오기
-- 다기기 동기화(선택): Cloudflare Worker `/state` + KV로 여러 PC에서 같은 데이터 공유 (`proxy/README.md` 참고)
+- 다기기 동기화(선택): Cloudflare Pages Functions `/state` + KV로 여러 PC에서 같은 데이터 공유 (`DEPLOY.md` 참고)
 - 동시 편집 보호: 개정 번호(rev) 기반 낙관적 잠금. 다른 기기가 먼저 저장했으면 덮어쓰지 않고 알림
 - 가져오기 검증: 투자자/입출금/거래 배열과 필수 필드 타입 확인, 가져오기 1회 되돌리기 지원
 - 총자산 추이: 거래/입출금/시세 갱신 시 일별 스냅샷 저장
 - 코인 시세 자동 갱신: 빗썸 KRW + Binance/CoinGecko USD 기준 국내/해외 24시간 가격 변동률 표시
-- 미국주식/환율 프록시 골격: `/proxy` Cloudflare Workers 프로젝트 포함
+- 미국주식/환율/동기화 API: `/functions`의 Cloudflare Pages Functions(프론트와 같은 오리진, `/quote` `/fxrate` `/state`)
 - 배당 시뮬레이션: 성장률, 연수, DRIP 가정에 따른 세전/세후/누적 배당 계산
 - 배당 캘린더: 보유 종목의 지급월 기준 12개월 예상 배당 표시
-- GitHub Pages public preview 배포 워크플로우
+- Cloudflare Pages Git 연동 배포(별도 CI 설정 불필요)
 
 ## 핵심 계산식
 
@@ -47,7 +47,7 @@
 
 ## 배포
 
-Cloudflare Pages(웹앱) + Cloudflare Worker/KV(원장 저장소) 조합으로 무료 운영할 수 있습니다.
+**Cloudflare Pages 프로젝트 하나**(웹앱 + `/functions` API + KV 원장 저장소)로 무료 운영할 수 있습니다.
 여러 PC에서 내보내기/가져오기 없이 같은 데이터를 씁니다. 절차와 무료 한도는 [DEPLOY.md](DEPLOY.md)를 참고하세요.
 
 ## 코드 구조
@@ -80,11 +80,9 @@ Node 20 이상이 필요합니다.
 ## 시세/환율 연동
 
 - 코인: 브라우저에서 빗썸 공개 API와 CoinGecko 공개 API를 직접 호출합니다.
-- 미국주식/환율: API 키 노출과 서버 측 HTML 파싱 문제 때문에 `/proxy`의 Cloudflare Workers 프록시를 사용합니다.
-- 연결 방법: Pages URL에 `?proxy=https://YOUR-WORKER.workers.dev`를 한 번 붙여 접속하세요. 앱이 해당 URL을 `localStorage`에 저장하고 이후 폴링에 사용합니다. 코드 수정은 필요 없습니다.
-  (기본값을 코드에 박아두려면 `src/config/constants.js`의 `DEFAULT_PROXY_BASE_URL`)
-- Finnhub API key는 프론트 코드에 넣지 말고 Worker 시크릿으로 등록하세요. 절차는 [DEPLOY.md](DEPLOY.md) 참고.
+- 미국주식/환율: API 키 노출과 서버 측 HTML 파싱 문제 때문에 같은 오리진의 Cloudflare Pages Functions(`/functions`)를 거칩니다. 별도 URL 입력이나 프록시 설정이 필요 없습니다.
+- Finnhub API key는 프론트 코드에 절대 넣지 말고 Cloudflare Pages 프로젝트의 환경변수(시크릿) `FINNHUB_API_KEY`로 등록하세요. 절차는 [DEPLOY.md](DEPLOY.md) 참고.
 
-## GitHub Pages
+## 다기기 동기화
 
-이 repo의 `Settings > Pages`에서 Source를 `GitHub Actions`로 설정하면, `main` 브랜치 push 후 public preview가 생성됩니다.
+배포된 Pages URL로 각 PC에서 접속한 뒤, 상단 **동기화 설정** 버튼을 눌러 `SYNC_TOKEN`과 동일한 값을 입력하면 그 순간부터 서버(Cloudflare KV)와 동기화됩니다. 토큰이 없으면 기존처럼 `localStorage` 전용으로 동작합니다. (하위호환으로 `?synckey=...` URL 파라미터도 계속 지원됩니다.)
