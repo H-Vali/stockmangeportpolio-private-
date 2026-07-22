@@ -3109,6 +3109,15 @@ tbody tr:hover {
   font-weight: 800;
 }
 
+/* 손익을 주가손익 / 환차손익으로 갈라 보여주는 줄 */
+.hv-profit-cell .hv-profit-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
 .hv-native-price {
   color: var(--faint) !important;
 }
