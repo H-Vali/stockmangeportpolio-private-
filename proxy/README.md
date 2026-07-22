@@ -23,8 +23,21 @@ wrangler kv namespace create ASSET_STATE
 
 - `GET /quote?symbol=SCHD`: Finnhub `/quote` 응답 중계, `Cache-Control: max-age=60`
 - `GET /fxrate`: USD/KRW 환율 응답, `Cache-Control: max-age=7200`
-- `GET /state`: 저장된 공동 운용 상태를 `{ "state": <object|null> }` 로 반환. `Authorization: Bearer <SYNC_TOKEN>` 필요.
+- `GET /state`: 저장된 공동 운용 상태를 `{ "state": <object|null>, "rev": <number> }` 로 반환. `Authorization: Bearer <SYNC_TOKEN>` 필요.
 - `PUT /state`: 본문(JSON 상태 객체)을 KV에 저장. `Authorization: Bearer <SYNC_TOKEN>` 필요. 최대 약 4MB.
+  성공 시 `{ "ok": true, "rev": <number>, "savedAt": ... }`.
+
+### 동시 편집 보호 (rev)
+
+`PUT /state` 에 `X-Expected-Rev` 헤더를 실으면 낙관적 잠금이 걸립니다. 서버가 보관한
+`rev` 와 값이 다르면 **409 `{ "error": "revision_conflict", "rev": <서버 rev> }`** 를 반환하고
+저장하지 않습니다. 헤더를 생략하면 검사를 건너뛰므로 구버전 클라이언트도 그대로 동작합니다.
+
+이 장치가 없던 시절에는 두 사람이 비슷한 시각에 입력하면 나중 요청이 앞사람 입력을
+통째로 지웠습니다(last-write-wins). 앱은 409 를 받으면 자동 업로드를 멈추고
+사용자에게 새로고침을 안내하며, 그동안 로컬 데이터는 보존합니다.
+
+`rev` 는 KV 값의 메타데이터에 저장되므로 별도 키가 필요하지 않습니다.
 
 ## 프론트 연결 방법
 
