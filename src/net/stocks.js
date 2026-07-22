@@ -43,11 +43,22 @@ export async function updateIndexQuotes() {
   }
 }
 
+// Finnhub 요청 한도(분당 60회) 초과 등으로 연속 실패하면 다음 몇 번의 폴링
+// 주기를 건너뛴다. 실패 직후에도 매 60초마다 계속 두드리면 한도가 풀릴 시간을
+// 주지 못한다. 성공하면 즉시 초기화된다.
+let consecutiveFailures = 0;
+let skipTicks = 0;
+
 export async function refreshQuotes() {
+  if (skipTicks > 0) {
+    skipTicks -= 1;
+    return;
+  }
   try {
     await updateCoinQuotes();
     await updateStockQuotes();
     await updateIndexQuotes();
+    consecutiveFailures = 0;
     state.market = {
       lastUpdatedAt: new Date().toISOString(),
       lastSuccessAt: new Date().toISOString(),
@@ -60,6 +71,8 @@ export async function refreshQuotes() {
     startCryptoRealtime();
     render();
   } catch (error) {
+    consecutiveFailures += 1;
+    skipTicks = Math.min(consecutiveFailures, 3); // 최대 3분(3주기)까지 건너뜀
     state.market.failedAt = new Date().toISOString();
     state.market.error = error.message;
     saveState({ snapshot: false, sync: false });
