@@ -1,4 +1,9 @@
-name = "assetpilot-proxy"
+# 이 이름이 곧 배포 대상 Worker 서비스이자 공개 주소가 됩니다.
+#   https://<name>.<계정 서브도메인>.workers.dev
+# Workers Builds 로 연결한 대시보드 서비스 이름과 반드시 같아야 합니다.
+# 다르면 wrangler 가 다른 이름의 Worker 를 새로 만들어 배포해서,
+# 대시보드에서 등록한 시크릿이 없는 쪽으로 배포되고 /state 가 500 을 반환합니다.
+name = "stockmangeportpolio"
 main = "src/index.js"
 compatibility_date = "2026-06-19"
 

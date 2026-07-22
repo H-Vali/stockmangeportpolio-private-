@@ -126,11 +126,36 @@ Type을 반드시 **Secret** 으로 고르세요(Text 아님). 저장하면 새 
 
 ### 1-4. 동작 확인 — 여기를 통과할 때까지 다음 단계로 가지 마세요
 
-배포된 주소는 `wrangler.toml` 의 `name` 을 따릅니다. 즉 프로젝트 이름이 아니라
-**`assetpilot-proxy.<계정>.workers.dev`** 입니다.
+배포된 주소는 `wrangler.toml` 의 `name` 을 따릅니다.
+
+```
+https://<name>.<계정 서브도메인>.workers.dev
+```
+
+> **`name` 은 대시보드에 만들어진 Worker 서비스 이름과 반드시 같아야 합니다.**
+> 다르면 wrangler 가 그 이름의 Worker 를 새로 만들어 배포합니다. 대시보드에서
+> 등록한 시크릿은 원래 서비스에 남아 있으므로, 새로 만들어진 쪽은 시크릿이 없어
+> `/state` 가 `sync_not_configured` (500) 를 반환합니다. 빌드도 배포도 성공으로
+> 표시되기 때문에 원인을 찾기 어렵습니다.
+
+**토큰 없이 먼저 확인하세요.** 인증 헤더를 빼고 호출하면 설정 상태가 그대로
+드러나므로, 이 출력은 공유해도 안전합니다.
 
 ```bash
-curl -H "Authorization: Bearer <SYNC_TOKEN>" https://assetpilot-proxy.<계정>.workers.dev/state
+curl -i https://<name>.<계정 서브도메인>.workers.dev/state
+```
+
+| 응답 | 의미 |
+|---|---|
+| `401 {"error":"unauthorized"}` | ✅ SYNC_TOKEN·KV 둘 다 정상. 인증만 거부된 상태 |
+| `500 {"error":"sync_not_configured"}` | 시크릿 미인식 (이름 불일치 가능성) |
+| `500 {"error":"kv_not_bound"}` | KV 바인딩 누락 (배포 경로 `/proxy` 확인) |
+| `404 {"error":"not_found"}` | 다른 스크립트가 배포됨 |
+
+401 을 확인한 뒤 토큰을 넣어 최종 확인합니다.
+
+```bash
+curl -H "Authorization: Bearer <SYNC_TOKEN>" https://<name>.<계정 서브도메인>.workers.dev/state
 ```
 
 | 응답 | 의미 |
@@ -170,7 +195,7 @@ curl -H "Authorization: Bearer <SYNC_TOKEN>" https://assetpilot-proxy.<계정>.w
 접속할 PC마다 **딱 한 번** 아래 주소로 들어갑니다.
 
 ```
-https://<프로젝트>.pages.dev/?proxy=https://assetpilot-proxy.<계정>.workers.dev&synckey=<SYNC_TOKEN>
+https://<프로젝트>.pages.dev/?proxy=https://<name>.<계정 서브도메인>.workers.dev&synckey=<SYNC_TOKEN>
 ```
 
 Worker 주소는 1-4에서 확인한 값을 그대로 씁니다.
