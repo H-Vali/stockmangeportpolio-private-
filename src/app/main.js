@@ -23,6 +23,7 @@ import { startRealtimeDemoLoop } from "../ui/demo.js";
 import { setupNewAssetForm } from "../ui/forms/new-asset.js";
 import { setupQuickTrade } from "../ui/forms/quick-trade.js";
 import { render } from "../ui/render/index.js";
+import { startMarketClock } from "../ui/render/marketclock.js";
 
 // 어디서 죽었는지 모른 채 흰 화면만 보는 상황을 막는다.
 window.addEventListener("error", (event) => {
@@ -37,6 +38,7 @@ setupNewAssetForm();
 setupQuickTrade();
 recordSnapshot();
 render();
+startMarketClock();
 
 hydrateFromServer();
 setTimeout(loadUsSymbols, 1500);

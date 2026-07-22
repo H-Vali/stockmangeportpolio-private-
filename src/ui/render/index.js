@@ -8,7 +8,6 @@ import { renderIndexMonitor, renderInvestorComparison, renderMarket } from "./ma
 import { renderFx, renderMarketStatus } from "./status.js";
 import { renderLedgerPreview, renderTransactions } from "./transactions.js";
 import { renderTrend } from "./trend.js";
-import { uiState } from "../uistate.js";
 
 export let _renderRafId = null;
 export function render() {
@@ -34,7 +33,6 @@ export function render() {
     populateOwnerSelects();
     renderDividendSimulation();
     renderDividendCalendar();
-    document.querySelector("#undoImportButton").classList.toggle("hidden", !uiState.importRollbackState);
   });
 }
 

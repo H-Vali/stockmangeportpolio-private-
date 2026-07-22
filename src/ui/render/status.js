@@ -10,9 +10,6 @@ export function renderFx() {
     : state.fx.source === "fallback" ? "환율 API 기준 (폴백)"
     : "수동 기준";
   document.querySelector("#fxSourceLabel").textContent = `${source} · ${state.fx.updatedAt ? `${formatClock(state.fx.updatedAt)} 갱신` : "업데이트 대기"}`;
-  document.querySelector("#manualFxToggle").checked = state.fx.mode === "manual";
-  document.querySelector("#manualFxInput").value = state.fx.manualUsdkrw || currentUsdKrw();
-  document.querySelector("#manualFxInput").disabled = state.fx.mode !== "manual";
   const usdtRate = Number(state.cryptoQuoteFx?.rate || 0);
   document.querySelector("#usdtKrwLabel").textContent = usdtRate ? fxFormatter.format(usdtRate) : "대기 중";
   document.querySelector("#usdtKrwSourceLabel").textContent = state.cryptoQuoteFx?.updatedAt ? `${formatClock(state.cryptoQuoteFx.updatedAt)} 갱신` : "업데이트 대기";

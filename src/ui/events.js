@@ -1,14 +1,9 @@
-import { SCHEMA_VERSION, SYNC_TOKEN_KEY } from "../config/constants.js";
-import { dateFormatter } from "../core/format.js";
+import { SYNC_TOKEN_KEY } from "../config/constants.js";
 import { addInvestorByName, commitTrade, deleteTrade, updateInvestorName, updateTrade } from "../domain/actions.js";
-import { refreshFxRate } from "../net/fx.js";
 import { loadUsSymbols } from "../net/symbols.js";
-import { clearPortfolioData, normalizeState } from "../state/schema.js";
 import { storage } from "../state/persistence.js";
-import { currentUsdKrw, exportableState, saveState, setState, state, syncUsdAssetFx } from "../state/store.js";
+import { currentUsdKrw, saveState, state } from "../state/store.js";
 import { getSyncToken, hydrateFromServer } from "../state/sync.js";
-import { validateImportState } from "../state/validate.js";
-import { triggerDashboardChangeDemo } from "./demo.js";
 import { showToast } from "./dom.js";
 import { canWithdraw, populateOwnerSelects, renderTradePreview, updateAssetFieldsFromTicker } from "./forms/common.js";
 import { clearHoldingsFilter } from "./render/dashboard.js";
@@ -297,13 +292,6 @@ document.querySelector("#tradeForm").addEventListener("submit", (event) => {
   form.closest("dialog").close();
 });
 
-document.querySelector("#seedButton").addEventListener("click", () => {
-  setState(clearPortfolioData(state));
-  saveState();
-  render();
-  showToast("\uBCF4\uC720/\uC6D0\uC7A5 \uB370\uC774\uD130\uB97C \uCD08\uAE30\uD654\uD588\uC2B5\uB2C8\uB2E4.");
-});
-
 document.querySelector("#syncSettingsButton").addEventListener("click", () => {
   document.querySelector("#syncTokenInput").value = getSyncToken();
   openDialog(document.querySelector("#syncSettingsDialog"));
@@ -326,85 +314,6 @@ document.querySelector("#clearSyncTokenButton").addEventListener("click", () => 
   document.querySelector("#syncTokenInput").value = "";
   showToast("\uB3D9\uAE30\uD654\uB97C \uD574\uC81C\uD588\uC2B5\uB2C8\uB2E4. \uC774 \uAE30\uAE30\uB294 \uB85C\uCEEC \uB370\uC774\uD130\uB9CC \uC0AC\uC6A9\uD569\uB2C8\uB2E4.");
   document.querySelector("#syncSettingsDialog").close();
-});
-
-document.querySelector("#demoChangeButton").addEventListener("click", triggerDashboardChangeDemo);
-
-document.querySelector("#exportButton").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(exportableState(), null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `assetpilot-${new Date().toISOString().slice(0, 10)}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-});
-
-document.querySelector("#importButton").addEventListener("click", () => {
-  document.querySelector("#importFileInput").click();
-});
-
-document.querySelector("#importFileInput").addEventListener("change", async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-  try {
-    const text = await file.text();
-    const parsed = JSON.parse(text);
-    const errors = validateImportState(parsed);
-    if (errors.length) {
-      showToast(errors[0], "error");
-      return;
-    }
-    if (parsed.schemaVersion && parsed.schemaVersion !== SCHEMA_VERSION) {
-      showToast(`백업 스키마 v${parsed.schemaVersion}입니다. 경고 후 계속 진행할 수 있습니다.`);
-    }
-    uiState.pendingImportState = normalizeState(parsed);
-    openDialog(document.querySelector("#confirmImportDialog"));
-  } catch {
-    showToast("JSON 파일을 읽을 수 없습니다.", "error");
-  } finally {
-    event.target.value = "";
-  }
-});
-
-document.querySelector("#confirmImportButton").addEventListener("click", () => {
-  if (!uiState.pendingImportState) return;
-  uiState.importRollbackState = structuredClone(state);
-  setState(uiState.pendingImportState);
-  state.schemaVersion = SCHEMA_VERSION;
-  uiState.pendingImportState = null;
-  saveState();
-  render();
-  document.querySelector("#confirmImportDialog").close();
-  showToast(`${dateFormatter.format(new Date())} 백업을 불러왔습니다.`);
-});
-
-document.querySelector("#undoImportButton").addEventListener("click", () => {
-  if (!uiState.importRollbackState) return;
-  setState(uiState.importRollbackState);
-  uiState.importRollbackState = null;
-  saveState();
-  render();
-  showToast("가져오기 전 상태로 되돌렸습니다.");
-});
-
-document.querySelector("#manualFxToggle").addEventListener("change", (event) => {
-  state.fx.mode = event.target.checked ? "manual" : "auto";
-  if (state.fx.mode === "manual") state.fx.source = "manual";
-  saveState();
-  render();
-  refreshFxRate();
-});
-
-document.querySelector("#manualFxInput").addEventListener("change", (event) => {
-  const value = Number(event.target.value);
-  if (!value) return;
-  state.fx.manualUsdkrw = value;
-  state.fx.usdkrw = state.fx.mode === "manual" ? value : state.fx.usdkrw;
-  // 코인은 제외한다. 코인은 USDT/KRW 로 환산하므로 수동 USD/KRW 를 덮어쓰면 안 된다.
-  if (state.fx.mode === "manual") syncUsdAssetFx();
-  saveState();
-  render();
 });
 
 document.querySelector("#dividendSimForm").addEventListener("input", (event) => {

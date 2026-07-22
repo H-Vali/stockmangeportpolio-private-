@@ -24,9 +24,6 @@ export const uiState = {
   quickTradeSide: "buy",
   // 투자자 시트 거래입력 영역의 신규등록/보유거래 탭
   quickTradeTab: "new",
-  // 가져오기 확인 대기 중인 상태 / 되돌리기용 직전 상태
-  pendingImportState: null,
-  importRollbackState: null,
   // 배당 시뮬레이션 상세 표 펼침 여부
   dividendDetailOpen: false,
   // 하단 원장 워크스페이스 펼침 여부
