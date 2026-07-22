@@ -36,42 +36,54 @@ function createBackoff(maxSkipTicks) {
 const stockBackoff = createBackoff(8); // 15초 주기 x 최대 8회 = 최대 2분 대기
 const indexBackoff = createBackoff(4); // 30초 주기 x 최대 4회 = 최대 2분 대기
 
+// 종목을 한 번에 하나씩 순서대로 조회한다. 한 종목이 429로 실패해도 나머지
+// 종목까지 통째로 버리지 않고, 성공한 종목은 그 자리에서 바로 반영한다
+// (예: 5종목 중 1개만 아직 한도에 걸려도 나머지 4개는 즉시 화면에 뜬다).
 export async function refreshStockQuotes() {
   if (stockBackoff.shouldSkip()) return;
-  try {
-    const holdings = replayHoldings().filter((holding) => holding.type === "주식" && holding.currency === "USD");
-    const symbols = [...new Set(holdings.map((holding) => holding.ticker))];
-    for (const symbol of symbols) {
+  const holdings = replayHoldings().filter((holding) => holding.type === "주식" && holding.currency === "USD");
+  const symbols = [...new Set(holdings.map((holding) => holding.ticker))];
+  let failureCount = 0;
+
+  for (const symbol of symbols) {
+    try {
       const quote = await fetchQuote(symbol);
       if (quote.c && state.assetCatalog[symbol]) {
         state.assetCatalog[symbol].currentPrice = Number(quote.c);
         state.assetCatalog[symbol].currentFx = currentUsdKrw();
       }
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      state.market.lastSuccessAt = new Date().toISOString();
+      saveState({ snapshot: true, sync: false });
+      render();
+    } catch (error) {
+      failureCount += 1;
     }
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+
+  state.market.lastUpdatedAt = new Date().toISOString();
+  if (failureCount === 0) {
     stockBackoff.onSuccess();
-    state.market = {
-      lastUpdatedAt: new Date().toISOString(),
-      lastSuccessAt: new Date().toISOString(),
-      failedAt: null,
-      error: null
-    };
-    saveState({ snapshot: true, sync: false });
-    render();
-  } catch (error) {
+    state.market.failedAt = null;
+    state.market.error = null;
+  } else {
     stockBackoff.onFailure();
     state.market.failedAt = new Date().toISOString();
-    state.market.error = error.message;
-    saveState({ snapshot: false, sync: false });
-    renderMarketStatus();
+    state.market.error = symbols.length > 1
+      ? `${failureCount}/${symbols.length}개 종목 갱신 실패`
+      : "시세를 가져오지 못했습니다.";
   }
+  saveState({ snapshot: false, sync: false });
+  renderMarketStatus();
 }
 
 export async function refreshIndexQuotes() {
   if (indexBackoff.shouldSkip()) return;
-  try {
-    state.indexQuotes = state.indexQuotes || {};
-    for (const idx of INDEX_MONITOR_LIST) {
+  state.indexQuotes = state.indexQuotes || {};
+  let failureCount = 0;
+
+  for (const idx of INDEX_MONITOR_LIST) {
+    try {
       const quote = await fetchQuote(idx.ticker);
       const price = Number(quote.c || 0);
       const changePercent = Number(quote.dp || 0);
@@ -82,14 +94,16 @@ export async function refreshIndexQuotes() {
           state.assetCatalog[idx.ticker].currentFx = currentUsdKrw();
         }
       }
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      // 지수는 손익 계산에 안 쓰이는 참고용이라 서버 상태 pill(state.market)은 건드리지 않는다.
+      saveState({ snapshot: false, sync: false });
+      render();
+    } catch (error) {
+      failureCount += 1;
+      console.warn(`지수 시세 갱신 실패: ${idx.ticker}`, error);
     }
-    indexBackoff.onSuccess();
-    // 지수는 손익 계산에 안 쓰이는 참고용이라 서버 상태 pill(state.market)은 건드리지 않는다.
-    saveState({ snapshot: false, sync: false });
-    render();
-  } catch (error) {
-    indexBackoff.onFailure();
-    console.warn("지수 시세 갱신 실패", error);
+    await new Promise((resolve) => setTimeout(resolve, 300));
   }
+
+  if (failureCount === 0) indexBackoff.onSuccess();
+  else indexBackoff.onFailure();
 }
