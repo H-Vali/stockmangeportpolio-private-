@@ -1,0 +1,17 @@
+{
+  "name": "assetpilot",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "description": "공동 운용 자산을 원화 기준으로 관리하는 정적 웹앱",
+  "scripts": {
+    "dev": "node tools/serve.mjs",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "test:watch": "node --test --watch \"tests/**/*.test.js\"",
+    "lint:modules": "node tools/check-modules.mjs",
+    "check": "npm run lint:modules && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

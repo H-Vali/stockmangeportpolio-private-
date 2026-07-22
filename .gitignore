@@ -3,3 +3,10 @@ Thumbs.db
 node_modules/
 dist/
 .env
+
+# 로컬 개발 서버 실행 설정 (사람마다 다를 수 있어 공유하지 않음)
+.claude/
+
+# wrangler 로컬 상태 / 로컬 시크릿
+.wrangler/
+.dev.vars
