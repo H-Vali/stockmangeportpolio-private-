@@ -218,8 +218,18 @@ document.querySelector("#holdingTradesList").addEventListener("click", (event) =
 
 document.querySelector("#investorHoldingsPreview").addEventListener("click", (event) => {
   const editBtn = event.target.closest("[data-edit-holding]");
-  if (!editBtn) return;
-  openHoldingTrades(state.selectedInvestorId, editBtn.dataset.editHolding);
+  if (editBtn) {
+    openHoldingTrades(state.selectedInvestorId, editBtn.dataset.editHolding);
+    return;
+  }
+  const sortTh = event.target.closest("[data-sort-key]");
+  if (!sortTh) return;
+  const key = sortTh.dataset.sortKey;
+  const current = uiState.holdingsPreviewSort;
+  uiState.holdingsPreviewSort = current.key === key
+    ? { key, dir: current.dir === "asc" ? "desc" : "asc" }
+    : { key, dir: "desc" };
+  render();
 });
 
 document.querySelectorAll("[data-close-dialog]").forEach((button) => {

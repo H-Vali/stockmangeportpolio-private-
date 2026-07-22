@@ -29,7 +29,9 @@ export const uiState = {
   // 하단 원장 워크스페이스 펼침 여부
   ledgerExpanded: false,
   // 거래 수정 모달이 편집 중인 거래 id
-  editingTradeId: null
+  editingTradeId: null,
+  // 투자자 시트 보유 종목 표의 정렬 열/방향
+  holdingsPreviewSort: { key: "valueKrw", dir: "desc" }
 };
 
 export function loadAllocationRatios() {

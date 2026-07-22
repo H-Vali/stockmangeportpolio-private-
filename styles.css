@@ -3611,6 +3611,34 @@ menu {
   color: var(--down);
 }
 
+.inv-holdings-table th.ih-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.inv-holdings-table th.ih-sortable:hover {
+  color: var(--ink);
+}
+
+.inv-holdings-table th.ih-sort-active {
+  color: var(--violet-2);
+}
+
+.ih-sort-arrow {
+  font-size: 8px;
+  margin-left: 3px;
+  opacity: 0.85;
+}
+
+.ih-type-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
 .register-held-toggle {
   display: flex;
   align-items: flex-start;

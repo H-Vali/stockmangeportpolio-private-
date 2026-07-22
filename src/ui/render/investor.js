@@ -1,5 +1,5 @@
 import { DIVIDEND_MONTHS } from "../../config/catalog.js";
-import { DIVIDEND_TAX_RATE } from "../../config/constants.js";
+import { DIVIDEND_TAX_RATE, allocationColors } from "../../config/constants.js";
 import { formatCompact, money, pct, signedMoney } from "../../core/format.js";
 import { getAllocationSlices } from "../../domain/allocation.js";
 import { investorById, replayHoldings, summarize, tradeAmountKrw } from "../../domain/portfolio.js";
@@ -10,6 +10,7 @@ import { renderTradePreview } from "../forms/common.js";
 import { populateQuickTradeTicker } from "../forms/quick-trade.js";
 import { renderDonutInto, wireAllocationInteractions } from "./dashboard.js";
 import { renderCashflows, visibleTransactions } from "./transactions.js";
+import { uiState } from "../uistate.js";
 
 export function renderInvestorTabs() {
   const tabs = document.querySelector("#investorTabs");
@@ -79,12 +80,23 @@ export function renderInvestorAllocation() {
   );
 }
 
+// 헤더 클릭 정렬용 비교 함수. 같은 열을 다시 누르면 events.js에서 방향을 뒤집는다.
+const HOLDINGS_SORTERS = {
+  ticker: (a, b) => a.ticker.localeCompare(b.ticker),
+  quantity: (a, b) => a.quantity - b.quantity,
+  currentPrice: (a, b) => a.currentPrice - b.currentPrice,
+  valueKrw: (a, b) => a.valueKrw - b.valueKrw,
+  profit: (a, b) => a.profit - b.profit
+};
+
 export function renderInvestorHoldingsPreview() {
   const list = document.querySelector("#investorHoldingsPreview");
   if (!list) return;
+  const { key: sortKey, dir: sortDir } = uiState.holdingsPreviewSort;
+  const sorter = HOLDINGS_SORTERS[sortKey] || HOLDINGS_SORTERS.valueKrw;
   const holdings = replayHoldings(state.selectedInvestorId)
     .slice()
-    .sort((a, b) => b.valueKrw - a.valueKrw);
+    .sort((a, b) => sorter(a, b) * (sortDir === "asc" ? 1 : -1));
   if (!holdings.length) {
     list.innerHTML = `<p class="empty-hint">보유 종목이 없습니다.</p>`;
     return;
@@ -94,17 +106,23 @@ export function renderInvestorHoldingsPreview() {
       ? `$${Number(value).toLocaleString("en-US", { maximumFractionDigits: 2 })}`
       : `${Math.round(value).toLocaleString("ko-KR")}원`;
   const krw = (value) => Math.round(value).toLocaleString("ko-KR");
+  const arrow = (col) => (sortKey === col ? `<span class="ih-sort-arrow">${sortDir === "asc" ? "▲" : "▼"}</span>` : "");
+  const sortTh = (col, label, small = "") =>
+    `<th class="ih-num ih-sortable${sortKey === col ? " ih-sort-active" : ""}" data-sort-key="${col}">${label}${small}${arrow(col)}</th>`;
+
   const rows = holdings
     .map((item) => {
       const cost = item.costKrw || item.valueKrw - item.profit;
       const ret = cost ? (item.profit / cost) * 100 : 0;
       const tone = item.profit >= 0 ? "up" : "down";
+      const priceTone = item.currentPrice > item.avgPrice ? "up" : item.currentPrice < item.avgPrice ? "down" : "neutral-text";
+      const typeColor = allocationColors[item.type] || "var(--muted)";
       const qtyText = Number(item.quantity).toLocaleString("en-US", { maximumFractionDigits: 8 });
       return `
         <tr>
-          <td class="ih-name"><strong>${item.ticker}</strong><small>${item.type} · ${item.currency}</small></td>
+          <td class="ih-name"><strong>${item.ticker}</strong><small><span class="ih-type-dot" style="background:${typeColor}" aria-hidden="true"></span>${item.type} · ${item.currency}</small></td>
           <td class="ih-num">${qtyText}</td>
-          <td class="ih-num">${nativePrice(item.currency, item.avgPrice)}<small>→ ${nativePrice(item.currency, item.currentPrice)}</small></td>
+          <td class="ih-num ${priceTone}">${nativePrice(item.currency, item.currentPrice)}<small>평단 ${nativePrice(item.currency, item.avgPrice)}</small></td>
           <td class="ih-num">${krw(item.valueKrw)}</td>
           <td class="ih-num ${tone}">${item.profit >= 0 ? "+" : "-"}${krw(Math.abs(item.profit))}<small class="${tone}">${ret >= 0 ? "+" : ""}${ret.toFixed(1)}%</small></td>
           <td class="ih-edit"><button type="button" class="ih-edit-btn" data-edit-holding="${item.ticker}" title="거래 수정" aria-label="${item.ticker} 거래 수정">수정</button></td>
@@ -115,11 +133,11 @@ export function renderInvestorHoldingsPreview() {
     <table class="inv-holdings-table">
       <thead>
         <tr>
-          <th>종목</th>
-          <th class="ih-num">수량</th>
-          <th class="ih-num">평단 → 현재가</th>
-          <th class="ih-num">평가금액<small>KRW</small></th>
-          <th class="ih-num">손익 / 수익률</th>
+          <th class="ih-sortable${sortKey === "ticker" ? " ih-sort-active" : ""}" data-sort-key="ticker">종목${arrow("ticker")}</th>
+          ${sortTh("quantity", "수량")}
+          ${sortTh("currentPrice", "현재가", "<small>평단</small>")}
+          ${sortTh("valueKrw", "평가금액", "<small>KRW</small>")}
+          ${sortTh("profit", "손익 / 수익률")}
           <th class="ih-edit" aria-label="수정"></th>
         </tr>
       </thead>
