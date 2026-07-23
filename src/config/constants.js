@@ -26,6 +26,9 @@ export const ENABLE_AUTO_REALTIME_DEMO = false;
 // 다기기 동기화: 상태를 Cloudflare Pages Functions(/state)로 저장/조회하기 위한 인증 토큰.
 // 상단 "동기화 설정"에서 입력하거나 ?synckey=... 로 접속하면 저장되고 이후 자동으로 사용됩니다.
 export const SYNC_TOKEN_KEY = "assetpilot-sync-token";
+// 로컬 변경이 서버에 아직 반영 안 됐음을 표시하는 플래그. localStorage에 남겨서
+// 새로고침/재부팅 후에도 "이 기기에 못 올린 변경이 있다"를 잊지 않게 한다.
+export const SYNC_DIRTY_KEY = "assetpilot-sync-dirty";
 export const SYNC_PUSH_DEBOUNCE_MS = 1200;
 
 

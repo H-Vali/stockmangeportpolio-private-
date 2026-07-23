@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION, STORAGE_KEY, SYNC_PUSH_DEBOUNCE_MS, SYNC_TOKEN_KEY } from "../config/constants.js";
+import { SCHEMA_VERSION, STORAGE_KEY, SYNC_DIRTY_KEY, SYNC_PUSH_DEBOUNCE_MS, SYNC_TOKEN_KEY } from "../config/constants.js";
 import { logger } from "../core/logger.js";
 import { storage } from "./persistence.js";
 import { migrate } from "./migrate.js";
@@ -40,8 +40,28 @@ export function persistLocal() {
   storage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+// --- 미반영 변경 추적(dirty) -------------------------------------------------
+//
+// 실제 사고 사례: 이 기기에서 편집 -> 409 충돌 등으로 푸시 실패 -> 사용자가
+// 토스트를 놓침 -> 페이지를 새로고침(또는 다음날 재방문) -> hydrateFromServer()가
+// "서버가 정본" 이라고 믿고 로컬을 서버의 예전 값으로 덮어씀 -> 편집 내용 영구 소실.
+//
+// localStorage에 dirty 플래그를 남겨 새로고침 후에도 "이 기기엔 아직 서버에
+//못 올린 변경이 있다"를 기억하고, hydrateFromServer()가 무조건 서버값으로
+// 덮어쓰지 않도록 막는다.
+function isDirty() {
+  return storage.getItem(SYNC_DIRTY_KEY) === "1";
+}
+function markDirty() {
+  storage.setItem(SYNC_DIRTY_KEY, "1");
+}
+function clearDirty() {
+  storage.removeItem(SYNC_DIRTY_KEY);
+}
+
 // 잦은 저장을 묶어서 서버로 한 번만 올림.
 export function schedulePush() {
+  markDirty();
   if (!syncEnabled() || conflicted) return;
   if (syncPushTimer) clearTimeout(syncPushTimer);
   syncPushTimer = setTimeout(pushStateToServer, SYNC_PUSH_DEBOUNCE_MS);
@@ -78,6 +98,7 @@ export async function pushStateToServer() {
     if (response.ok) {
       const detail = await response.json().catch(() => ({}));
       if (detail?.rev != null) knownServerRev = Number(detail.rev);
+      clearDirty();
     }
     setSyncStatus(response.ok ? "synced" : "error", response.ok ? null : `저장 실패 (${response.status})`);
   } catch (error) {
@@ -96,6 +117,17 @@ export async function pushStateToServer() {
 // 서버가 비어 있으면 현재 로컬 상태를 서버에 최초 업로드.
 export async function hydrateFromServer() {
   if (!syncEnabled()) return;
+  if (isDirty()) {
+    // 이 기기에 서버로 못 올린 변경이 남아있다. 서버 값을 받아 그냥 덮어쓰면
+    // 그 변경을 영구히 잃는다 -> 먼저 (최신 rev를 다시 확인한 뒤) 업로드를 시도한다.
+    await pushLocalWithFreshRev();
+    if (conflicted) return; // 진짜 충돌 -> 사용자가 직접 고를 때까지 아무 것도 덮지 않는다.
+    if (isDirty()) {
+      // 오프라인 등으로 업로드가 안 됐다. 서버 최신본으로 로컬을 지우면 안 되니 중단.
+      setSyncStatus("offline", "서버에 연결할 수 없어 이 기기의 변경사항을 유지합니다.");
+      return;
+    }
+  }
   try {
     const response = await fetch("/state", {
       headers: { "Authorization": `Bearer ${getSyncToken()}` }
@@ -145,11 +177,33 @@ export async function hydrateFromServer() {
   }
 }
 
-/** 충돌 해소: 서버 상태를 다시 받아 로컬을 대체한다. */
+// 서버의 최신 rev를 다시 확인해 knownServerRev를 맞춘 뒤 로컬을 업로드한다.
+// (rev를 모른 채 그냥 올리면 X-Expected-Rev 검사를 건너뛰어 진짜 충돌도 무조건 덮어써 버린다.)
+async function pushLocalWithFreshRev() {
+  try {
+    const response = await fetch("/state", { headers: { "Authorization": `Bearer ${getSyncToken()}` } });
+    if (response.ok) {
+      const data = await response.json();
+      if (data?.rev != null) knownServerRev = Number(data.rev);
+    }
+  } catch (error) {
+    logger.error("sync", "업로드 전 서버 rev 확인 실패", error);
+  }
+  await pushStateToServer();
+}
+
+/** 충돌 해소(서버 우선): 이 기기의 미반영 변경을 버리고 서버 상태로 대체한다. */
 export async function resolveConflictWithServer() {
   conflicted = false;
+  clearDirty();
   knownServerRev = null;
   await hydrateFromServer();
+}
+
+/** 충돌 해소(로컬 우선): 서버의 최신 rev를 다시 확인한 뒤 이 기기 변경을 강제로 올린다. */
+export async function resolveConflictKeepLocal() {
+  conflicted = false;
+  await pushLocalWithFreshRev();
 }
 
 /** 현재 동기화 상태(디버깅/상태 표시용) */
@@ -165,6 +219,13 @@ export function setSyncStatus(status, message) {
   }
   lastSyncStatus = status;
   updateSyncPill(status);
+  updateConflictBox();
+}
+
+function updateConflictBox() {
+  if (typeof document === "undefined") return;
+  const el = document.querySelector("#syncConflictBox");
+  if (el) el.classList.toggle("hidden", !conflicted);
 }
 
 // 동기화 상태를 토스트(한 번 반짝)와 별개로 상단에 상시 노출한다.
@@ -183,9 +244,9 @@ function updateSyncPill(status) {
   const el = document.querySelector("#syncStatusPill");
   if (!el) return;
   const resolved = syncEnabled() ? status : "off";
-  const [label, state] = SYNC_PILL_LABELS[resolved] || SYNC_PILL_LABELS.error;
+  const [label, pillState] = SYNC_PILL_LABELS[resolved] || SYNC_PILL_LABELS.error;
   el.textContent = label;
-  el.dataset.state = state;
+  el.dataset.state = pillState;
 }
 
 // 부팅 직후, 네트워크 응답을 기다리기 전에도 토큰 유무만으로 즉시 표시한다.
