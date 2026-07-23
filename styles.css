@@ -383,14 +383,12 @@ menu {
 }
 
 .sync-status[data-state="off"],
-.sync-status[data-state="error"],
-.sync-status[data-state="conflict"] {
+.sync-status[data-state="error"] {
   color: var(--up);
   border-color: rgba(246, 70, 93, 0.4);
 }
 .sync-status[data-state="off"]::before,
-.sync-status[data-state="error"]::before,
-.sync-status[data-state="conflict"]::before {
+.sync-status[data-state="error"]::before {
   background: var(--up);
 }
 
@@ -3618,14 +3616,30 @@ menu {
     justify-content: center;
   }
 
-  .mini-metrics,
   .form-grid {
     grid-template-columns: 1fr;
   }
 
-  .metric-stack {
+  .metric-stack,
+  .mini-metrics {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+  }
+
+  .mini-metrics .metric-card {
+    min-height: 0;
+    padding: 12px 14px;
+  }
+
+  .mini-metrics .metric-card strong {
+    margin: 4px 0;
+    font-size: 18px;
+    white-space: nowrap;
+  }
+
+  .mini-metrics .metric-card span,
+  .mini-metrics .metric-card small {
+    font-size: 11px;
   }
 
   .hero-grid .metric-card {

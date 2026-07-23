@@ -3,7 +3,7 @@ import { addInvestorByName, commitTrade, deleteTrade, updateInvestorName, update
 import { loadUsSymbols } from "../net/symbols.js";
 import { storage } from "../state/persistence.js";
 import { currentUsdKrw, saveState, state } from "../state/store.js";
-import { getSyncToken, hydrateFromServer, resolveConflictKeepLocal, resolveConflictWithServer, setSyncStatus } from "../state/sync.js";
+import { getSyncToken, hydrateFromServer, setSyncStatus } from "../state/sync.js";
 import { showToast } from "./dom.js";
 import { canWithdraw, populateOwnerSelects, renderTradePreview, updateAssetFieldsFromTicker } from "./forms/common.js";
 import { clearHoldingsFilter } from "./render/dashboard.js";
@@ -340,18 +340,6 @@ document.querySelector("#clearSyncTokenButton").addEventListener("click", () => 
   document.querySelector("#syncTokenInput").value = "";
   showToast("\uB3D9\uAE30\uD654\uB97C \uD574\uC81C\uD588\uC2B5\uB2C8\uB2E4. \uC774 \uAE30\uAE30\uB294 \uB85C\uCEEC \uB370\uC774\uD130\uB9CC \uC0AC\uC6A9\uD569\uB2C8\uB2E4.");
   setSyncStatus("off", null);
-  document.querySelector("#syncSettingsDialog").close();
-});
-
-document.querySelector("#keepLocalButton").addEventListener("click", async () => {
-  await resolveConflictKeepLocal();
-  showToast("\uC774 \uAE30\uAE30\uC758 \uBCC0\uACBD\uC0AC\uD56D\uC744 \uC11C\uBC84\uC5D0 \uB2E4\uC2DC \uC62C\uB838\uC2B5\uB2C8\uB2E4.");
-  document.querySelector("#syncSettingsDialog").close();
-});
-
-document.querySelector("#useServerButton").addEventListener("click", async () => {
-  await resolveConflictWithServer();
-  showToast("\uC11C\uBC84 \uCD5C\uC2E0 \uB370\uC774\uD130\uB85C \uAD50\uCCB4\uD588\uC2B5\uB2C8\uB2E4.");
   document.querySelector("#syncSettingsDialog").close();
 });
 
