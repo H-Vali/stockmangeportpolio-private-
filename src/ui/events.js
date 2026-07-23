@@ -3,7 +3,7 @@ import { addInvestorByName, commitTrade, deleteTrade, updateInvestorName, update
 import { loadUsSymbols } from "../net/symbols.js";
 import { storage } from "../state/persistence.js";
 import { currentUsdKrw, saveState, state } from "../state/store.js";
-import { getSyncToken, hydrateFromServer } from "../state/sync.js";
+import { getSyncToken, hydrateFromServer, setSyncStatus } from "../state/sync.js";
 import { showToast } from "./dom.js";
 import { canWithdraw, populateOwnerSelects, renderTradePreview, updateAssetFieldsFromTicker } from "./forms/common.js";
 import { clearHoldingsFilter } from "./render/dashboard.js";
@@ -19,7 +19,22 @@ document.querySelectorAll("[data-view]").forEach((button) => {
     state.selectedView = button.dataset.view;
     saveState({ snapshot: false });
     render();
+    closeMobileSidebar();
   });
+});
+
+const sidebarEl = document.querySelector("#sidebar");
+const sidebarToggleButton = document.querySelector("#sidebarToggle");
+
+function closeMobileSidebar() {
+  if (!sidebarEl) return;
+  sidebarEl.classList.remove("nav-open");
+  sidebarToggleButton?.setAttribute("aria-expanded", "false");
+}
+
+sidebarToggleButton?.addEventListener("click", () => {
+  const isOpen = sidebarEl.classList.toggle("nav-open");
+  sidebarToggleButton.setAttribute("aria-expanded", String(isOpen));
 });
 
 document.querySelectorAll("[data-expand-ledger]").forEach((link) => {
@@ -36,6 +51,7 @@ document.querySelectorAll("[data-expand-ledger]").forEach((link) => {
     renderView();
     if (isNavShortcut) {
       document.querySelector("#transactions")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      closeMobileSidebar();
     }
   });
 });
@@ -323,6 +339,7 @@ document.querySelector("#clearSyncTokenButton").addEventListener("click", () => 
   storage.removeItem(SYNC_TOKEN_KEY);
   document.querySelector("#syncTokenInput").value = "";
   showToast("\uB3D9\uAE30\uD654\uB97C \uD574\uC81C\uD588\uC2B5\uB2C8\uB2E4. \uC774 \uAE30\uAE30\uB294 \uB85C\uCEEC \uB370\uC774\uD130\uB9CC \uC0AC\uC6A9\uD569\uB2C8\uB2E4.");
+  setSyncStatus("off", null);
   document.querySelector("#syncSettingsDialog").close();
 });
 

@@ -164,4 +164,30 @@ export function setSyncStatus(status, message) {
     showToast(message, status === "error" || status === "offline" || status === "conflict" ? "error" : "info");
   }
   lastSyncStatus = status;
+  updateSyncPill(status);
 }
+
+// 동기화 상태를 토스트(한 번 반짝)와 별개로 상단에 상시 노출한다.
+// 조용히 로컬로 폴백해도 화면에서 바로 "이 기기는 서버와 연결 안 됨"을 알 수 있게 하기 위함.
+const SYNC_PILL_LABELS = {
+  checking: ["동기화 확인 중…", "checking"],
+  off: ["동기화 꺼짐 (토큰 없음)", "off"],
+  synced: ["동기화됨", "synced"],
+  error: ["동기화 오류", "error"],
+  offline: ["오프라인 (로컬만)", "offline"],
+  conflict: ["동기화 충돌", "conflict"]
+};
+
+function updateSyncPill(status) {
+  if (typeof document === "undefined") return;
+  const el = document.querySelector("#syncStatusPill");
+  if (!el) return;
+  const resolved = syncEnabled() ? status : "off";
+  const [label, state] = SYNC_PILL_LABELS[resolved] || SYNC_PILL_LABELS.error;
+  el.textContent = label;
+  el.dataset.state = state;
+}
+
+// 부팅 직후, 네트워크 응답을 기다리기 전에도 토큰 유무만으로 즉시 표시한다.
+// (Node 테스트 환경처럼 document 가 없는 곳에서 이 모듈을 import 할 수도 있어 가드한다.)
+updateSyncPill(syncEnabled() ? "checking" : "off");

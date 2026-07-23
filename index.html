@@ -25,37 +25,43 @@
   </head>
   <body>
     <div class="app-shell">
-      <aside class="sidebar" aria-label="주요 메뉴">
+      <aside class="sidebar" id="sidebar" aria-label="주요 메뉴">
         <div class="brand">
           <div class="brand-mark">AP</div>
           <div>
             <strong>AssetPilot</strong>
             <span>Ledger Portfolio</span>
           </div>
+          <button type="button" id="sidebarToggle" class="sidebar-toggle" aria-expanded="false" aria-controls="sidebarCollapsible" aria-label="메뉴 열기">
+            <span></span><span></span><span></span>
+          </button>
         </div>
 
-        <nav class="nav-list">
-          <button type="button" class="nav-item active" data-view="dashboard">통합 대시보드</button>
-          <button type="button" class="nav-item" data-view="investor">투자자별 시트</button>
-          <button type="button" class="nav-item" data-view="holdings">보유 종목</button>
-          <button type="button" class="nav-item" data-view="calendar">배당 캘린더</button>
-          <button type="button" class="nav-item" data-view="dividend">배당 시뮬레이션</button>
-          <button type="button" class="nav-item" data-expand-ledger data-nav-expand-ledger>원장 내역</button>
-        </nav>
+        <div class="sidebar-collapsible" id="sidebarCollapsible">
+          <div class="sidebar-collapsible-inner">
+            <nav class="nav-list">
+              <button type="button" class="nav-item active" data-view="dashboard">통합 대시보드</button>
+              <button type="button" class="nav-item" data-view="investor">투자자별 시트</button>
+              <button type="button" class="nav-item" data-view="holdings">보유 종목</button>
+              <button type="button" class="nav-item" data-view="calendar">배당 캘린더</button>
+              <button type="button" class="nav-item" data-view="dividend">배당 시뮬레이션</button>
+              <button type="button" class="nav-item" data-expand-ledger data-nav-expand-ledger>원장 내역</button>
+            </nav>
 
-        <div class="sidebar-fx-panel" aria-label="환율 기준">
-          <div class="currency-card sidebar-rate-card">
-            <span>USD/KRW</span>
-            <strong id="fxRateLabel">1,380.00</strong>
-            <small id="fxSourceLabel">수동 기준 · 업데이트 대기</small>
-          </div>
-          <div class="currency-card sidebar-rate-card usdt-rate-card">
-            <span>USDT/KRW</span>
-            <strong id="usdtKrwLabel">대기 중</strong>
-            <small id="usdtKrwSourceLabel">업데이트 대기</small>
+            <div class="sidebar-fx-panel" aria-label="환율 기준">
+              <div class="currency-card sidebar-rate-card">
+                <span>USD/KRW</span>
+                <strong id="fxRateLabel">1,380.00</strong>
+                <small id="fxSourceLabel">수동 기준 · 업데이트 대기</small>
+              </div>
+              <div class="currency-card sidebar-rate-card usdt-rate-card">
+                <span>USDT/KRW</span>
+                <strong id="usdtKrwLabel">대기 중</strong>
+                <small id="usdtKrwSourceLabel">업데이트 대기</small>
+              </div>
+            </div>
           </div>
         </div>
-
       </aside>
 
       <main class="main">
@@ -71,6 +77,7 @@
               <span id="usMarketClockTime">--:--:--</span>
               <span id="usMarketClockSession" class="market-session-badge neutral-text">-</span>
             </span>
+            <span id="syncStatusPill" class="status-pill sync-status" data-state="checking" title="이 기기의 서버 동기화 상태">동기화 확인 중…</span>
             <button type="button" id="syncSettingsButton" class="ghost-button" title="여러 PC 간 데이터 동기화 토큰 설정">동기화 설정</button>
           </div>
         </header>
