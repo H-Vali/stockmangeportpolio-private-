@@ -14,7 +14,7 @@ export async function onRequestGet({ request, env }) {
   const to = new Date(now);
   to.setUTCFullYear(to.getUTCFullYear() + 1);
 
-  const upstream = new URL("https://finnhub.io/api/v1/stock/dividend2");
+  const upstream = new URL("https://finnhub.io/api/v1/stock/dividend");
   upstream.searchParams.set("symbol", symbol);
   upstream.searchParams.set("from", from.toISOString().slice(0, 10));
   upstream.searchParams.set("to", to.toISOString().slice(0, 10));
