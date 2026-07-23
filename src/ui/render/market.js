@@ -159,6 +159,7 @@ export function renderIndexMonitor() {
 export function renderInvestorComparison() {
   const list = document.querySelector("#investorComparison");
   list.innerHTML = "";
+  document.querySelector("#investorComparisonPanel")?.classList.toggle("single-investor", state.investors.length <= 1);
   const total = summarize().totalValue || 1;
   const nextValues = {};
   state.investors.forEach((investor) => {

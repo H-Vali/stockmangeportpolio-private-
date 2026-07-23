@@ -123,7 +123,7 @@
             </div>
           </section>
 
-          <section class="workspace">
+          <section class="workspace" id="dashboardWorkspace" data-active-preview="holdings">
             <div class="panel span-4" id="allocation">
               <div class="panel-header">
                 <div>
@@ -148,18 +148,18 @@
               <div id="allocationInvestorBreakdown"></div>
             </div>
 
-            <div class="panel span-4 crypto-panel">
-              <div class="panel-header compact-head">
+            <details class="panel span-4 crypto-panel mobile-collapsible">
+              <summary class="panel-header compact-head">
                 <div>
                   <p class="eyebrow">Crypto</p>
                   <h2>가격 변동</h2>
                 </div>
                 <div class="crypto-rate-pill" id="cryptoRatePill">USDT/KRW 대기 중</div>
-              </div>
+              </summary>
               <div class="market-list" id="marketList"></div>
-            </div>
+            </details>
 
-            <div class="panel span-4">
+            <div class="panel span-4" id="investorComparisonPanel">
               <div class="panel-header compact-head">
                 <div>
                   <p class="eyebrow">Investors</p>
@@ -174,17 +174,17 @@
               <p class="dashboard-add-investor-hint">대시보드에서 바로 추가하고, 세부 입출금은 투자자별 시트에서 관리합니다.</p>
             </div>
 
-            <div class="panel span-12" id="indexMonitor">
-              <div class="panel-header compact-head">
+            <details class="panel span-12 mobile-collapsible" id="indexMonitor">
+              <summary class="panel-header compact-head">
                 <div>
                   <p class="eyebrow">Index Monitor</p>
                   <h2>주요 지수</h2>
                 </div>
-              </div>
+              </summary>
               <div class="market-list index-grid" id="indexMonitorList"></div>
-            </div>
+            </details>
 
-            <div class="panel span-12">
+            <div class="panel span-12" id="trendPanel">
               <div class="panel-header">
                 <div>
                   <p class="eyebrow">History</p>
@@ -195,7 +195,12 @@
               <div class="trend-area" id="trendArea"></div>
             </div>
 
-            <div class="panel span-6">
+            <div class="panel span-12 preview-tabs" id="dashboardPreviewTabs">
+              <button type="button" class="tab-btn active" data-preview-tab="holdings">보유 종목</button>
+              <button type="button" class="tab-btn" data-preview-tab="ledger">원장 내역</button>
+            </div>
+
+            <div class="panel span-6" id="holdingsPreviewPanel">
               <div class="panel-header compact-head">
                 <div>
                   <p class="eyebrow">All Investors</p>
@@ -206,7 +211,7 @@
               <div class="market-list" id="holdingsPreview"></div>
             </div>
 
-            <div class="panel span-6">
+            <div class="panel span-6" id="ledgerPreviewPanel">
               <div class="panel-header compact-head">
                 <div>
                   <p class="eyebrow">All Investors</p>
@@ -296,11 +301,13 @@
                   <div id="investorProfitBreakdown"></div>
                 </div>
 
-                <div class="panel investor-activity-panel">
-                  <p class="eyebrow">Activity</p>
-                  <h2>최근 활동</h2>
+                <details class="panel investor-activity-panel mobile-collapsible">
+                  <summary>
+                    <p class="eyebrow">Activity</p>
+                    <h2>최근 활동</h2>
+                  </summary>
                   <div id="investorActivity"></div>
-                </div>
+                </details>
               </div>
 
               <div class="investor-col investor-col-right">

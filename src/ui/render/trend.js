@@ -73,6 +73,7 @@ export function renderHeroSparkline() {
 export function renderTrend() {
   const area = document.querySelector("#trendArea");
   const snapshots = totalValueHistory();
+  document.querySelector("#trendPanel")?.classList.toggle("trend-empty", snapshots.length < 2);
   if (snapshots.length < 2) {
     area.innerHTML = `<div class="empty-state compact-empty">데이터가 쌓이면 추이가 표시됩니다.</div>`;
     document.querySelector("#trendHint").textContent = "";

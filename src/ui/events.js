@@ -83,6 +83,17 @@ document.querySelectorAll("[data-quick-trade-tab]").forEach((tab) => {
 
 applyQuickTradeTab();
 
+// 대시보드 모바일: 보유 종목/원장 내역 미리보기를 세로로 둘 다 쌓지 않고 탭으로 전환한다.
+document.querySelector("#dashboardPreviewTabs")?.addEventListener("click", (event) => {
+  const tab = event.target.closest("[data-preview-tab]");
+  if (!tab) return;
+  const target = tab.dataset.previewTab;
+  document.querySelector("#dashboardWorkspace").dataset.activePreview = target;
+  document.querySelectorAll("#dashboardPreviewTabs [data-preview-tab]").forEach((btn) => {
+    btn.classList.toggle("active", btn === tab);
+  });
+});
+
 document.querySelector("#clearHoldingsFilterButton").addEventListener("click", clearHoldingsFilter);
 
 document.querySelector("#investorTabs").addEventListener("click", (event) => {

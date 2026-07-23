@@ -1245,6 +1245,58 @@ a.ghost-button {
   margin-bottom: 12px;
 }
 
+.mobile-collapsible > summary {
+  list-style: none;
+  cursor: pointer;
+  position: relative;
+  padding-right: 30px;
+}
+
+.mobile-collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-collapsible > summary::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: translateY(-70%) rotate(45deg);
+  transition: transform 180ms ease;
+}
+
+.mobile-collapsible[open] > summary::after {
+  transform: translateY(-30%) rotate(-135deg);
+}
+
+.mobile-collapsible > .market-list {
+  margin-top: 2px;
+}
+
+.preview-tabs {
+  display: none;
+}
+
+/* 아코디언(mobile-collapsible)은 데스크톱에서는 항상 펼쳐진 상태로 고정한다. */
+@media (min-width: 1121px) {
+  .mobile-collapsible > summary {
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .mobile-collapsible > summary::after {
+    display: none;
+  }
+
+  .mobile-collapsible:not([open]) > *:not(summary) {
+    display: block !important;
+  }
+}
+
 .crypto-rate-pill {
   display: inline-flex;
   align-items: center;
@@ -3477,6 +3529,31 @@ menu {
     grid-template-rows: 1fr;
     opacity: 1;
     margin-top: 20px;
+  }
+
+  /* 대시보드: 내 자산 데이터 우선, 참고용 시세는 접힘 + 미리보기는 탭 전환 */
+  #investorComparisonPanel.single-investor #investorComparison {
+    display: none;
+  }
+
+  #trendPanel.trend-empty {
+    display: none;
+  }
+
+  .preview-tabs {
+    display: flex;
+    gap: 0;
+    padding: 4px;
+    overflow: hidden;
+  }
+
+  .preview-tabs .tab-btn {
+    border-radius: 6px;
+  }
+
+  #dashboardWorkspace[data-active-preview="holdings"] #ledgerPreviewPanel,
+  #dashboardWorkspace[data-active-preview="ledger"] #holdingsPreviewPanel {
+    display: none;
   }
 
   .hero-grid,
