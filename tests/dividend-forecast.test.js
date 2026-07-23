@@ -36,6 +36,21 @@ test("normalizeDividendRecords: {data:[...]} 래핑된 응답도 처리한다", 
   assert.equal(normalized.length, 1);
 });
 
+test("normalizeDividendRecords: Twelve Data 응답({meta,dividends[],ex_date})을 처리하고 meta.currency로 보완한다", () => {
+  const raw = {
+    meta: { symbol: "AAPL", currency: "USD" },
+    dividends: [
+      { ex_date: "2026-02-09", amount: 0.26 },
+      { ex_date: "2025-11-10", amount: 0.26 }
+    ]
+  };
+  const normalized = normalizeDividendRecords(raw);
+  assert.equal(normalized.length, 2);
+  assert.equal(normalized[0].payDate, "2025-11-10");
+  assert.equal(normalized[0].currency, "USD");
+  assert.equal(normalized[1].payDate, "2026-02-09");
+});
+
 test("buildDividendForecast: 분기 배당 이력이면 다음 분기 간격으로 예측을 이어간다", () => {
   const records = normalizeDividendRecords([
     rec({ date: "2025-01-15", amount: 1 }),

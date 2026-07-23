@@ -35,14 +35,17 @@ function median(values) {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+// Twelve Data({meta:{currency}, dividends:[{ex_date, amount}]})와
+// (혹시 다시 쓸 경우를 대비한) Finnhub 스타일 필드명을 모두 받아들인다.
 export function normalizeDividendRecords(raw) {
-  const list = Array.isArray(raw) ? raw : (raw?.data || []);
+  const list = Array.isArray(raw) ? raw : (raw?.dividends || raw?.data || []);
+  const fallbackCurrency = raw?.meta?.currency;
   return list
     .map((r) => ({
-      exDate: r.date || r.exDate || null,
-      payDate: r.payDate || r.date || r.exDate || null,
+      exDate: r.date || r.exDate || r.ex_date || null,
+      payDate: r.payDate || r.pay_date || r.date || r.exDate || r.ex_date || null,
       amount: Number(r.adjustedAmount ?? r.amount ?? 0),
-      currency: r.currency || "USD"
+      currency: r.currency || fallbackCurrency || "USD"
     }))
     .filter((r) => r.payDate && r.amount > 0)
     .sort((a, b) => a.payDate.localeCompare(b.payDate));
