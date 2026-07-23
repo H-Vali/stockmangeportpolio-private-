@@ -164,13 +164,15 @@ export async function hydrateFromServer() {
     // 이 기기에 서버로 못 올린 변경이 남아있다. 서버 값을 받아 그냥 덮어쓰면
     // 그 변경을 영구히 잃는다 -> 먼저 (최신 rev를 다시 확인한 뒤) 업로드를 시도한다.
     // 다른 기기가 그 사이 먼저 저장했다면 pushStateToServer 내부에서 자동으로
-    // 정리되므로(autoResolveConflict) 여기선 결과만 확인하면 된다.
+    // 정리된다(autoResolveConflict, 필요하면 서버 상태를 반영하고 render()까지 끝낸다).
+    // 아래의 일반 조회 경로로 다시 떨어지면 방금 반영한 결과를 불필요하게(그리고
+    // KV 전파 지연 중이면 위험하게) 다시 덮어쓸 수 있어 여기서 끝낸다.
     await pushLocalWithFreshRev();
     if (isDirty()) {
       // 오프라인 등으로 업로드가 안 됐다. 서버 최신본으로 로컬을 지우면 안 되니 중단.
       setSyncStatus("offline", "서버에 연결할 수 없어 이 기기의 변경사항을 유지합니다.");
-      return;
     }
+    return;
   }
   try {
     const response = await fetch("/state", {
