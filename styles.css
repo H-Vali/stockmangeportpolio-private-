@@ -3618,10 +3618,30 @@ menu {
     justify-content: center;
   }
 
-  .metric-stack,
   .mini-metrics,
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .metric-stack {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .hero-grid .metric-card {
+    min-height: 0;
+    padding: 12px 14px;
+  }
+
+  .hero-grid .metric-card strong {
+    margin: 4px 0;
+    font-size: 18px;
+    white-space: nowrap;
+  }
+
+  .hero-grid .metric-card span,
+  .hero-grid .metric-card small {
+    font-size: 11px;
   }
 
   .investor-donut-area {
