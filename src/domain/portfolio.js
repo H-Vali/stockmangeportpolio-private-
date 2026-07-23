@@ -32,7 +32,8 @@ export function getAsset(ticker, fallback = {}) {
     currency: fallback.currency || "USD",
     currentPrice: fallback.price || 0,
     currentFx: fallback.fx || currentUsdKrw(),
-    annualDividend: 0
+    annualDividend: 0,
+    dividendForecast: []
   };
 }
 
@@ -45,7 +46,9 @@ export function ensureAssetFromTrade(trade) {
     currency: trade.currency || existing?.currency || "USD",
     currentPrice: existing?.currentPrice ?? trade.price,
     currentFx: existing?.currentFx ?? trade.fx,
-    annualDividend: existing?.annualDividend ?? 0
+    annualDividend: existing?.annualDividend ?? 0,
+    dividendForecast: existing?.dividendForecast ?? [],
+    dividendFetchedAt: existing?.dividendFetchedAt ?? null
   };
 }
 
@@ -138,6 +141,11 @@ export function replayHoldings(ownerId) {
     const valueKrw = lot.quantity * currentPrice * currentFx;
     const stockProfit = lot.quantity * (currentPrice - avgPrice) * currentFx;
     const fxProfit = asset.currency === "KRW" ? 0 : lot.quantity * avgPrice * (currentFx - avgFx);
+    // 배당은 Finnhub 이력 기반 예측 스케줄(dividendForecast)로 계산한다.
+    // 향후 12개월치 주당 예상 배당 합계 x 보유수량 x 현재 환율(미래 환율은 알 수 없어 현재값으로 근사).
+    const dividendForecast = asset.dividendForecast || [];
+    const dividendPerShareAnnual = dividendForecast.reduce((sum, p) => sum + p.amountPerShare, 0);
+    const annualDividend = lot.quantity * dividendPerShareAnnual * currentFx;
     return {
       ...lot,
       name: asset.name,
@@ -151,7 +159,8 @@ export function replayHoldings(ownerId) {
       stockProfit,
       fxProfit,
       profit: stockProfit + fxProfit,
-      annualDividend: asset.annualDividend || 0
+      annualDividend,
+      dividendForecast
     };
   });
 }

@@ -1,6 +1,6 @@
 import { DIVIDEND_TAX_RATE } from "../../config/constants.js";
 import { fxFormatter, money, numberFormatter, pct, qty, signedMoney, usdFormatter } from "../../core/format.js";
-import { consolidatedHoldings, dividendFrequencyLabel } from "../../domain/dividend.js";
+import { consolidatedHoldings, dividendFrequencyLabelForTicker } from "../../domain/dividend.js";
 import { investorById, replayHoldings } from "../../domain/portfolio.js";
 import { currentUsdKrw, state } from "../../state/store.js";
 import { visibleOwnerId } from "./layout.js";
@@ -169,7 +169,7 @@ export function renderHoldingsView() {
     const owner = investorById(item.ownerId);
     const profitClass = item.profit >= 0 ? "positive" : "negative";
     const hasDividend = item.annualDividend > 0;
-    const freqLabel = hasDividend ? dividendFrequencyLabel(item.ticker) : null;
+    const freqLabel = hasDividend ? dividendFrequencyLabelForTicker(item.ticker, item.dividendForecast) : null;
     const breakeven = item.breakevenRise > 0 ? `<small class="hv-breakeven">손익분기 +${pct(item.breakevenRise)} 필요</small>` : "";
     // 손익을 주가손익과 환차손익으로 갈라 보여준다.
     // 환차손익은 매입시점 평균환율(avgFx) 대비 현재 환율의 차이에서 나온 몫이라,

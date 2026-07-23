@@ -1,7 +1,7 @@
-import { DIVIDEND_MONTHS } from "../../config/catalog.js";
-import { DIVIDEND_TAX_RATE, allocationColors } from "../../config/constants.js";
+import { allocationColors } from "../../config/constants.js";
 import { formatCompact, money, pct, signedMoney } from "../../core/format.js";
 import { getAllocationSlices } from "../../domain/allocation.js";
+import { nextDividendPayout } from "../../domain/dividend.js";
 import { investorById, replayHoldings, summarize, tradeAmountKrw } from "../../domain/portfolio.js";
 import { state } from "../../state/store.js";
 import { setMoneyElement, setSignedMoneyElement } from "../dom.js";
@@ -81,10 +81,18 @@ export function renderInvestorAllocation() {
 }
 
 // 헤더 클릭 정렬용 비교 함수. 같은 열을 다시 누르면 events.js에서 방향을 뒤집는다.
+// 현재가가 평단(avgPrice)까지 올라야 손익분기라는 가정 하에 필요한 추가 상승률.
+// 이미 평단 이상이면 0(달성)으로 취급한다.
+function breakEvenPct(item) {
+  if (!item.currentPrice) return 0;
+  return Math.max(((item.avgPrice - item.currentPrice) / item.currentPrice) * 100, 0);
+}
+
 const HOLDINGS_SORTERS = {
   ticker: (a, b) => a.ticker.localeCompare(b.ticker),
   quantity: (a, b) => a.quantity - b.quantity,
   currentPrice: (a, b) => a.currentPrice - b.currentPrice,
+  breakEven: (a, b) => breakEvenPct(a) - breakEvenPct(b),
   valueKrw: (a, b) => a.valueKrw - b.valueKrw,
   profit: (a, b) => a.profit - b.profit
 };
@@ -118,11 +126,17 @@ export function renderInvestorHoldingsPreview() {
       const priceTone = item.currentPrice > item.avgPrice ? "up" : item.currentPrice < item.avgPrice ? "down" : "neutral-text";
       const typeColor = allocationColors[item.type] || "var(--muted)";
       const qtyText = Number(item.quantity).toLocaleString("en-US", { maximumFractionDigits: 8 });
+      const breakEven = breakEvenPct(item);
+      const breakEvenCell =
+        breakEven > 0
+          ? `<td class="ih-num down">+${breakEven.toFixed(1)}%</td>`
+          : `<td class="ih-num up">달성</td>`;
       return `
         <tr>
           <td class="ih-name"><strong>${item.ticker}</strong><small><span class="ih-type-dot" style="background:${typeColor}" aria-hidden="true"></span>${item.type} · ${item.currency}</small></td>
           <td class="ih-num">${qtyText}</td>
           <td class="ih-num ${priceTone}">${nativePrice(item.currency, item.currentPrice)}<small>평단 ${nativePrice(item.currency, item.avgPrice)}</small></td>
+          ${breakEvenCell}
           <td class="ih-num">${krw(item.valueKrw)}</td>
           <td class="ih-num ${tone}">${item.profit >= 0 ? "+" : "-"}${krw(Math.abs(item.profit))}<small class="${tone}">${ret >= 0 ? "+" : ""}${ret.toFixed(1)}%</small></td>
           <td class="ih-edit"><button type="button" class="ih-edit-btn" data-edit-holding="${item.ticker}" title="거래 수정" aria-label="${item.ticker} 거래 수정">수정</button></td>
@@ -136,6 +150,7 @@ export function renderInvestorHoldingsPreview() {
           <th class="ih-sortable${sortKey === "ticker" ? " ih-sort-active" : ""}" data-sort-key="ticker">종목${arrow("ticker")}</th>
           ${sortTh("quantity", "수량")}
           ${sortTh("currentPrice", "현재가", "<small>평단</small>")}
+          ${sortTh("breakEven", "손익분기", "<small>필요 상승률</small>")}
           ${sortTh("valueKrw", "평가금액", "<small>KRW</small>")}
           ${sortTh("profit", "손익 / 수익률")}
           <th class="ih-edit" aria-label="수정"></th>
@@ -148,31 +163,17 @@ export function renderInvestorHoldingsPreview() {
 export function renderUpcomingDividend() {
   const el = document.querySelector("#investorUpcomingDividend");
   if (!el) return;
-  const holdings = replayHoldings(state.selectedInvestorId).filter((item) => item.annualDividend > 0);
-  const currentMonth = new Date().getMonth() + 1;
-  let best = null;
-  holdings.forEach((item) => {
-    const months = DIVIDEND_MONTHS[item.ticker] || [];
-    months.forEach((month) => {
-      const diff = month >= currentMonth ? month - currentMonth : month + 12 - currentMonth;
-      if (!best || diff < best.diff) {
-        best = {
-          ticker: item.ticker,
-          diff,
-          perPayment: (item.annualDividend / months.length) * (1 - DIVIDEND_TAX_RATE)
-        };
-      }
-    });
-  });
+  const best = nextDividendPayout(state.selectedInvestorId);
   const summary = summarize(state.selectedInvestorId);
   if (!best) {
     el.innerHTML = `<p class="empty-hint">예정된 배당이 없습니다.</p>`;
     return;
   }
+  const dDay = Math.max(0, Math.round((new Date(`${best.payDate}T00:00:00Z`) - new Date()) / 86400000));
   el.innerHTML = `
-    <div class="investor-kpi-line"><strong>${best.ticker}</strong><span>약 D-${best.diff * 30}</span></div>
-    <div class="investor-kpi-value positive">${signedMoney(best.perPayment)}</div>
-    <small class="muted">연간 예상 세후 배당 ${money(summary.dividendAfterTax)}</small>
+    <div class="investor-kpi-line"><strong>${best.ticker}</strong><span>D-${dDay} · ${best.payDate}${best.estimated ? " (예측)" : ""}</span></div>
+    <div class="investor-kpi-value positive">${signedMoney(best.amountAfterTax)}</div>
+    <small class="muted">향후 12개월 예상 세후 배당 ${money(summary.dividendAfterTax)}</small>
   `;
 }
 

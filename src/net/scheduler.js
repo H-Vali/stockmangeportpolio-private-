@@ -1,4 +1,5 @@
 import { refreshCoinQuotes, startCryptoRealtime } from "./crypto.js";
+import { refreshDividendForecasts } from "./dividends.js";
 import { refreshFxRate } from "./fx.js";
 import { refreshIndexQuotes, refreshStockQuotes } from "./stocks.js";
 
@@ -6,6 +7,7 @@ export let stockTimer = null;
 export let indexTimer = null;
 export let coinTimer = null;
 export let fxTimer = null;
+export let dividendTimer = null;
 
 // 탭이 백그라운드일 때는 시세를 갱신하지 않는다.
 //
@@ -30,17 +32,21 @@ export function startPolling() {
   refreshStockQuotes();
   refreshIndexQuotes();
   refreshCoinQuotes();
+  refreshDividendForecasts();
   startCryptoRealtime();
 
   clearInterval(stockTimer);
   clearInterval(indexTimer);
   clearInterval(coinTimer);
   clearInterval(fxTimer);
+  clearInterval(dividendTimer);
 
   stockTimer = setInterval(whenVisible(refreshStockQuotes), 15000);
   indexTimer = setInterval(whenVisible(refreshIndexQuotes), 30000);
   coinTimer = setInterval(whenVisible(refreshCoinQuotes), 15000);
   fxTimer = setInterval(whenVisible(refreshFxRate), 5 * 60 * 1000);
+  // 배당 지급 스케줄은 하루에도 잘 안 바뀌므로 6시간 주기면 충분하다.
+  dividendTimer = setInterval(whenVisible(refreshDividendForecasts), 6 * 60 * 60 * 1000);
 
   // 백그라운드에 있다가 다시 보게 되면 최신 시세로 바로 갱신한다.
   // (건너뛴 주기만큼 낡아 있던 값이 탭 복귀 순간 바로 채워진다.)

@@ -1,5 +1,6 @@
 import { DIVIDEND_MONTHS } from "../config/catalog.js";
 import { DIVIDEND_TAX_RATE } from "../config/constants.js";
+import { frequencyLabelFromForecast } from "./dividend-forecast.js";
 import { replayHoldings } from "./portfolio.js";
 
 export function dividendRows(scenario) {
@@ -39,4 +40,54 @@ export function consolidatedHoldings(ownerId, typeFilter) {
   const all = replayHoldings(ownerId).filter((h) => h.quantity > 0.00000001);
   if (typeFilter) return all.filter((h) => h.type === typeFilter);
   return all;
+}
+
+// Finnhub 이력 기반 예측(dividendForecast)이 있는 종목은 그 값으로,
+// 없는 종목은 기존 정적 지급월 맵(DIVIDEND_MONTHS)으로 배당 주기 라벨을 표시한다.
+export function dividendFrequencyLabelForTicker(ticker, forecast) {
+  return frequencyLabelFromForecast(forecast) || dividendFrequencyLabel(ticker);
+}
+
+// 보유 종목별 예측 배당 지급을 실제 지급 예정월(1~12)로 분류한다.
+// 정적으로 연간 배당을 12로 균등 분할하던 예전 방식과 달리, 종목별 실제
+// 지급 패턴(월배당/분기배당 등 금액이 다를 수 있음)을 그대로 반영한다.
+export function dividendPayoutsByMonth(ownerId) {
+  const holdings = consolidatedHoldings(ownerId).filter((h) => h.dividendForecast?.length);
+  const monthlyTotals = new Array(12).fill(0);
+  const monthlyItems = Array.from({ length: 12 }, () => []);
+
+  holdings.forEach((holding) => {
+    holding.dividendForecast.forEach((payout) => {
+      const monthIndex = Number(payout.payDate.slice(5, 7)) - 1;
+      const amountAfterTax = holding.quantity * payout.amountPerShare * holding.currentFx * (1 - DIVIDEND_TAX_RATE);
+      monthlyTotals[monthIndex] += amountAfterTax;
+      monthlyItems[monthIndex].push({
+        ticker: holding.ticker,
+        amount: amountAfterTax,
+        payDate: payout.payDate,
+        estimated: payout.estimated
+      });
+    });
+  });
+
+  return { monthlyTotals, monthlyItems, dividendHoldingsCount: holdings.length };
+}
+
+// 가장 가까운 예상 배당 지급 1건 (실제 지급 예정일 기준, 투자자 화면용).
+export function nextDividendPayout(ownerId) {
+  const holdings = consolidatedHoldings(ownerId).filter((h) => h.dividendForecast?.length);
+  let best = null;
+  holdings.forEach((holding) => {
+    holding.dividendForecast.forEach((payout) => {
+      if (!best || payout.payDate < best.payDate) {
+        best = {
+          ticker: holding.ticker,
+          payDate: payout.payDate,
+          estimated: payout.estimated,
+          amountAfterTax: holding.quantity * payout.amountPerShare * holding.currentFx * (1 - DIVIDEND_TAX_RATE)
+        };
+      }
+    });
+  });
+  return best;
 }

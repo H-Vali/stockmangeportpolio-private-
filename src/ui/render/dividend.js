@@ -1,9 +1,7 @@
-import { DIVIDEND_MONTHS } from "../../config/catalog.js";
 import { DIVIDEND_TAX_RATE, monthNames } from "../../config/constants.js";
 import { fxFormatter, money, numberFormatter, pct, qty } from "../../core/format.js";
 import { getKstNowParts } from "../../core/time.js";
-import { dividendFrequencyLabel, dividendRows } from "../../domain/dividend.js";
-import { replayHoldings } from "../../domain/portfolio.js";
+import { dividendPayoutsByMonth, dividendRows } from "../../domain/dividend.js";
 import { currentUsdKrw } from "../../state/store.js";
 import { uiState } from "../uistate.js";
 
@@ -157,7 +155,7 @@ export function renderTargetDividend(scenario) {
 
 export function renderDividendCalendar() {
   const ownerId = document.querySelector("#calendarTargetSelect").value || null;
-  const holdings = replayHoldings(ownerId).filter((holding) => holding.annualDividend > 0);
+  const { monthlyTotals, monthlyItems, dividendHoldingsCount } = dividendPayoutsByMonth(ownerId);
   const grid = document.querySelector("#dividendCalendar");
   const summaryEl = document.querySelector("#calendarSummary");
   grid.innerHTML = "";
@@ -165,18 +163,6 @@ export function renderDividendCalendar() {
   const now = new Date();
   const kstParts = getKstNowParts(now);
   const currentMonth = Number(kstParts.dateKey.split("-")[1]);
-
-  const monthlyTotals = new Array(12).fill(0);
-  const monthlyItems = Array.from({ length: 12 }, () => []);
-
-  holdings.forEach((holding) => {
-    const months = DIVIDEND_MONTHS[holding.ticker] || [3, 6, 9, 12];
-    const perPayout = (holding.annualDividend / months.length) * (1 - DIVIDEND_TAX_RATE);
-    months.forEach((m) => {
-      monthlyTotals[m - 1] += perPayout;
-      monthlyItems[m - 1].push({ ticker: holding.ticker, amount: perPayout });
-    });
-  });
 
   const annualTotal = monthlyTotals.reduce((s, v) => s + v, 0);
   const monthlyAvg = annualTotal / 12;
@@ -186,7 +172,7 @@ export function renderDividendCalendar() {
   if (summaryEl) {
     summaryEl.innerHTML = `
       <div class="cal-summary-card cal-summary-total">
-        <span>연간 예상 배당 (세후)</span>
+        <span>향후 12개월 예상 배당 (세후)</span>
         <strong>${money(annualTotal)}</strong>
       </div>
       <div class="cal-summary-card">
@@ -199,7 +185,7 @@ export function renderDividendCalendar() {
       </div>
       <div class="cal-summary-card">
         <span>배당 종목 수</span>
-        <strong>${holdings.length}종목</strong>
+        <strong>${dividendHoldingsCount}종목</strong>
       </div>
     `;
   }
@@ -207,16 +193,16 @@ export function renderDividendCalendar() {
   monthNames.forEach((monthName, monthIndex) => {
     const month = monthIndex + 1;
     const total = monthlyTotals[monthIndex];
-    const items = monthlyItems[monthIndex];
+    const items = monthlyItems[monthIndex].slice().sort((a, b) => a.payDate.localeCompare(b.payDate));
     const isCurrent = month === currentMonth;
     const barWidth = maxMonthly > 0 ? (total / maxMonthly) * 100 : 0;
 
     const itemsHtml = items.length > 0
       ? items.map((item) => {
           const ratio = total > 0 ? ((item.amount / total) * 100).toFixed(1) : 0;
-          const freq = dividendFrequencyLabel(item.ticker);
+          const day = Number(item.payDate.slice(8, 10));
           return `<div class="calendar-item">
-            <div class="cal-item-info"><strong>${item.ticker}</strong><span class="cal-item-freq">${freq}</span><span class="cal-item-ratio">${ratio}%</span></div>
+            <div class="cal-item-info"><strong>${item.ticker}</strong><span class="cal-item-freq">${day}일${item.estimated ? " · 예측" : " · 확정"}</span><span class="cal-item-ratio">${ratio}%</span></div>
             <span class="cal-item-amount">${money(item.amount)}</span>
           </div>`;
         }).join("")
