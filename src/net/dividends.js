@@ -30,10 +30,9 @@ async function ensureDividendForecast(ticker) {
     }
     return true;
   } catch (error) {
-    // 실패해도 다음 주기에 다시 시도한다. 화면은 이전 예측값(또는 빈 값)을 유지.
-    if (state.assetCatalog[ticker]) {
-      state.assetCatalog[ticker].dividendFetchedAt = new Date().toISOString();
-    }
+    // 실패(주로 Polygon 429 rate limit)는 dividendFetchedAt 을 건드리지 않는다.
+    // 여기서 "지금 시도했다"고 기록해버리면 실패한 종목이 12시간 캐시에 걸려
+    // 다음 스케줄(6시간 뒤) 두 번을 그냥 건너뛰게 된다. 화면은 이전 예측값(또는 빈 값)을 유지.
     return false;
   }
 }
