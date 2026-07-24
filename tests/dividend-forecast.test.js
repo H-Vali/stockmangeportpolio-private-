@@ -36,6 +36,22 @@ test("normalizeDividendRecords: {data:[...]} 래핑된 응답도 처리한다", 
   assert.equal(normalized.length, 1);
 });
 
+test("normalizeDividendRecords: Polygon.io 응답({results:[{ex_dividend_date,pay_date,cash_amount}]})을 처리한다", () => {
+  const raw = {
+    status: "OK",
+    results: [
+      { ticker: "AAPL", ex_dividend_date: "2026-02-09", pay_date: "2026-02-13", cash_amount: 0.26, currency: "USD" },
+      { ticker: "AAPL", ex_dividend_date: "2025-11-10", pay_date: "2025-11-14", cash_amount: 0.26, currency: "USD" }
+    ]
+  };
+  const normalized = normalizeDividendRecords(raw);
+  assert.equal(normalized.length, 2);
+  // payDate는 ex_dividend_date가 아니라 pay_date를 우선한다
+  assert.equal(normalized[0].payDate, "2025-11-14");
+  assert.equal(normalized[1].payDate, "2026-02-13");
+  assert.equal(normalized[0].amount, 0.26);
+});
+
 test("normalizeDividendRecords: Twelve Data 응답({meta,dividends[],ex_date})을 처리하고 meta.currency로 보완한다", () => {
   const raw = {
     meta: { symbol: "AAPL", currency: "USD" },
