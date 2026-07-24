@@ -42,21 +42,20 @@ async function ensureDividendForecast(ticker) {
 const DIVIDEND_FETCH_INTERVAL_MS = 13000;
 
 // 배당을 지급하는(미국 상장) 보유 종목만 대상으로 순차 조회한다.
+// 종목 하나당 13초씩 걸리므로(레이트리밋 때문), 전부 끝난 뒤 한 번에 반영하면
+// 캘린더가 1~2분간 텅 비어 보인다. 종목이 도착하는 대로 바로바로 반영한다.
 export async function refreshDividendForecasts() {
   const holdings = replayHoldings().filter((h) => (h.type === "주식" || h.type === "ETF") && h.currency === "USD");
   const tickers = [...new Set(holdings.map((h) => h.ticker))];
-  let changed = false;
 
   for (const [index, ticker] of tickers.entries()) {
     const updated = await ensureDividendForecast(ticker);
-    if (updated) changed = true;
+    if (updated) {
+      saveState({ snapshot: false, sync: false });
+      render();
+    }
     if (index < tickers.length - 1) {
       await new Promise((resolve) => setTimeout(resolve, DIVIDEND_FETCH_INTERVAL_MS));
     }
-  }
-
-  if (changed) {
-    saveState({ snapshot: false, sync: false });
-    render();
   }
 }
