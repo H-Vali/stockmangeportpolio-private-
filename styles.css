@@ -1292,8 +1292,14 @@ a.ghost-button {
     display: none;
   }
 
+  /* 크롬 등 최신 브라우저는 닫힌 <details> 내부를 display 뿐 아니라
+     content-visibility:hidden 으로도 숨긴다. display만 되돌리면 DOM엔
+     내용이 있어도 화면엔 안 보이는 상태가 되므로 둘 다 되돌려야 한다.
+     실제 강제-펼침은 JS(events.js)가 [open] 속성을 붙이는 방식으로 하고,
+     여기 CSS는 그 전까지의 깜빡임을 막는 보조 수단이다. */
   .mobile-collapsible:not([open]) > *:not(summary) {
     display: block !important;
+    content-visibility: visible !important;
   }
 }
 

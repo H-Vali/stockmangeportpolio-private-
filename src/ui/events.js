@@ -37,6 +37,18 @@ sidebarToggleButton?.addEventListener("click", () => {
   sidebarToggleButton.setAttribute("aria-expanded", String(isOpen));
 });
 
+// 데스크톱(>1120px)에서는 모바일 전용 <details> 아코디언(코인 시세/주요 지수)이
+// 항상 펼쳐져 보여야 한다. CSS의 display 오버라이드만으로는 부족했다 — 최신
+// 크롬은 닫힌 details 내부를 content-visibility:hidden 으로도 숨겨서, DOM엔
+// 내용이 있어도 화면엔 빈 패널로 보이는 사고가 있었다(2026-07-24). [open]
+// 속성을 실제로 붙이는 쪽이 브라우저 구현에 안 흔들리는 확실한 방법이다.
+function syncCollapsiblesForViewport() {
+  if (!window.matchMedia("(min-width: 1121px)").matches) return;
+  document.querySelectorAll(".mobile-collapsible:not([open])").forEach((el) => el.setAttribute("open", ""));
+}
+syncCollapsiblesForViewport();
+window.addEventListener("resize", syncCollapsiblesForViewport);
+
 document.querySelectorAll("[data-expand-ledger]").forEach((link) => {
   link.addEventListener("click", (event) => {
     const isNavShortcut = link.dataset.navExpandLedger !== undefined;
