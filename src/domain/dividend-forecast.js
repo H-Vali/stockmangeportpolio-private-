@@ -1,8 +1,10 @@
 // Finnhub 배당 이력을 앞으로의 예상 지급 스케줄로 바꾼다.
 //
-// 회사가 이미 다음 지급일을 공시한 건(payDate > 오늘)은 그대로 쓰고,
-// 그 이후는 최근 지급 간격(중앙값)을 반복 적용해 근사치를 채운다.
-// 정확한 배당락일/금액 예측은 불가능하므로 "최대한 근접한" 값이 목표다.
+// 캘린더는 "오늘부터 12개월"이 아니라 "올해 1~12월" 고정 범위를 보여준다.
+// 그래서 연도가 바뀌면(1/1) now.getUTCFullYear() 가 자동으로 새 연도를
+// 가리키게 되어, 별도 리셋 로직 없이 캘린더가 새해 1월부터 다시 예측치로
+// 채워진다. 올해 이미 지난 지급(과거 실적)은 확정으로, 아직 공시되지
+// 않은 나머지 달은 최근 지급 간격(중앙값)을 반복 적용해 근사치로 채운다.
 
 function toDateOnly(dateStr) {
   return new Date(`${dateStr}T00:00:00Z`);
@@ -11,12 +13,6 @@ function toDateOnly(dateStr) {
 function addDays(date, days) {
   const next = new Date(date.getTime());
   next.setUTCDate(next.getUTCDate() + days);
-  return next;
-}
-
-function addMonths(date, months) {
-  const next = new Date(date.getTime());
-  next.setUTCMonth(next.getUTCMonth() + months);
   return next;
 }
 
@@ -52,22 +48,28 @@ export function normalizeDividendRecords(raw) {
 }
 
 // records: normalizeDividendRecords()의 결과 (오름차순)
-export function buildDividendForecast(records, { now = new Date(), horizonMonths = 12 } = {}) {
+export function buildDividendForecast(records, { now = new Date() } = {}) {
   if (!records.length) return [];
 
+  const year = now.getUTCFullYear();
+  const yearStartKey = `${year}-01-01`;
+  const yearEndKey = `${year}-12-31`;
   const nowKey = toDateKey(now);
-  const horizonKey = toDateKey(addMonths(now, horizonMonths));
-  const past = records.filter((r) => r.payDate <= nowKey);
-  const future = records.filter((r) => r.payDate > nowKey && r.payDate <= horizonKey);
 
-  const schedule = future.map((r) => ({
+  // 올해 안에서 이미 지급된 실적(확정) + 이미 공시된 올해 남은 지급일(확정)
+  const pastThisYear = records.filter((r) => r.payDate >= yearStartKey && r.payDate <= nowKey);
+  const futureDeclaredThisYear = records.filter((r) => r.payDate > nowKey && r.payDate <= yearEndKey);
+  const allPast = records.filter((r) => r.payDate <= nowKey);
+
+  const schedule = [...pastThisYear, ...futureDeclaredThisYear].map((r) => ({
     payDate: r.payDate,
     amountPerShare: r.amount,
     currency: r.currency,
     estimated: false
   }));
 
-  const recentPast = past.slice(-8);
+  // 주기 파악은 연도 경계와 무관하게 전체 과거 이력(최근 8건)으로 한다.
+  const recentPast = allPast.slice(-8);
   if (recentPast.length >= 2) {
     const intervals = [];
     for (let i = 1; i < recentPast.length; i += 1) {
@@ -76,19 +78,21 @@ export function buildDividendForecast(records, { now = new Date(), horizonMonths
     const validIntervals = intervals.filter((d) => d > 0);
     const intervalDays = Math.round(median(validIntervals) || 91);
     const last = recentPast.at(-1);
-    let cursor = toDateOnly(future.length ? future.at(-1).payDate : last.payDate);
+    let cursor = toDateOnly(futureDeclaredThisYear.length ? futureDeclaredThisYear.at(-1).payDate : last.payDate);
 
     let guard = 0;
-    while (guard < 24) {
+    while (guard < 60) {
       cursor = addDays(cursor, intervalDays);
       const cursorKey = toDateKey(cursor);
-      if (cursorKey > horizonKey) break;
-      schedule.push({
-        payDate: cursorKey,
-        amountPerShare: last.amount,
-        currency: last.currency,
-        estimated: true
-      });
+      if (cursorKey > yearEndKey) break;
+      if (cursorKey >= yearStartKey) {
+        schedule.push({
+          payDate: cursorKey,
+          amountPerShare: last.amount,
+          currency: last.currency,
+          estimated: true
+        });
+      }
       guard += 1;
     }
   }

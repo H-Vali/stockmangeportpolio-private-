@@ -1,4 +1,5 @@
 import { DIVIDEND_TAX_RATE, monthNames } from "../../config/constants.js";
+import { tickerColor } from "../../core/colors.js";
 import { fxFormatter, money, numberFormatter, pct, qty, usdFormatter } from "../../core/format.js";
 import { getKstNowParts } from "../../core/time.js";
 import { dividendPayoutsByMonth, dividendRows } from "../../domain/dividend.js";
@@ -166,7 +167,8 @@ export function renderDividendCalendar() {
 
   const now = new Date();
   const kstParts = getKstNowParts(now);
-  const currentMonth = Number(kstParts.dateKey.split("-")[1]);
+  const [currentYear, currentMonthRaw] = kstParts.dateKey.split("-");
+  const currentMonth = Number(currentMonthRaw);
 
   const annualTotal = monthlyTotals.reduce((s, v) => s + v, 0);
   const monthlyAvg = annualTotal / 12;
@@ -176,7 +178,7 @@ export function renderDividendCalendar() {
   if (summaryEl) {
     summaryEl.innerHTML = `
       <div class="cal-summary-card cal-summary-total">
-        <span>향후 12개월 예상 배당 (세후)</span>
+        <span>${currentYear}년 예상 배당 (세후)</span>
         <strong>${money(annualTotal)}</strong>
       </div>
       <div class="cal-summary-card">
@@ -207,9 +209,10 @@ export function renderDividendCalendar() {
           const day = Number(item.payDate.slice(8, 10));
           const key = dividendItemKey(item);
           const isOpen = uiState.dividendBasisOpenTickers.has(key);
-          return `<div class="calendar-item${isOpen ? " basis-open" : ""}">
+          const color = tickerColor(item.ticker);
+          return `<div class="calendar-item${isOpen ? " basis-open" : ""}" style="--ticker-color:${color}">
             <button type="button" class="calendar-item-toggle" data-basis-key="${key}">
-              <span class="cal-item-info"><strong>${item.ticker}</strong><span class="cal-item-freq">${day}일${item.estimated ? " · 예측" : " · 확정"}</span><span class="cal-item-ratio">${ratio}%</span></span>
+              <span class="cal-item-info"><span class="cal-item-ticker-dot" style="background:${color}" aria-hidden="true"></span><strong>${item.ticker}</strong><span class="cal-item-freq">${day}일${item.estimated ? " · 예측" : " · 확정"}</span><span class="cal-item-ratio">${ratio}%</span></span>
               <span class="cal-item-amount">${money(item.amount)}<span class="basis-toggle-caret">${isOpen ? "▲" : "▼"}</span></span>
             </button>
             <div class="basis-body${isOpen ? "" : " hidden"}">

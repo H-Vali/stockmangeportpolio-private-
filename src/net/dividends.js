@@ -23,7 +23,7 @@ async function ensureDividendForecast(ticker) {
   try {
     const raw = await fetchDividendHistory(ticker);
     const records = normalizeDividendRecords(raw);
-    const forecast = buildDividendForecast(records, { now: new Date(), horizonMonths: 12 });
+    const forecast = buildDividendForecast(records, { now: new Date() });
     if (state.assetCatalog[ticker]) {
       state.assetCatalog[ticker].dividendForecast = forecast;
       state.assetCatalog[ticker].dividendFetchedAt = new Date().toISOString();

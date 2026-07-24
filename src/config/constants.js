@@ -41,6 +41,18 @@ export const allocationColors = {
 };
 export const ALLOCATION_ORDER = ["주식", "ETF", "코인", "채권", "예수금"];
 export const fallbackColors = ["#ff7ac8", "#3bb5a6", "#7c5cfc", "#e8b339", "#5a5a68"];
+// 배당 캘린더 등에서 종목(티커)별 구분 색상으로 쓰는 카테고리 팔레트.
+// dataviz 스킬의 8색 카테고리 팔레트(다크 모드용, 앱 배경 #15151c 기준 검증됨).
+export const TICKER_COLOR_PALETTE = [
+  "#3987e5",
+  "#d95926",
+  "#199e70",
+  "#c98500",
+  "#d55181",
+  "#008300",
+  "#9085e9",
+  "#e66767"
+];
 export const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 
 export const DEFAULT_MARKET_INDICATORS = [
