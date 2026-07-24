@@ -30,8 +30,9 @@ export const uiState = {
   editingTradeId: null,
   // 투자자 시트 보유 종목 표의 정렬 열/방향
   holdingsPreviewSort: { key: "valueKrw", dir: "desc" },
-  // 배당 캘린더 "종목별 산출근거" 펼침 상태 (render()가 자주 재호출되므로
-  // <details open>이 아니라 여기서 직접 추적해야 재렌더링에도 펼침 상태가 유지된다)
+  // 배당 캘린더 각 지급 항목의 산출근거 펼침 상태 (`ticker|payDate` 키).
+  // render()가 자주 재호출되므로 <details open>이 아니라 여기서 직접 추적해야
+  // 재렌더링에도 펼침 상태가 유지된다.
   dividendBasisOpenTickers: new Set()
 };
 

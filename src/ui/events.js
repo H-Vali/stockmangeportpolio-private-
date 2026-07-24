@@ -357,12 +357,12 @@ document.querySelector("#toggleDividendDetail").addEventListener("click", () => 
 });
 document.querySelector("#targetMonthlyDividend").addEventListener("input", renderDividendSimulation);
 document.querySelector("#calendarTargetSelect").addEventListener("change", renderDividendCalendar);
-document.querySelector("#dividendBasisList").addEventListener("click", (event) => {
-  const toggle = event.target.closest(".basis-toggle");
+document.querySelector("#dividendCalendar").addEventListener("click", (event) => {
+  const toggle = event.target.closest(".calendar-item-toggle");
   if (!toggle) return;
-  const ticker = toggle.dataset.ticker;
-  if (uiState.dividendBasisOpenTickers.has(ticker)) uiState.dividendBasisOpenTickers.delete(ticker);
-  else uiState.dividendBasisOpenTickers.add(ticker);
+  const key = toggle.dataset.basisKey;
+  if (uiState.dividendBasisOpenTickers.has(key)) uiState.dividendBasisOpenTickers.delete(key);
+  else uiState.dividendBasisOpenTickers.add(key);
   renderDividendCalendar();
 });
 

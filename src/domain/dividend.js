@@ -51,6 +51,9 @@ export function dividendFrequencyLabelForTicker(ticker, forecast) {
 // 보유 종목별 예측 배당 지급을 실제 지급 예정월(1~12)로 분류한다.
 // 정적으로 연간 배당을 12로 균등 분할하던 예전 방식과 달리, 종목별 실제
 // 지급 패턴(월배당/분기배당 등 금액이 다를 수 있음)을 그대로 반영한다.
+//
+// 각 항목에는 캘린더 화면에서 펼쳐 보이는 산출근거(보유수량 x 주당 배당금 -
+// 세금 15%, 달러/원화 둘 다)에 필요한 필드를 그대로 실어 보낸다.
 export function dividendPayoutsByMonth(ownerId) {
   const holdings = consolidatedHoldings(ownerId).filter((h) => h.dividendForecast?.length);
   const monthlyTotals = new Array(12).fill(0);
@@ -59,54 +62,26 @@ export function dividendPayoutsByMonth(ownerId) {
   holdings.forEach((holding) => {
     holding.dividendForecast.forEach((payout) => {
       const monthIndex = Number(payout.payDate.slice(5, 7)) - 1;
-      const amountAfterTax = holding.quantity * payout.amountPerShare * holding.currentFx * (1 - DIVIDEND_TAX_RATE);
+      const beforeTaxUsd = holding.quantity * payout.amountPerShare;
+      const afterTaxUsd = beforeTaxUsd * (1 - DIVIDEND_TAX_RATE);
+      const amountAfterTax = afterTaxUsd * holding.currentFx;
       monthlyTotals[monthIndex] += amountAfterTax;
       monthlyItems[monthIndex].push({
         ticker: holding.ticker,
+        name: holding.name,
         amount: amountAfterTax,
         payDate: payout.payDate,
-        estimated: payout.estimated
+        estimated: payout.estimated,
+        quantity: holding.quantity,
+        amountPerShare: payout.amountPerShare,
+        fx: holding.currentFx,
+        beforeTaxUsd,
+        afterTaxUsd
       });
     });
   });
 
   return { monthlyTotals, monthlyItems, dividendHoldingsCount: holdings.length };
-}
-
-// 종목별 배당금 산출근거 (배당 캘린더 드롭다운용).
-// 보유수량(자동 로드) x 주당 배당금 - 해외주식 배당소득세(15%) 를 지급 건별로 펼쳐서
-// 달러/원화 둘 다 보여준다. 연간 합계 기준 내림차순으로 정렬한다.
-export function dividendBasisByTicker(ownerId) {
-  const holdings = consolidatedHoldings(ownerId).filter((h) => h.dividendForecast?.length);
-
-  const byTicker = holdings.map((holding) => {
-    const payouts = holding.dividendForecast
-      .map((payout) => {
-        const beforeTaxUsd = holding.quantity * payout.amountPerShare;
-        const afterTaxUsd = beforeTaxUsd * (1 - DIVIDEND_TAX_RATE);
-        return {
-          payDate: payout.payDate,
-          amountPerShare: payout.amountPerShare,
-          beforeTaxUsd,
-          afterTaxUsd,
-          afterTaxKrw: afterTaxUsd * holding.currentFx,
-          estimated: payout.estimated
-        };
-      })
-      .sort((a, b) => a.payDate.localeCompare(b.payDate));
-
-    return {
-      ticker: holding.ticker,
-      name: holding.name,
-      quantity: holding.quantity,
-      fx: holding.currentFx,
-      payouts,
-      annualAfterTaxUsd: payouts.reduce((sum, p) => sum + p.afterTaxUsd, 0),
-      annualAfterTaxKrw: payouts.reduce((sum, p) => sum + p.afterTaxKrw, 0)
-    };
-  });
-
-  return byTicker.sort((a, b) => b.annualAfterTaxKrw - a.annualAfterTaxKrw);
 }
 
 // 가장 가까운 예상 배당 지급 1건 (실제 지급 예정일 기준, 투자자 화면용).

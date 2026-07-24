@@ -911,6 +911,25 @@ a.ghost-button {
   gap: 10px;
 }
 
+.investor-col-left .cashflow-panel {
+  padding: 14px;
+}
+
+.investor-col-left .inline-form {
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.investor-col-left .inline-form select,
+.investor-col-left .inline-form input {
+  min-height: 34px;
+  font-size: 12px;
+}
+
+.investor-col-left .cashflow-side {
+  grid-column: 1 / -1;
+}
+
 .cashflow-side {
   display: flex;
   overflow: hidden;
@@ -920,6 +939,10 @@ a.ghost-button {
 
 .cashflow-side .side-btn {
   min-width: 64px;
+}
+
+.investor-col-left .cashflow-side .side-btn {
+  min-height: 32px;
 }
 
 .side-btn.deposit {
@@ -955,6 +978,18 @@ a.ghost-button {
   padding: 10px 12px;
   background: var(--surface-2);
   color: var(--muted);
+}
+
+.investor-col-left .cashflow-list {
+  gap: 6px;
+  margin-top: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.investor-col-left .cashflow-row {
+  padding: 7px 10px;
+  font-size: 12px;
 }
 
 .investor-hero {
@@ -2930,17 +2965,28 @@ tbody tr:hover {
 }
 
 .calendar-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 7px 10px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.calendar-item-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   transition: background 180ms ease;
 }
 
-.calendar-item:hover {
+.calendar-item-toggle:hover {
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -2963,10 +3009,17 @@ tbody tr:hover {
 }
 
 .cal-item-amount {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-family: "Space Grotesk", Pretendard, sans-serif;
   font-size: 12px;
   font-weight: 700;
   color: var(--violet-3);
+}
+
+.calendar-item.basis-open {
+  border-color: rgba(124, 92, 252, 0.3);
 }
 
 .cal-empty {
@@ -2994,80 +3047,16 @@ tbody tr:hover {
   letter-spacing: 0.02em;
 }
 
-/* ── Dividend Basis List ── */
-.dividend-basis-list {
-  display: grid;
-  gap: 10px;
-}
-
-.dividend-basis-item {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface-2);
-  overflow: hidden;
-}
-
-.basis-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  padding: 14px 16px;
-  border: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.basis-toggle:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.basis-toggle-main {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-
-.basis-toggle-main strong {
-  font-family: "Space Grotesk", Pretendard, sans-serif;
-  font-size: 13px;
-}
-
-.basis-toggle-main .muted {
-  color: var(--faint);
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.basis-toggle-total {
-  flex: 1;
-  text-align: right;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--violet-3);
-  white-space: nowrap;
-}
-
-.basis-toggle-total small {
-  color: var(--faint);
-  font-weight: 500;
-}
-
+/* ── Calendar Item Basis Dropdown ── */
 .basis-toggle-caret {
   color: var(--faint);
-  font-size: 10px;
+  font-size: 9px;
 }
 
 .basis-body {
-  padding: 0 16px 16px;
-  border-top: 1px solid var(--line);
+  padding: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .basis-body.hidden {
@@ -3075,9 +3064,10 @@ tbody tr:hover {
 }
 
 .basis-formula {
-  margin: 12px 0;
-  font-size: 11px;
+  margin: 0 0 8px;
+  font-size: 10px;
   color: var(--muted);
+  line-height: 1.5;
 }
 
 .basis-table-wrap {

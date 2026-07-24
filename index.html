@@ -308,6 +308,26 @@
                   </summary>
                   <div id="investorActivity"></div>
                 </details>
+
+                <div class="panel cashflow-panel">
+                  <div class="panel-header compact-head">
+                    <div>
+                      <p class="eyebrow">Cash Flow</p>
+                      <h2>입·출금 입력</h2>
+                    </div>
+                  </div>
+                  <form id="cashflowForm" class="inline-form">
+                    <select name="ownerId" id="cashflowOwnerSelect"></select>
+                    <input name="date" type="date" required />
+                    <input name="amount" type="number" min="0" step="1" placeholder="금액" required />
+                    <input name="memo" placeholder="메모" />
+                    <div class="cashflow-side">
+                      <button type="submit" class="side-btn deposit" data-cashflow-type="deposit">입금</button>
+                      <button type="submit" class="side-btn withdraw" data-cashflow-type="withdraw">출금</button>
+                    </div>
+                  </form>
+                  <div class="cashflow-list" id="cashflowList"></div>
+                </div>
               </div>
 
               <div class="investor-col investor-col-right">
@@ -382,26 +402,6 @@
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div class="panel cashflow-panel">
-              <div class="panel-header">
-                <div>
-                  <p class="eyebrow">Cash Flow</p>
-                  <h2>입·출금 입력</h2>
-                </div>
-              </div>
-              <form id="cashflowForm" class="inline-form">
-                <select name="ownerId" id="cashflowOwnerSelect"></select>
-                <input name="date" type="date" required />
-                <input name="amount" type="number" min="0" step="1" placeholder="금액" required />
-                <input name="memo" placeholder="메모" />
-                <div class="cashflow-side">
-                  <button type="submit" class="side-btn deposit" data-cashflow-type="deposit">입금</button>
-                  <button type="submit" class="side-btn withdraw" data-cashflow-type="withdraw">출금</button>
-                </div>
-              </form>
-              <div class="cashflow-list" id="cashflowList"></div>
             </div>
           </section>
         </section>
@@ -506,15 +506,6 @@
             </div>
             <div class="calendar-summary" id="calendarSummary"></div>
             <div class="calendar-grid" id="dividendCalendar"></div>
-          </section>
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="eyebrow">Calculation Basis</p>
-                <h2>종목별 산출근거</h2>
-              </div>
-            </div>
-            <div class="dividend-basis-list" id="dividendBasisList"></div>
           </section>
         </section>
 
