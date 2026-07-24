@@ -988,6 +988,49 @@ a.ghost-button {
   font-size: 12px;
 }
 
+.cashflow-query {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.cashflow-query input[type="date"] {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+  font-size: 12px;
+}
+
+.cashflow-query-sep {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.cashflow-query-button {
+  min-height: 34px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.cashflow-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.cashflow-list-head button {
+  border: 0;
+  background: none;
+  color: var(--violet-3);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .investor-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -2007,8 +2050,16 @@ tbody tr:hover {
 .investor-columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
-  align-items: start;
+  align-items: stretch;
   gap: 14px;
+}
+
+/* 오른쪽 컬럼(보유종목+거래입력)이 더 길어서 왼쪽 밑에 남는 공백을,
+   마지막 패널(입출금 입력)이 늘어나 메꾸도록 해서 하단 라인을 맞춘다. */
+.investor-col-left .cashflow-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .investor-col {

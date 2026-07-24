@@ -11,6 +11,7 @@ import { renderDividendCalendar, renderDividendSimulation } from "./render/divid
 import { holdingsDisplayCurrency, renderHoldingsView } from "./render/holdings.js";
 import { openDialog, render } from "./render/index.js";
 import { renderDeleteConfirm, renderView } from "./render/layout.js";
+import { renderCashflows } from "./render/transactions.js";
 import { openHoldingTrades, openTradeEditor, setTradeDialogMode } from "./trade-dialog.js";
 import { uiState } from "./uistate.js";
 
@@ -188,6 +189,22 @@ document.querySelector("#cashflowForm").addEventListener("submit", (event) => {
   form.elements.date.valueAsDate = new Date();
   saveState();
   render();
+});
+
+document.querySelector("#cashflowQueryButton").addEventListener("click", () => {
+  uiState.cashflowQuery = {
+    open: true,
+    from: document.querySelector("#cashflowQueryFrom").value,
+    to: document.querySelector("#cashflowQueryTo").value
+  };
+  renderCashflows();
+});
+
+document.querySelector("#cashflowListClose").addEventListener("click", () => {
+  uiState.cashflowQuery = { open: false, from: "", to: "" };
+  document.querySelector("#cashflowQueryFrom").value = "";
+  document.querySelector("#cashflowQueryTo").value = "";
+  renderCashflows();
 });
 
 document.querySelector("#openTradeForm").addEventListener("click", () => {

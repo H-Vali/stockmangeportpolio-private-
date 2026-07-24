@@ -1,6 +1,7 @@
 import { money } from "../../core/format.js";
 import { investorById, tradeAmountKrw } from "../../domain/portfolio.js";
 import { state } from "../../state/store.js";
+import { uiState } from "../uistate.js";
 import { visibleOwnerId } from "./layout.js";
 
 export function visibleTransactions() {
@@ -59,20 +60,37 @@ export function renderLedgerPreview() {
 
 export function renderCashflows() {
   const list = document.querySelector("#cashflowList");
-  list.innerHTML = "";
-  state.cashflows
+  const head = document.querySelector("#cashflowListHead");
+  const rangeLabel = document.querySelector("#cashflowListRange");
+  if (!list || !head) return;
+  const query = uiState.cashflowQuery;
+  if (!query.open) {
+    list.hidden = true;
+    head.hidden = true;
+    list.innerHTML = "";
+    return;
+  }
+  const rows = state.cashflows
     .filter((flow) => flow.ownerId === state.selectedInvestorId)
+    .filter((flow) => !query.from || flow.date >= query.from)
+    .filter((flow) => !query.to || flow.date <= query.to)
     .slice()
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 5)
-    .forEach((flow) => {
-      const row = document.createElement("div");
-      row.className = "cashflow-row";
-      const colorClass = flow.type === "withdraw" ? "negative" : "";
-      row.innerHTML = `
-        <span>${flow.date}</span>
-        <strong class="${colorClass}">${flow.type === "deposit" ? "입금" : "출금"} ${money(flow.amount)}</strong>
-      `;
-      list.appendChild(row);
-    });
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  head.hidden = false;
+  rangeLabel.textContent = query.from || query.to
+    ? `${query.from || "처음"} ~ ${query.to || "지금"}`
+    : "전체 기간";
+  list.hidden = false;
+  list.innerHTML = rows.length
+    ? rows.map((flow) => {
+        const colorClass = flow.type === "withdraw" ? "negative" : "";
+        return `
+          <div class="cashflow-row">
+            <span>${flow.date}</span>
+            <strong class="${colorClass}">${flow.type === "deposit" ? "입금" : "출금"} ${money(flow.amount)}</strong>
+          </div>
+        `;
+      }).join("")
+    : `<p class="empty-hint">해당 기간의 입출금 내역이 없습니다.</p>`;
 }

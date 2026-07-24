@@ -326,7 +326,17 @@
                       <button type="submit" class="side-btn withdraw" data-cashflow-type="withdraw">출금</button>
                     </div>
                   </form>
-                  <div class="cashflow-list" id="cashflowList"></div>
+                  <div class="cashflow-query">
+                    <input type="date" id="cashflowQueryFrom" aria-label="조회 시작일" />
+                    <span class="cashflow-query-sep">~</span>
+                    <input type="date" id="cashflowQueryTo" aria-label="조회 종료일" />
+                    <button type="button" id="cashflowQueryButton" class="ghost-button cashflow-query-button">조회</button>
+                  </div>
+                  <div class="cashflow-list-head" id="cashflowListHead" hidden>
+                    <span id="cashflowListRange"></span>
+                    <button type="button" id="cashflowListClose">닫기</button>
+                  </div>
+                  <div class="cashflow-list" id="cashflowList" hidden></div>
                 </div>
               </div>
 

@@ -33,7 +33,10 @@ export const uiState = {
   // 배당 캘린더 각 지급 항목의 산출근거 펼침 상태 (`ticker|payDate` 키).
   // render()가 자주 재호출되므로 <details open>이 아니라 여기서 직접 추적해야
   // 재렌더링에도 펼침 상태가 유지된다.
-  dividendBasisOpenTickers: new Set()
+  dividendBasisOpenTickers: new Set(),
+  // 투자자 시트 입출금 내역: 조회 버튼을 눌러야만 목록이 뜬다 (기본은 접힘).
+  // 우측 거래입력 패널과 하단 라인을 맞추기 위해 평소엔 목록을 비워둔다.
+  cashflowQuery: { open: false, from: "", to: "" }
 };
 
 export function loadAllocationRatios() {
