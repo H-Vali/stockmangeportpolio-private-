@@ -73,28 +73,6 @@ document.querySelector("#collapseLedgerButton").addEventListener("click", () => 
   renderView();
 });
 
-// 투자자 시트 "신규 자산 등록" / "보유 종목 거래" 탭. 두 폼을 동시에 노출하면
-// 필드가 12개 넘게 한 화면에 쌓여 입력 흐름이 헷갈려서 탭으로 분리했다.
-function applyQuickTradeTab() {
-  document.querySelectorAll("[data-quick-trade-tab]").forEach((tab) => {
-    const active = tab.dataset.quickTradeTab === uiState.quickTradeTab;
-    tab.classList.toggle("active", active);
-    tab.setAttribute("aria-selected", String(active));
-  });
-  document.querySelectorAll("[data-quick-trade-panel]").forEach((panel) => {
-    panel.hidden = panel.dataset.quickTradePanel !== uiState.quickTradeTab;
-  });
-}
-
-document.querySelectorAll("[data-quick-trade-tab]").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    uiState.quickTradeTab = tab.dataset.quickTradeTab;
-    applyQuickTradeTab();
-  });
-});
-
-applyQuickTradeTab();
-
 // 대시보드 모바일: 보유 종목/원장 내역 미리보기를 세로로 둘 다 쌓지 않고 탭으로 전환한다.
 document.querySelector("#dashboardPreviewTabs")?.addEventListener("click", (event) => {
   const tab = event.target.closest("[data-preview-tab]");
@@ -379,6 +357,14 @@ document.querySelector("#toggleDividendDetail").addEventListener("click", () => 
 });
 document.querySelector("#targetMonthlyDividend").addEventListener("input", renderDividendSimulation);
 document.querySelector("#calendarTargetSelect").addEventListener("change", renderDividendCalendar);
+document.querySelector("#dividendBasisList").addEventListener("click", (event) => {
+  const toggle = event.target.closest(".basis-toggle");
+  if (!toggle) return;
+  const ticker = toggle.dataset.ticker;
+  if (uiState.dividendBasisOpenTickers.has(ticker)) uiState.dividendBasisOpenTickers.delete(ticker);
+  else uiState.dividendBasisOpenTickers.add(ticker);
+  renderDividendCalendar();
+});
 
 document.querySelector("#holdingsViewOwnerSelect").addEventListener("change", renderHoldingsView);
 document.querySelector("#holdingsViewTypeFilter").addEventListener("change", renderHoldingsView);

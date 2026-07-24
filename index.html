@@ -323,91 +323,62 @@
                   <div class="quick-trade" id="quickTrade">
                     <div class="quick-trade-divider"></div>
                     <p class="eyebrow">거래 입력</p>
-                    <div class="quick-trade-tabs" role="tablist" aria-label="거래 입력 방식">
-                      <button type="button" class="tab-btn active" data-quick-trade-tab="new" role="tab" aria-selected="true">신규 자산 등록</button>
-                      <button type="button" class="tab-btn" data-quick-trade-tab="existing" role="tab" aria-selected="false">보유 종목 거래</button>
+                    <div class="quick-trade-side">
+                      <button type="button" id="qtBuy" class="side-btn active buy">매수</button>
+                      <button type="button" id="qtSell" class="side-btn">매도</button>
                     </div>
-
-                    <div class="quick-trade-panel" data-quick-trade-panel="new">
-                      <div class="quick-trade-fields">
-                        <div class="quick-trade-row">
-                          <label class="field">
-                            <span class="field-label">티커</span>
-                            <input type="text" id="newAssetTicker" placeholder="예: QQQ" autocomplete="off" />
-                          </label>
-                          <label class="field">
-                            <span class="field-label">종목명</span>
-                            <input type="text" id="newAssetName" placeholder="예: Invesco QQQ" autocomplete="off" />
-                          </label>
-                        </div>
-                        <div class="quick-trade-row">
-                          <label class="field">
-                            <span class="field-label">분류</span>
-                            <select id="newAssetType">
-                              <option value="주식">주식</option>
-                              <option value="ETF">ETF</option>
-                              <option value="코인">코인</option>
-                              <option value="채권">채권</option>
-                            </select>
-                          </label>
-                          <label class="field">
-                            <span class="field-label">통화</span>
-                            <select id="newAssetCurrency">
-                              <option value="USD">USD</option>
-                              <option value="KRW">KRW</option>
-                            </select>
-                          </label>
-                        </div>
-                        <div class="quick-trade-row">
-                          <label class="field">
-                            <span class="field-label">수량</span>
-                            <input type="number" id="newAssetQty" placeholder="0" min="0" step="any" />
-                          </label>
-                          <label class="field">
-                            <span class="field-label">체결가</span>
-                            <input type="number" id="newAssetPrice" placeholder="0" min="0" step="any" />
-                          </label>
-                        </div>
-                        <div class="fx-wrap" id="newAssetFxWrap">
-                          <span class="fx-label">매입환율</span>
-                          <input type="number" id="newAssetFx" placeholder="1380" min="0" step="any" />
-                        </div>
-                        <label class="register-held-toggle">
-                          <input type="checkbox" id="newAssetRegisterHeld" checked />
-                          <span>보유분 등록 <small>예수금 차감 안 함 · 매입금액만큼 자동 입금</small></span>
+                    <div class="quick-trade-fields">
+                      <div class="quick-trade-row">
+                        <label class="field">
+                          <span class="field-label">티커</span>
+                          <input type="text" id="qtTicker" placeholder="예: QQQ" autocomplete="off" list="qtTickerOptions" />
+                          <datalist id="qtTickerOptions"></datalist>
                         </label>
-                        <button type="button" id="newAssetSubmit" class="new-asset-submit">신규 종목 등록</button>
+                        <label class="field">
+                          <span class="field-label">종목명</span>
+                          <input type="text" id="qtName" placeholder="예: Invesco QQQ" autocomplete="off" />
+                        </label>
                       </div>
-                      <p class="quick-trade-hint">새 종목은 등록 즉시 선택 투자자의 매수 거래로 반영됩니다.</p>
-                    </div>
-
-                    <div class="quick-trade-panel" data-quick-trade-panel="existing" hidden>
-                      <label class="field">
-                        <span class="field-label">보유 종목</span>
-                        <select id="quickTradeTicker"></select>
-                      </label>
-                      <div class="quick-trade-side">
-                        <button type="button" id="quickTradeBuy" class="side-btn active buy">매수</button>
-                        <button type="button" id="quickTradeSell" class="side-btn">매도</button>
+                      <div class="quick-trade-row">
+                        <label class="field">
+                          <span class="field-label">분류</span>
+                          <select id="qtType">
+                            <option value="주식">주식</option>
+                            <option value="ETF">ETF</option>
+                            <option value="코인">코인</option>
+                            <option value="채권">채권</option>
+                          </select>
+                        </label>
+                        <label class="field">
+                          <span class="field-label">통화</span>
+                          <select id="qtCurrency">
+                            <option value="USD">USD</option>
+                            <option value="KRW">KRW</option>
+                          </select>
+                        </label>
                       </div>
                       <div class="quick-trade-row">
                         <label class="field">
                           <span class="field-label">수량</span>
-                          <input type="number" id="quickTradeQty" placeholder="0" min="0" step="any" />
+                          <input type="number" id="qtQty" placeholder="0" min="0" step="any" />
                         </label>
                         <label class="field">
                           <span class="field-label">체결가</span>
-                          <input type="number" id="quickTradePrice" placeholder="0" min="0" step="any" />
+                          <input type="number" id="qtPrice" placeholder="0" min="0" step="any" />
                         </label>
                       </div>
-                      <div class="fx-wrap" id="quickTradeFxRow">
-                        <span class="fx-label" id="quickTradeFxLabel">매입환율</span>
-                        <input type="number" id="quickTradeFx" placeholder="환율" min="0" step="any" />
+                      <div class="fx-wrap" id="qtFxWrap">
+                        <span class="fx-label" id="qtFxLabel">매입환율</span>
+                        <input type="number" id="qtFx" placeholder="1380" min="0" step="any" />
                       </div>
-                      <button type="button" id="quickTradeSubmit" class="primary-button">추가</button>
-                      <div class="quick-trade-preview" id="quickTradePreview" hidden></div>
-                      <p class="quick-trade-hint">상세 입력은 <a href="#" id="openTradeModalLink">거래 입력 모달</a>에서 진행하세요.</p>
+                      <label class="register-held-toggle" id="qtRegisterHeldRow">
+                        <input type="checkbox" id="qtRegisterHeld" />
+                        <span>보유분 등록 <small>예수금 차감 안 함 · 매입금액만큼 자동 입금</small></span>
+                      </label>
+                      <button type="button" id="qtSubmit" class="new-asset-submit">매수 추가</button>
                     </div>
+                    <div class="quick-trade-preview" id="qtPreview" hidden></div>
+                    <p class="quick-trade-hint">상세 입력은 <a href="#" id="qtOpenModalLink">거래 입력 모달</a>에서 진행하세요.</p>
                   </div>
                 </div>
               </div>
@@ -535,6 +506,15 @@
             </div>
             <div class="calendar-summary" id="calendarSummary"></div>
             <div class="calendar-grid" id="dividendCalendar"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Calculation Basis</p>
+                <h2>종목별 산출근거</h2>
+              </div>
+            </div>
+            <div class="dividend-basis-list" id="dividendBasisList"></div>
           </section>
         </section>
 

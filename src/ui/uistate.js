@@ -22,8 +22,6 @@ export const uiState = {
   holdingsTypeFilter: null,
   // 빠른 매매 입력 폼의 매수/매도 토글
   quickTradeSide: "buy",
-  // 투자자 시트 거래입력 영역의 신규등록/보유거래 탭
-  quickTradeTab: "new",
   // 배당 시뮬레이션 상세 표 펼침 여부
   dividendDetailOpen: false,
   // 하단 원장 워크스페이스 펼침 여부
@@ -31,7 +29,10 @@ export const uiState = {
   // 거래 수정 모달이 편집 중인 거래 id
   editingTradeId: null,
   // 투자자 시트 보유 종목 표의 정렬 열/방향
-  holdingsPreviewSort: { key: "valueKrw", dir: "desc" }
+  holdingsPreviewSort: { key: "valueKrw", dir: "desc" },
+  // 배당 캘린더 "종목별 산출근거" 펼침 상태 (render()가 자주 재호출되므로
+  // <details open>이 아니라 여기서 직접 추적해야 재렌더링에도 펼침 상태가 유지된다)
+  dividendBasisOpenTickers: new Set()
 };
 
 export function loadAllocationRatios() {

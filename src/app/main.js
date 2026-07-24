@@ -20,7 +20,6 @@ import { loadUsSymbols } from "../net/symbols.js";
 import { recordSnapshot } from "../state/store.js";
 import { hydrateFromServer } from "../state/sync.js";
 import { startRealtimeDemoLoop } from "../ui/demo.js";
-import { setupNewAssetForm } from "../ui/forms/new-asset.js";
 import { setupQuickTrade } from "../ui/forms/quick-trade.js";
 import { render } from "../ui/render/index.js";
 import { startMarketClock } from "../ui/render/marketclock.js";
@@ -34,7 +33,6 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 document.querySelector("#cashflowForm").elements.date.valueAsDate = new Date();
-setupNewAssetForm();
 setupQuickTrade();
 recordSnapshot();
 render();

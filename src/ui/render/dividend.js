@@ -1,7 +1,7 @@
 import { DIVIDEND_TAX_RATE, monthNames } from "../../config/constants.js";
-import { fxFormatter, money, numberFormatter, pct, qty } from "../../core/format.js";
+import { fxFormatter, money, numberFormatter, pct, qty, usdFormatter } from "../../core/format.js";
 import { getKstNowParts } from "../../core/time.js";
-import { dividendPayoutsByMonth, dividendRows } from "../../domain/dividend.js";
+import { dividendBasisByTicker, dividendPayoutsByMonth, dividendRows } from "../../domain/dividend.js";
 import { currentUsdKrw } from "../../state/store.js";
 import { uiState } from "../uistate.js";
 
@@ -220,4 +220,51 @@ export function renderDividendCalendar() {
     `;
     grid.appendChild(card);
   });
+
+  renderDividendBasisList(ownerId);
+}
+
+export function renderDividendBasisList(ownerId) {
+  const list = document.querySelector("#dividendBasisList");
+  if (!list) return;
+  const basis = dividendBasisByTicker(ownerId);
+
+  if (!basis.length) {
+    list.innerHTML = `<div class="cal-empty"><span>배당 예측 데이터가 있는 보유 종목이 없습니다.</span></div>`;
+    return;
+  }
+
+  list.innerHTML = basis.map((item) => {
+    const isOpen = uiState.dividendBasisOpenTickers.has(item.ticker);
+    const rowsHtml = item.payouts.map((p) => `
+      <tr>
+        <td>${p.payDate}${p.estimated ? ' <span class="cal-item-freq">예측</span>' : ' <span class="cal-item-freq">확정</span>'}</td>
+        <td>${usdFormatter.format(p.amountPerShare)}</td>
+        <td>${usdFormatter.format(p.beforeTaxUsd)}</td>
+        <td>${usdFormatter.format(p.afterTaxUsd)}</td>
+        <td>${money(p.afterTaxKrw)}</td>
+      </tr>
+    `).join("");
+
+    return `
+      <div class="dividend-basis-item${isOpen ? " basis-open" : ""}">
+        <button type="button" class="basis-toggle" data-ticker="${item.ticker}">
+          <span class="basis-toggle-main"><strong>${item.ticker}</strong><span class="muted">${item.name || ""}</span></span>
+          <span class="basis-toggle-total">연 ${money(item.annualAfterTaxKrw)} <small>(세후)</small></span>
+          <span class="basis-toggle-caret">${isOpen ? "▲" : "▼"}</span>
+        </button>
+        <div class="basis-body${isOpen ? "" : " hidden"}">
+          <p class="basis-formula">보유수량 <b>${qty(item.quantity)}주</b> × 주당 배당금($) − 해외주식 배당소득세 15% · 적용환율 ${fxFormatter.format(item.fx)}원</p>
+          <div class="basis-table-wrap">
+            <table class="basis-table">
+              <thead>
+                <tr><th>지급일</th><th>주당 배당금</th><th>세전 합계</th><th>세후 합계($)</th><th>세후 합계(KRW)</th></tr>
+              </thead>
+              <tbody>${rowsHtml}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
 }

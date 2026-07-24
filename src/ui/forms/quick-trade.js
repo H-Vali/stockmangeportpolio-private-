@@ -1,61 +1,82 @@
 import { money, qty } from "../../core/format.js";
 import { commitTrade } from "../../domain/actions.js";
 import { computeAveragingPreview, replayHoldings } from "../../domain/portfolio.js";
+import { findAssetLookupMatch, loadUsSymbols } from "../../net/symbols.js";
 import { currentUsdKrw, state } from "../../state/store.js";
 import { showToast } from "../dom.js";
 import { populateOwnerSelects, renderTradePreview } from "./common.js";
-import { quickTradeAsset, shouldShowQuickTradeFx } from "./new-asset.js";
 import { openDialog } from "../render/index.js";
 import { setTradeDialogMode } from "../trade-dialog.js";
 import { uiState } from "../uistate.js";
 
-export function populateQuickTradeTicker() {
-  const select = document.querySelector("#quickTradeTicker");
-  if (!select) return;
-  const current = select.value;
-  const holdings = replayHoldings(state.selectedInvestorId);
-  select.innerHTML = holdings.length
-    ? holdings.map((item) => `<option value="${item.ticker}">${item.ticker} · ${item.name || item.ticker}</option>`).join("")
-    : `<option value="">보유 종목 없음</option>`;
-  if (holdings.some((item) => item.ticker === current)) select.value = current;
-  updateQuickTradeDefaults();
+function field(selector) {
+  return document.querySelector(selector);
 }
 
-export function updateQuickTradeDefaults() {
-  const asset = quickTradeAsset();
-  const fxRow = document.querySelector("#quickTradeFxRow");
-  const fxInput = document.querySelector("#quickTradeFx");
-  const fxLabel = document.querySelector("#quickTradeFxLabel");
-  const priceInput = document.querySelector("#quickTradePrice");
-  const submit = document.querySelector("#quickTradeSubmit");
-  if (!fxInput || !priceInput) return;
-  if (fxLabel) fxLabel.textContent = uiState.quickTradeSide === "buy" ? "매입환율" : "매도환율";
-  if (!asset) {
-    if (fxRow) fxRow.style.display = "none";
-    if (submit) submit.disabled = true;
-    renderQuickTradePreview();
-    return;
-  }
-  if (submit) submit.disabled = false;
-  if (fxRow) fxRow.style.display = shouldShowQuickTradeFx(asset) ? "" : "none";
-  if (!fxInput.value) fxInput.value = asset.currency === "KRW" ? 1 : Math.round(asset.currentFx || currentUsdKrw());
-  if (!priceInput.value) priceInput.value = asset.currentPrice || "";
+function isQuickTradeValid() {
+  const ticker = field("#qtTicker")?.value.trim();
+  const name = field("#qtName")?.value.trim();
+  const currency = field("#qtCurrency")?.value;
+  const quantity = Number(field("#qtQty")?.value);
+  const price = Number(field("#qtPrice")?.value);
+  const fx = Number(field("#qtFx")?.value);
+  if (!ticker || !name || !quantity || quantity <= 0 || !price || price <= 0) return false;
+  if (currency === "USD" && (!fx || fx <= 0)) return false;
+  return true;
+}
+
+function applyQuickTradeLookup(asset) {
+  if (!asset) return;
+  const tickerInput = field("#qtTicker");
+  const nameInput = field("#qtName");
+  const typeInput = field("#qtType");
+  const currencyInput = field("#qtCurrency");
+  const priceInput = field("#qtPrice");
+  const fxInput = field("#qtFx");
+  if (tickerInput) tickerInput.value = asset.ticker;
+  if (nameInput) nameInput.value = asset.name;
+  if (typeInput && asset.type) typeInput.value = asset.type;
+  if (currencyInput && asset.currency) currencyInput.value = asset.currency;
+  if (priceInput && !priceInput.value && asset.currentPrice) priceInput.value = asset.currentPrice;
+  if (fxInput && !fxInput.value && asset.currency === "USD") fxInput.value = Math.round(asset.currentFx || currentUsdKrw());
+  updateQuickTradeFxVisibility();
   renderQuickTradePreview();
 }
 
+function updateQuickTradeFxVisibility() {
+  const currency = field("#qtCurrency")?.value;
+  const fxWrap = field("#qtFxWrap");
+  const fxInput = field("#qtFx");
+  if (fxWrap) fxWrap.style.display = currency === "USD" ? "" : "none";
+  if (currency === "KRW" && fxInput) fxInput.value = 1;
+  if (currency === "USD" && fxInput && !fxInput.value) fxInput.value = Math.round(currentUsdKrw());
+  updateQuickTradeSubmitState();
+}
+
+function updateQuickTradeSubmitState() {
+  const button = field("#qtSubmit");
+  if (!button) return;
+  button.classList.toggle("enabled", isQuickTradeValid());
+  const registerHeld = uiState.quickTradeSide === "buy" && field("#qtRegisterHeld")?.checked === true;
+  button.textContent = uiState.quickTradeSide === "sell" ? "매도 추가" : registerHeld ? "보유분 등록" : "매수 추가";
+}
+
 export function renderQuickTradePreview() {
-  const preview = document.querySelector("#quickTradePreview");
+  const preview = field("#qtPreview");
   if (!preview) return;
-  const ticker = document.querySelector("#quickTradeTicker")?.value;
-  const asset = quickTradeAsset();
-  const quantity = Number(document.querySelector("#quickTradeQty")?.value) || 0;
-  const price = Number(document.querySelector("#quickTradePrice")?.value) || 0;
-  if (!ticker || !asset || !quantity || !price) {
+  const ticker = field("#qtTicker")?.value.trim().toUpperCase();
+  const quantity = Number(field("#qtQty")?.value) || 0;
+  const price = Number(field("#qtPrice")?.value) || 0;
+  const currency = field("#qtCurrency")?.value;
+  if (!ticker || !quantity || !price) {
     preview.hidden = true;
     return;
   }
-  const fxInput = Number(document.querySelector("#quickTradeFx")?.value) || 0;
-  const fx = asset.currency === "KRW" ? 1 : shouldShowQuickTradeFx(asset) ? fxInput || asset.currentFx || currentUsdKrw() : currentUsdKrw();
+  const known = state.assetCatalog[ticker];
+  const fxInput = Number(field("#qtFx")?.value) || 0;
+  const fx = currency === "KRW" ? 1 : fxInput || known?.currentFx || currentUsdKrw();
+  const currentPrice = known?.currentPrice || price;
+  const currentFx = currency === "KRW" ? 1 : known?.currentFx || fx;
   const result = computeAveragingPreview({
     ownerId: state.selectedInvestorId,
     side: uiState.quickTradeSide,
@@ -63,9 +84,9 @@ export function renderQuickTradePreview() {
     quantity,
     price,
     fx,
-    currency: asset.currency,
-    currentFx: asset.currency === "KRW" ? 1 : asset.currentFx || fx,
-    currentPrice: asset.currentPrice || price
+    currency,
+    currentFx,
+    currentPrice
   });
   preview.hidden = false;
   if (uiState.quickTradeSide === "sell") {
@@ -73,7 +94,7 @@ export function renderQuickTradePreview() {
     return;
   }
   preview.innerHTML = `
-    <strong>물타기 미리보기</strong>
+    <strong>매수 미리보기</strong>
     <span>평단 ${money((result.beforeAvgPrice || 0) * (result.beforeAvgFx || fx))} → ${money((result.afterAvgPrice || 0) * (result.afterAvgFx || fx))}</span>
     <span>평균환율 ${qty(result.beforeAvgFx || fx)} → ${qty(result.afterAvgFx || fx)}</span>
   `;
@@ -81,67 +102,138 @@ export function renderQuickTradePreview() {
 
 export function setQuickTradeSide(side) {
   uiState.quickTradeSide = side;
-  const buyBtn = document.querySelector("#quickTradeBuy");
-  const sellBtn = document.querySelector("#quickTradeSell");
+  const buyBtn = field("#qtBuy");
+  const sellBtn = field("#qtSell");
   buyBtn.classList.toggle("active", side === "buy");
   buyBtn.classList.toggle("buy", side === "buy");
   sellBtn.classList.toggle("active", side === "sell");
   sellBtn.classList.toggle("sell", side === "sell");
-  document.querySelector("#quickTradeSubmit").textContent = side === "buy" ? "매수 추가" : "매도 추가";
-  const fxLabel = document.querySelector("#quickTradeFxLabel");
+  const fxLabel = field("#qtFxLabel");
   if (fxLabel) fxLabel.textContent = side === "buy" ? "매입환율" : "매도환율";
+  const registerRow = field("#qtRegisterHeldRow");
+  if (registerRow) registerRow.style.display = side === "buy" ? "" : "none";
+  updateQuickTradeSubmitState();
   renderQuickTradePreview();
 }
 
-export function resetQuickTradeInputs() {
-  document.querySelector("#quickTradeQty").value = "";
-  document.querySelector("#quickTradePrice").value = "";
-  document.querySelector("#quickTradeFx").value = "";
-  document.querySelector("#quickTradePreview").hidden = true;
-  updateQuickTradeDefaults();
+// 투자자 시트 진입/전환마다 호출된다. 과거엔 보유 종목만 담긴 select였지만
+// 통합 폼에서는 자유 입력 티커에 자동완성 후보를 제공하는 datalist로 대체했다.
+export function populateQuickTradeTicker() {
+  const datalist = field("#qtTickerOptions");
+  if (datalist) {
+    const holdings = replayHoldings(state.selectedInvestorId);
+    datalist.innerHTML = holdings
+      .map((item) => `<option value="${item.ticker}">${item.name || item.ticker}</option>`)
+      .join("");
+  }
+  renderQuickTradePreview();
+}
+
+export function resetQuickTrade() {
+  ["#qtTicker", "#qtName", "#qtQty", "#qtPrice", "#qtFx"].forEach((selector) => {
+    const el = field(selector);
+    if (el) el.value = "";
+  });
+  const registerHeld = field("#qtRegisterHeld");
+  if (registerHeld) registerHeld.checked = false;
+  if (field("#qtType")) field("#qtType").value = "주식";
+  if (field("#qtCurrency")) field("#qtCurrency").value = "USD";
+  updateQuickTradeFxVisibility();
+  field("#qtPreview").hidden = true;
+  updateQuickTradeSubmitState();
 }
 
 export function setupQuickTrade() {
-  document.querySelector("#quickTradeBuy").addEventListener("click", () => setQuickTradeSide("buy"));
-  document.querySelector("#quickTradeSell").addEventListener("click", () => setQuickTradeSide("sell"));
-  document.querySelector("#quickTradeTicker").addEventListener("change", updateQuickTradeDefaults);
-  ["#quickTradeQty", "#quickTradePrice", "#quickTradeFx"].forEach((selector) => {
-    document.querySelector(selector).addEventListener("input", renderQuickTradePreview);
+  field("#qtBuy").addEventListener("click", () => setQuickTradeSide("buy"));
+  field("#qtSell").addEventListener("click", () => setQuickTradeSide("sell"));
+
+  ["#qtTicker", "#qtName"].forEach((selector) => {
+    field(selector)?.addEventListener("focus", loadUsSymbols, { once: true });
   });
-  document.querySelector("#quickTradeSubmit").addEventListener("click", () => {
-    const ticker = document.querySelector("#quickTradeTicker").value;
-    const asset = quickTradeAsset();
-    const quantity = Number(document.querySelector("#quickTradeQty").value) || 0;
-    const price = Number(document.querySelector("#quickTradePrice").value) || 0;
-    if (!ticker || !asset || !quantity || !price) {
-      showToast("보유 종목, 수량, 체결가를 입력하세요.", "error");
+  field("#qtTicker")?.addEventListener("input", (event) => {
+    const match = findAssetLookupMatch(event.target.value, "ticker");
+    if (match) applyQuickTradeLookup(match);
+    updateQuickTradeSubmitState();
+    renderQuickTradePreview();
+  });
+  field("#qtTicker")?.addEventListener("change", (event) => {
+    applyQuickTradeLookup(findAssetLookupMatch(event.target.value, "ticker"));
+  });
+  field("#qtName")?.addEventListener("input", (event) => {
+    const match = findAssetLookupMatch(event.target.value, "name");
+    if (match) applyQuickTradeLookup(match);
+    updateQuickTradeSubmitState();
+    renderQuickTradePreview();
+  });
+  field("#qtName")?.addEventListener("change", (event) => {
+    applyQuickTradeLookup(findAssetLookupMatch(event.target.value, "name"));
+  });
+  field("#qtCurrency")?.addEventListener("change", updateQuickTradeFxVisibility);
+  field("#qtType")?.addEventListener("change", () => {
+    // 코인은 빗썸(원화) 거래가 기본 — 통화를 KRW로 맞춰준다.
+    const currencyField = field("#qtCurrency");
+    if (field("#qtType")?.value === "코인" && currencyField) {
+      currencyField.value = "KRW";
+      updateQuickTradeFxVisibility();
+    }
+    updateQuickTradeSubmitState();
+  });
+  ["#qtQty", "#qtPrice", "#qtFx"].forEach((selector) => {
+    field(selector)?.addEventListener("input", () => {
+      updateQuickTradeSubmitState();
+      renderQuickTradePreview();
+    });
+  });
+  field("#qtRegisterHeld")?.addEventListener("change", updateQuickTradeSubmitState);
+
+  field("#qtSubmit").addEventListener("click", () => {
+    if (!isQuickTradeValid()) {
+      showToast("티커, 종목명, 수량, 체결가를 입력하세요.", "error");
       return;
     }
-    const fxInput = Number(document.querySelector("#quickTradeFx").value) || 0;
-    const fx = asset.currency === "KRW" ? 1 : shouldShowQuickTradeFx(asset) ? fxInput || asset.currentFx || currentUsdKrw() : currentUsdKrw();
+    const ticker = field("#qtTicker").value.trim().toUpperCase();
+    const name = field("#qtName").value.trim();
+    const type = field("#qtType").value;
+    const currency = field("#qtCurrency").value;
+    const quantity = Number(field("#qtQty").value);
+    const price = Number(field("#qtPrice").value);
+    const fx = currency === "USD" ? Number(field("#qtFx").value) : 1;
+    const side = uiState.quickTradeSide;
+    const registerHeld = side === "buy" && field("#qtRegisterHeld")?.checked === true;
+
+    const known = state.assetCatalog[ticker];
+    const currentPrice = known?.currentPrice || price;
+    const currentFx = currency === "KRW" ? 1 : known?.currentFx || fx;
+
     const result = commitTrade({
       ownerId: state.selectedInvestorId,
-      side: uiState.quickTradeSide,
+      side,
       ticker,
-      name: asset.name,
-      type: asset.type,
-      currency: asset.currency,
+      name,
+      type,
+      currency,
       quantity,
       price,
       fx,
-      currentPrice: asset.currentPrice || price,
-      currentFx: asset.currency === "KRW" ? 1 : asset.currentFx || fx,
+      currentPrice,
+      currentFx,
+      registerHeld,
       date: new Date().toISOString().slice(0, 10),
-      memo: "빠른 입력"
+      memo: registerHeld ? "보유 종목 등록" : "빠른 입력"
     });
     if (!result.ok) {
       showToast(result.message, "error");
       return;
     }
-    resetQuickTradeInputs();
-    showToast(`${ticker} ${uiState.quickTradeSide === "buy" ? "매수" : "매도"} 거래를 추가했습니다.`);
+    resetQuickTrade();
+    showToast(
+      registerHeld
+        ? `${ticker} 보유분을 등록했습니다 (예수금 유지).`
+        : `${ticker} ${side === "buy" ? "매수" : "매도"} 거래를 추가했습니다.`
+    );
   });
-  document.querySelector("#openTradeModalLink").addEventListener("click", (event) => {
+
+  field("#qtOpenModalLink")?.addEventListener("click", (event) => {
     event.preventDefault();
     const form = document.querySelector("#tradeForm");
     form.reset();
@@ -154,4 +246,6 @@ export function setupQuickTrade() {
     renderTradePreview();
     openDialog(document.querySelector("#tradeDialog"));
   });
+
+  updateQuickTradeFxVisibility();
 }

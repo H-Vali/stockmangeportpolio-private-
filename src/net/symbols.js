@@ -1,4 +1,4 @@
-import { assetLookupEntries, normalizeAssetSearch } from "../ui/forms/new-asset.js";
+import { assetLookupEntries, normalizeAssetSearch } from "../domain/asset-lookup.js";
 
 export let usSymbols = null;
 export let usSymbolTickerMap = null;
