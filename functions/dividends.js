@@ -17,9 +17,12 @@ export async function onRequestGet({ request, env }) {
   upstream.searchParams.set("order", "desc");
   upstream.searchParams.set("apiKey", env.POLYGON_API_KEY);
 
+  // cacheTtl+cacheEverything는 상태코드와 무관하게 캐시한다 — Polygon이 429(레이트리밋)를
+  // 반환한 순간을 그대로 6시간 캐시해버려서, 그 티커는 한도가 풀린 뒤에도 계속 429만
+  // 돌려받는 사고가 있었다(2026-07-24). cacheTtlByStatus로 성공 응답만 캐시하도록 수정.
   const response = await fetch(upstream, {
     headers: { "Accept": "application/json" },
-    cf: { cacheTtl: 21600, cacheEverything: true }
+    cf: { cacheTtlByStatus: { "200-299": 21600, "300-599": 0 } }
   });
   const body = await response.text();
   return new Response(body, {
