@@ -3066,36 +3066,34 @@ tbody tr:hover {
   line-height: 1.5;
 }
 
-.basis-table-wrap {
-  overflow-x: auto;
+.basis-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.basis-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-
-.basis-table th {
-  text-align: right;
-  padding: 6px 8px;
-  color: var(--faint);
-  font-size: 10px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.basis-table th:first-child,
-.basis-table td:first-child {
-  text-align: left;
-}
-
-.basis-table td {
-  text-align: right;
-  padding: 6px 8px;
+.basis-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
-  white-space: nowrap;
+}
+
+.basis-stat:first-child {
+  border-top: none;
+}
+
+.basis-stat span {
+  font-size: 10px;
+  color: var(--faint);
+}
+
+.basis-stat b {
   font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 /* ── Holdings View ── */

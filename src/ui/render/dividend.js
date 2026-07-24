@@ -214,17 +214,10 @@ export function renderDividendCalendar() {
             </button>
             <div class="basis-body${isOpen ? "" : " hidden"}">
               <p class="basis-formula">보유수량 <b>${qty(item.quantity)}주</b> × 주당 배당금 <b>${usdFormatter.format(item.amountPerShare)}</b> − 해외주식 배당소득세 15% · 적용환율 ${fxFormatter.format(item.fx)}원</p>
-              <div class="basis-table-wrap">
-                <table class="basis-table">
-                  <thead><tr><th>세전 합계</th><th>세후 합계($)</th><th>세후 합계(KRW)</th></tr></thead>
-                  <tbody>
-                    <tr>
-                      <td>${usdFormatter.format(item.beforeTaxUsd)}</td>
-                      <td>${usdFormatter.format(item.afterTaxUsd)}</td>
-                      <td>${money(item.amount)}</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div class="basis-stats">
+                <div class="basis-stat"><span>세전 합계</span><b>${usdFormatter.format(item.beforeTaxUsd)}</b></div>
+                <div class="basis-stat"><span>세후 합계($)</span><b>${usdFormatter.format(item.afterTaxUsd)}</b></div>
+                <div class="basis-stat"><span>세후 합계(KRW)</span><b>${money(item.amount)}</b></div>
               </div>
             </div>
           </div>`;
