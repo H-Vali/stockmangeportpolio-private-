@@ -1,4 +1,4 @@
-import { cashBalance, computeAveragingPreview, getAsset } from "../../domain/portfolio.js";
+import { cashBalanceByCurrency, computeAveragingPreview, getAsset } from "../../domain/portfolio.js";
 import { usSymbolByTicker } from "../../net/symbols.js";
 import { state } from "../../state/store.js";
 
@@ -71,6 +71,6 @@ export function renderTradePreview() {
   preview.textContent = tradePreviewData().text;
 }
 
-export function canWithdraw(ownerId, amount) {
-  return cashBalance(ownerId) >= amount;
+export function canWithdraw(ownerId, amount, currency = "KRW") {
+  return cashBalanceByCurrency(ownerId, currency) >= amount;
 }

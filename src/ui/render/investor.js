@@ -1,5 +1,5 @@
 import { allocationColors } from "../../config/constants.js";
-import { formatCompact, money, pct, signedMoney } from "../../core/format.js";
+import { formatCompact, money, pct, signedMoney, usdFormatter } from "../../core/format.js";
 import { getAllocationSlices } from "../../domain/allocation.js";
 import { nextDividendPayout } from "../../domain/dividend.js";
 import { investorById, replayHoldings, summarize, tradeAmountKrw } from "../../domain/portfolio.js";
@@ -43,7 +43,11 @@ export function renderInvestorSheet() {
   document.querySelector("#investorReturnRate").textContent = `${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}`;
   setMoneyElement("#investorDividendAfterTax", summary.dividendAfterTax);
   document.querySelector("#investorDividendDetail").textContent = `세전 ${money(summary.dividend)} · 세금 ${money(summary.tax)}`;
-  setMoneyElement("#investorCash", summary.cash);
+  setMoneyElement("#investorCash", summary.cashKrw);
+  const cashDetail = document.querySelector("#investorCashDetail");
+  if (cashDetail) {
+    cashDetail.textContent = `외화 ${usdFormatter.format(summary.cashUsd)} · 매수 가능 현금`;
+  }
   document.querySelector("#deleteInvestorButton").disabled = state.investors.length <= 1;
   renderDeleteConfirm();
   renderInvestorAllocation();

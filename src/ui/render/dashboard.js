@@ -1,5 +1,5 @@
 import { ALLOCATION_ORDER, allocationColors, fallbackColors } from "../../config/constants.js";
-import { money, pct, signedMoney } from "../../core/format.js";
+import { money, pct, signedMoney, usdFormatter } from "../../core/format.js";
 import { getAllocationSlices } from "../../domain/allocation.js";
 import { replayHoldings, summarize } from "../../domain/portfolio.js";
 import { state } from "../../state/store.js";
@@ -24,8 +24,8 @@ export function renderDashboard() {
   }
   smoothTextUpdate("#profitRate", `수익률 ${summary.returnRate >= 0 ? "+" : ""}${pct(summary.returnRate)}`);
   smoothTextUpdate("#totalDividend", `총배당 ${money(summary.dividend)}`);
-  setMoneyElement("#cashAmount", summary.cash);
-  smoothTextUpdate("#cashRatio", `평가금액 포함 · ${pct(summary.totalValue ? (summary.cash / summary.totalValue) * 100 : 0)}`);
+  setMoneyElement("#cashAmount", summary.cashKrw);
+  smoothTextUpdate("#cashRatio", `외화 ${usdFormatter.format(summary.cashUsd)} · 평가금액 포함 ${pct(summary.totalValue ? (summary.cash / summary.totalValue) * 100 : 0)}`);
 }
 
 export function renderAllocation() {

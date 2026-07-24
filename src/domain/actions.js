@@ -1,4 +1,4 @@
-import { cashBalance, ensureAssetFromTrade, getAsset, makeInvestor, replayHoldings } from "./portfolio.js";
+import { cashBalanceByCurrency, ensureAssetFromTrade, getAsset, makeInvestor, replayHoldings } from "./portfolio.js";
 import { currentUsdKrw, saveState, state, syncUsdAssetFx } from "../state/store.js";
 import { showToast } from "../ui/dom.js";
 import { render } from "../ui/render/index.js";
@@ -43,12 +43,16 @@ export function commitTrade(data) {
   const quantity = Number(data.quantity) || 0;
   const price = Number(data.price) || 0;
   const amount = quantity * price * fx;
+  const nativeAmount = quantity * price; // 거래 통화(원화/외화) 액면가 — 예수금 풀 검증·자동입금에 쓴다
   const existing = replayHoldings(data.ownerId).find((holding) => holding.ticker === ticker);
 
   if (!ticker || !quantity || !price) return { ok: false, message: "종목, 수량, 체결가를 입력하세요." };
   const registerHeld = data.registerHeld === true && data.side === "buy";
-  if (data.side === "buy" && !registerHeld && cashBalance(data.ownerId) < amount) {
-    return { ok: false, field: "quantity", message: "매수금액이 예수금을 초과합니다." };
+  // 외화 종목은 외화 예수금 안에서만 매수 가능하다 — 원화 예수금이 아무리 많아도
+  // 대신 쓸 수 없다(실제 증권사 계좌처럼 통화별 잔고를 분리한다).
+  if (data.side === "buy" && !registerHeld && cashBalanceByCurrency(data.ownerId, currency) < nativeAmount) {
+    const label = currency === "KRW" ? "원화" : "외화";
+    return { ok: false, field: "quantity", message: `매수금액이 ${label} 예수금을 초과합니다.` };
   }
   if (data.side === "sell" && (!existing || existing.quantity < quantity)) {
     return { ok: false, field: "quantity", message: "매도수량이 보유수량을 초과합니다." };
@@ -74,13 +78,16 @@ export function commitTrade(data) {
   // 새로 만들어진 USD 종목이 폼에 적힌 환율에 묶이지 않도록 즉시 현재 환율에 맞춘다.
   // 매입시점 환율(trade.fx)은 위 trade 객체에 그대로 남아 환차손익의 기준이 된다.
   syncUsdAssetFx();
-  if (registerHeld && amount > 0) {
+  if (registerHeld && nativeAmount > 0) {
+    // 이미 보유 중이던 걸 등록하는 거래라 예수금이 실제로 오간 게 아니다. 매수가
+    // 빠져나갈 통화 풀(원화/외화)에 그만큼 자동 입금해서 잔고가 맞아떨어지게 한다.
     state.cashflows.push({
       id: crypto.randomUUID(),
       ownerId: data.ownerId,
       date: trade.date,
       type: "deposit",
-      amount: Math.round(amount),
+      amount: Math.round(nativeAmount),
+      currency,
       memo: "보유 등록 자동 입금",
       autoFor: trade.id
     });
@@ -123,7 +130,8 @@ export function updateTrade(id, data) {
   const auto = state.cashflows.find((flow) => flow.autoFor === id);
   if (auto) {
     if (trade.side === "buy") {
-      auto.amount = Math.round(quantity * price * fx);
+      auto.amount = Math.round(quantity * price); // 거래 통화 액면가
+      auto.currency = currency;
       auto.date = trade.date;
       auto.ownerId = trade.ownerId;
     } else {

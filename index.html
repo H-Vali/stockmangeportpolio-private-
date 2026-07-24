@@ -270,7 +270,7 @@
               <article class="metric-card"><span>투자원금</span><strong id="investorPrincipal">0원</strong><small>입금 - 출금</small></article>
               <article class="metric-card"><span>평가손익</span><strong id="investorStatProfit">0원</strong><small id="investorReturnRate">0%</small></article>
               <article class="metric-card"><span>배당 (세후)</span><strong id="investorDividendAfterTax">0원</strong><small id="investorDividendDetail">세전 0원 · 세금 0원</small></article>
-              <article class="metric-card"><span>예수금</span><strong id="investorCash">0원</strong><small>매수 가능 현금</small></article>
+              <article class="metric-card"><span>예수금 (원화)</span><strong id="investorCash">0원</strong><small id="investorCashDetail">매수 가능 현금</small></article>
             </div>
 
             <div class="investor-columns">
@@ -319,8 +319,12 @@
                   <form id="cashflowForm" class="inline-form">
                     <select name="ownerId" id="cashflowOwnerSelect"></select>
                     <input name="date" type="date" required />
-                    <input name="amount" type="number" min="0" step="1" placeholder="금액" required />
-                    <input name="memo" placeholder="메모" />
+                    <select name="currency" id="cashflowCurrency">
+                      <option value="KRW">KRW</option>
+                      <option value="USD">USD (외화)</option>
+                    </select>
+                    <input name="amount" id="cashflowAmount" type="number" min="0" step="1" placeholder="금액" required />
+                    <input name="memo" placeholder="메모 (예: 배당 수령)" />
                     <div class="cashflow-side">
                       <button type="submit" class="side-btn deposit" data-cashflow-type="deposit">입금</button>
                       <button type="submit" class="side-btn withdraw" data-cashflow-type="withdraw">출금</button>

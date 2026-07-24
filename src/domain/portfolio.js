@@ -24,6 +24,13 @@ export function tradeAmountKrw(trade) {
   return trade.quantity * trade.price * trade.fx;
 }
 
+// 매매대금을 거래 통화 그대로(환산 없이) 반환한다. 예수금을 원화/외화 풀로
+// 나눈 뒤로는, 어느 풀에서 얼마가 빠지고 들어오는지는 거래 통화 액면가로
+// 정해진다 — 원화로 환산해서 섞어버리면 "외화 예수금"이라는 개념이 무너진다.
+export function tradeAmountNative(trade) {
+  return trade.quantity * trade.price;
+}
+
 export function getAsset(ticker, fallback = {}) {
   return state.assetCatalog[ticker] || {
     ticker,
@@ -165,18 +172,53 @@ export function replayHoldings(ownerId) {
   });
 }
 
-export function netCashflow(ownerId) {
+// 입출금 기록엔 currency 필드가 없을 수 있다(과거 데이터, 또는 원화 입출금은
+// 굳이 표시 안 함) — 그 경우 원화로 취급한다.
+function flowCurrency(flow) {
+  return flow.currency || "KRW";
+}
+
+export function netCashflowByCurrency(ownerId, currency) {
   return state.cashflows
-    .filter((flow) => !ownerId || flow.ownerId === ownerId)
+    .filter((flow) => (!ownerId || flow.ownerId === ownerId) && flowCurrency(flow) === currency)
     .reduce((sum, flow) => sum + (flow.type === "deposit" ? flow.amount : -flow.amount), 0);
 }
 
-export function cashBalance(ownerId) {
-  const principal = netCashflow(ownerId);
+export function netCashflowKrw(ownerId) {
+  return netCashflowByCurrency(ownerId, "KRW");
+}
+
+export function netCashflowUsd(ownerId) {
+  return netCashflowByCurrency(ownerId, "USD");
+}
+
+// 원화 환산 총 입출금(투자원금·수익률 계산용). 외화 입출금은 현재 환율로 환산한다.
+export function netCashflow(ownerId) {
+  return netCashflowKrw(ownerId) + netCashflowUsd(ownerId) * currentUsdKrw();
+}
+
+// 예수금을 원화 풀/외화 풀로 나눠서 계산한다. 원화 매매는 원화 풀을,
+// 외화(USD) 매매는 외화 풀을 액면가 그대로 드나든다 — 매수 시점 환율로
+// 환산해 하나로 섞지 않는다(외화로 산 건 외화로 판다).
+export function cashBalanceByCurrency(ownerId, currency) {
+  const principal = netCashflowByCurrency(ownerId, currency);
   const tradeCash = state.trades
-    .filter((trade) => !ownerId || trade.ownerId === ownerId)
-    .reduce((sum, trade) => sum + (trade.side === "buy" ? -tradeAmountKrw(trade) : tradeAmountKrw(trade)), 0);
+    .filter((trade) => (!ownerId || trade.ownerId === ownerId) && trade.currency === currency)
+    .reduce((sum, trade) => sum + (trade.side === "buy" ? -tradeAmountNative(trade) : tradeAmountNative(trade)), 0);
   return principal + tradeCash;
+}
+
+export function cashBalanceKrw(ownerId) {
+  return cashBalanceByCurrency(ownerId, "KRW");
+}
+
+export function cashBalanceUsd(ownerId) {
+  return cashBalanceByCurrency(ownerId, "USD");
+}
+
+// 원화 환산 총 예수금(평가금액 계산용). 외화 예수금은 현재 환율로 환산한다.
+export function cashBalance(ownerId) {
+  return cashBalanceKrw(ownerId) + cashBalanceUsd(ownerId) * currentUsdKrw();
 }
 
 export function expectedDividend(ownerId) {
@@ -186,7 +228,9 @@ export function expectedDividend(ownerId) {
 export function summarize(ownerId) {
   const holdings = replayHoldings(ownerId);
   const principal = netCashflow(ownerId);
-  const cash = cashBalance(ownerId);
+  const cashKrw = cashBalanceKrw(ownerId);
+  const cashUsd = cashBalanceUsd(ownerId);
+  const cash = cashKrw + cashUsd * currentUsdKrw();
   const holdingsValue = holdings.reduce((sum, holding) => sum + holding.valueKrw, 0);
   const totalValue = holdingsValue + cash;
   const profit = totalValue - principal;
@@ -196,6 +240,8 @@ export function summarize(ownerId) {
     holdings,
     principal,
     cash,
+    cashKrw,
+    cashUsd,
     holdingsValue,
     totalValue,
     profit,

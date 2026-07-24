@@ -169,10 +169,12 @@ document.querySelector("#cashflowForm").addEventListener("submit", (event) => {
   const form = event.currentTarget;
   const ownerId = form.elements.ownerId.value;
   const type = event.submitter?.dataset.cashflowType || "deposit";
+  const currency = form.elements.currency.value;
   const amount = Number(form.elements.amount.value) || 0;
   if (!amount) return;
-  if (type === "withdraw" && !canWithdraw(ownerId, amount)) {
-    form.elements.amount.setCustomValidity("출금액이 예수금을 초과합니다.");
+  if (type === "withdraw" && !canWithdraw(ownerId, amount, currency)) {
+    const label = currency === "KRW" ? "원화" : "외화";
+    form.elements.amount.setCustomValidity(`출금액이 ${label} 예수금을 초과합니다.`);
     form.reportValidity();
     form.elements.amount.setCustomValidity("");
     return;
@@ -182,13 +184,22 @@ document.querySelector("#cashflowForm").addEventListener("submit", (event) => {
     ownerId,
     date: form.elements.date.value,
     type,
+    currency,
     amount,
     memo: form.elements.memo.value.trim()
   });
   form.reset();
   form.elements.date.valueAsDate = new Date();
+  form.elements.currency.value = "KRW";
+  form.elements.amount.step = "1";
   saveState();
   render();
+});
+
+// USD는 소수점 배당금($1.23 등)을 그대로 입력할 수 있어야 하니 스텝을 바꿔준다.
+document.querySelector("#cashflowCurrency").addEventListener("change", (event) => {
+  const amountInput = document.querySelector("#cashflowAmount");
+  amountInput.step = event.target.value === "USD" ? "0.01" : "1";
 });
 
 document.querySelector("#cashflowQueryButton").addEventListener("click", () => {
