@@ -911,10 +911,6 @@ a.ghost-button {
   gap: 10px;
 }
 
-.investor-col-left .cashflow-panel {
-  padding: 14px;
-}
-
 .investor-col-left .inline-form {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
