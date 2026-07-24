@@ -38,17 +38,22 @@ async function ensureDividendForecast(ticker) {
   }
 }
 
+// Polygon.io 무료 플랜은 분당 5회로 빡빡하다. 종목 수가 많으면 300ms 간격으로는
+// 바로 429가 나므로(실측 확인됨), 5회/분보다 넉넉한 13초 간격으로 순차 조회한다.
+const DIVIDEND_FETCH_INTERVAL_MS = 13000;
+
 // 배당을 지급하는(미국 상장) 보유 종목만 대상으로 순차 조회한다.
-// 종목 수가 많지 않은 개인 포트폴리오 특성상 Finnhub 예산 부담이 적다.
 export async function refreshDividendForecasts() {
   const holdings = replayHoldings().filter((h) => (h.type === "주식" || h.type === "ETF") && h.currency === "USD");
   const tickers = [...new Set(holdings.map((h) => h.ticker))];
   let changed = false;
 
-  for (const ticker of tickers) {
+  for (const [index, ticker] of tickers.entries()) {
     const updated = await ensureDividendForecast(ticker);
     if (updated) changed = true;
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    if (index < tickers.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, DIVIDEND_FETCH_INTERVAL_MS));
+    }
   }
 
   if (changed) {
