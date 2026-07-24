@@ -164,16 +164,23 @@ document.querySelector("#confirmDeleteInvestor").addEventListener("click", () =>
 });
 
 
-document.querySelector("#cashflowForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-  const form = event.currentTarget;
+// 입금/출금 두 제출 버튼 중 어느 쪽을 눌렀는지는 SubmitEvent.submitter로
+// 알아냈었는데, 일부 인앱 브라우저(카카오톡·네이버 등 구형 웹뷰)는 이 속성을
+// 지원하지 않아 항상 "deposit"으로만 처리돼 출금 버튼이 안 먹는 것처럼 보이는
+// 사고가 있었다. 버튼마다 직접 click 리스너를 달아 어느 브라우저에서도
+// 확실하게 동작하게 한다.
+function submitCashflow(type) {
+  const form = document.querySelector("#cashflowForm");
   const ownerId = form.elements.ownerId.value;
-  const type = event.submitter?.dataset.cashflowType || "deposit";
   const currency = form.elements.currency.value;
   const amount = Number(form.elements.amount.value) || 0;
   if (!amount) return;
   if (type === "withdraw" && !canWithdraw(ownerId, amount, currency)) {
+    // 네이티브 setCustomValidity+reportValidity 만으로는 툴팁이 안 보이거나
+    // 곧바로 사라지는 경우가 있어(브라우저/포커스 상태에 따라 다름), 눈에 띄는
+    // 토스트로도 이유를 알려준다 — "버튼을 눌러도 아무 반응이 없다"는 오해 방지.
     const label = currency === "KRW" ? "원화" : "외화";
+    showToast(`출금액이 ${label} 예수금을 초과합니다.`, "error");
     form.elements.amount.setCustomValidity(`출금액이 ${label} 예수금을 초과합니다.`);
     form.reportValidity();
     form.elements.amount.setCustomValidity("");
@@ -194,6 +201,17 @@ document.querySelector("#cashflowForm").addEventListener("submit", (event) => {
   form.elements.amount.step = "1";
   saveState();
   render();
+}
+
+document.querySelector("#cashflowForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitCashflow("deposit");
+});
+document.querySelectorAll('#cashflowForm [data-cashflow-type]').forEach((button) => {
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    submitCashflow(button.dataset.cashflowType);
+  });
 });
 
 // USD는 소수점 배당금($1.23 등)을 그대로 입력할 수 있어야 하니 스텝을 바꿔준다.
