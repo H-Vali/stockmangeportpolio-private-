@@ -706,6 +706,36 @@ a.ghost-button {
   line-height: 1.05;
 }
 
+.cash-dual {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 7px;
+}
+
+.cash-dual-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cash-dual-row small {
+  display: inline;
+  min-width: 32px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.cash-dual-row strong {
+  display: inline;
+  margin: 0;
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
 .hero-grid .metric-stack {
   gap: 12px;
 }
@@ -3876,6 +3906,15 @@ menu {
   .mini-metrics .metric-card span,
   .mini-metrics .metric-card small {
     font-size: 11px;
+  }
+
+  .mini-metrics .cash-dual {
+    margin: 4px 0;
+    gap: 3px;
+  }
+
+  .mini-metrics .cash-dual-row strong {
+    font-size: 15px;
   }
 
   .hero-grid .metric-card {
