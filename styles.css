@@ -711,31 +711,18 @@ a.ghost-button {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px 20px;
+  column-gap: 22px;
+  row-gap: 2px;
   margin: 8px 0 7px;
 }
 
-.cash-dual-row {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.cash-dual-row small {
-  display: inline;
-  min-width: 32px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.cash-dual-row strong {
-  display: inline;
+.cash-dual strong {
+  display: inline-block;
   margin: 0;
   font-family: "Space Grotesk", Pretendard, sans-serif;
-  font-size: 20px;
-  line-height: 1.1;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.05;
 }
 
 .hero-grid .metric-stack {
@@ -3917,10 +3904,11 @@ menu {
 
   .mini-metrics .cash-dual {
     margin: 4px 0;
-    gap: 3px;
+    column-gap: 14px;
+    row-gap: 2px;
   }
 
-  .mini-metrics .cash-dual-row strong {
+  .mini-metrics .cash-dual strong {
     font-size: 15px;
   }
 

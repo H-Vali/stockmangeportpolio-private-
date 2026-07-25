@@ -45,7 +45,9 @@ export function renderInvestorSheet() {
   document.querySelector("#investorDividendDetail").textContent = `세전 ${money(summary.dividend)} · 세금 ${money(summary.tax)}`;
   setMoneyElement("#investorCash", summary.cashKrw);
   const cashUsdEl = document.querySelector("#investorCashUsd");
-  if (cashUsdEl) cashUsdEl.textContent = usdFormatter.format(summary.cashUsd);
+  if (cashUsdEl) {
+    cashUsdEl.innerHTML = `<span class="currency-prefix">USD</span>${usdFormatter.format(summary.cashUsd)}`;
+  }
   document.querySelector("#deleteInvestorButton").disabled = state.investors.length <= 1;
   renderDeleteConfirm();
   renderInvestorAllocation();
