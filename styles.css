@@ -708,8 +708,9 @@ a.ghost-button {
 
 .cash-dual {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 20px;
   margin: 8px 0 7px;
 }
 
