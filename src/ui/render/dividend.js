@@ -212,7 +212,7 @@ export function renderDividendCalendar() {
           const color = tickerColor(item.ticker);
           return `<div class="calendar-item${isOpen ? " basis-open" : ""}" style="--ticker-color:${color}">
             <button type="button" class="calendar-item-toggle" data-basis-key="${key}">
-              <span class="cal-item-info"><span class="cal-item-ticker-dot" style="background:${color}" aria-hidden="true"></span><strong>${item.ticker}</strong><span class="cal-item-freq">${day}일${item.estimated ? " · 예측" : " · 확정"}</span><span class="cal-item-ratio">${ratio}%</span></span>
+              <span class="cal-item-info"><span class="cal-item-ticker-dot" style="background:${color}" aria-hidden="true"></span><strong>${item.ticker}</strong><span class="cal-item-freq${item.estimated ? "" : " cal-item-freq-confirmed"}">${day}일${item.estimated ? " · 예측" : " · 확정"}</span><span class="cal-item-ratio">${ratio}%</span></span>
               <span class="cal-item-amount">${money(item.amount)}<span class="basis-toggle-caret">${isOpen ? "▲" : "▼"}</span></span>
             </button>
             <div class="basis-body${isOpen ? "" : " hidden"}">

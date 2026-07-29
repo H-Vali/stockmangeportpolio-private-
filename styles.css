@@ -13,6 +13,7 @@
   --violet-3: #b69cff;
   --up: #f6465d;
   --down: #3b82f6;
+  --confirmed: #2ecc71;
   --shadow: 0 22px 60px rgba(0, 0, 0, 0.38);
   --glow: 0 0 44px rgba(124, 92, 252, 0.28);
 }
@@ -703,6 +704,24 @@ a.ghost-button {
   margin: 8px 0 7px;
   font-family: "Space Grotesk", Pretendard, sans-serif;
   font-size: 30px;
+  line-height: 1.05;
+}
+
+.cash-dual {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 22px;
+  row-gap: 2px;
+  margin: 8px 0 7px;
+}
+
+.cash-dual strong {
+  display: inline-block;
+  margin: 0;
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
   line-height: 1.05;
 }
 
@@ -3103,6 +3122,11 @@ tbody tr:hover {
   letter-spacing: 0.02em;
 }
 
+.cal-item-freq-confirmed {
+  background: rgba(46, 204, 113, 0.15);
+  color: var(--confirmed);
+}
+
 /* ── Calendar Item Basis Dropdown ── */
 .basis-toggle-caret {
   color: var(--faint);
@@ -4004,6 +4028,16 @@ menu {
   .mini-metrics .metric-card span,
   .mini-metrics .metric-card small {
     font-size: 11px;
+  }
+
+  .mini-metrics .cash-dual {
+    margin: 4px 0;
+    column-gap: 14px;
+    row-gap: 2px;
+  }
+
+  .mini-metrics .cash-dual strong {
+    font-size: 15px;
   }
 
   .hero-grid .metric-card {

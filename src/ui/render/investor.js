@@ -44,9 +44,9 @@ export function renderInvestorSheet() {
   setMoneyElement("#investorDividendAfterTax", summary.dividendAfterTax);
   document.querySelector("#investorDividendDetail").textContent = `세전 ${money(summary.dividend)} · 세금 ${money(summary.tax)}`;
   setMoneyElement("#investorCash", summary.cashKrw);
-  const cashDetail = document.querySelector("#investorCashDetail");
-  if (cashDetail) {
-    cashDetail.textContent = `외화 ${usdFormatter.format(summary.cashUsd)} · 매수 가능 현금`;
+  const cashUsdEl = document.querySelector("#investorCashUsd");
+  if (cashUsdEl) {
+    cashUsdEl.innerHTML = `<span class="currency-prefix">USD</span>${usdFormatter.format(summary.cashUsd)}`;
   }
   document.querySelector("#deleteInvestorButton").disabled = state.investors.length <= 1;
   renderDeleteConfirm();
