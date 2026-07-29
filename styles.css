@@ -3487,6 +3487,117 @@ tbody tr:hover {
   font-weight: 800;
 }
 
+/* ── Realized P&L (실현손익) ── */
+.holdings-view-tabs {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.holdings-view-tabs .tab-btn {
+  min-width: 96px;
+  padding: 0 14px;
+}
+
+.realized-range-sep {
+  display: flex;
+  align-items: center;
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.tax-estimate-box {
+  border: 1px solid rgba(246, 70, 93, 0.28);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background:
+    radial-gradient(circle at 8% 20%, rgba(246, 70, 93, 0.1), transparent 60%),
+    var(--surface-2);
+}
+
+.tax-estimate-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.tax-estimate-row strong {
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 20px;
+}
+
+.tax-estimate-row small {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+#realizedSummaryStrip {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.realized-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.realized-list-head,
+.realized-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.9fr) minmax(110px, 0.8fr) minmax(140px, 1fr) minmax(140px, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.realized-list-head {
+  padding: 0 18px 4px;
+  color: var(--faint);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.realized-row {
+  min-height: 64px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 18px;
+  background: var(--surface-2);
+}
+
+.realized-cell {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.realized-cell strong {
+  font-family: "Space Grotesk", Pretendard, sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.realized-cell small {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.realized-profit-cell .hv-profit-split {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+}
+
 .toast {
   position: fixed;
   right: 24px;
@@ -3780,6 +3891,19 @@ menu {
     align-items: start;
   }
 
+  .realized-list-head {
+    display: none;
+  }
+
+  .realized-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  #realizedSummaryStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .holdings-controls {
     flex-direction: column;
   }
@@ -3816,6 +3940,10 @@ menu {
 
   .hv-owner-type {
     grid-template-columns: auto auto minmax(0, 1fr);
+  }
+
+  .realized-row {
+    grid-template-columns: 1fr;
   }
 }
 

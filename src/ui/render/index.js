@@ -5,6 +5,7 @@ import { renderHoldings, renderHoldingsPreview, renderHoldingsView } from "./hol
 import { renderInvestorSheet, renderInvestorTabs } from "./investor.js";
 import { renderView } from "./layout.js";
 import { renderIndexMonitor, renderInvestorComparison, renderMarket } from "./market.js";
+import { renderRealizedView } from "./realized.js";
 import { renderFx, renderMarketStatus } from "./status.js";
 import { renderLedgerPreview, renderTransactions } from "./transactions.js";
 import { renderTrend } from "./trend.js";
@@ -25,6 +26,7 @@ export function render() {
     renderHoldings();
     renderHoldingsPreview();
     renderHoldingsView();
+    renderRealizedView();
     renderTransactions();
     renderLedgerPreview();
     renderTrend();

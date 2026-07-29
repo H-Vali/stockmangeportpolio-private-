@@ -4,6 +4,9 @@ export const LEGACY_STORAGE_KEY = "assetpilot-ledger-state-v2";
 // 스키마 버전. 올릴 때는 state/migrate.js 에 N-1 -> N 변환을 함께 등록한다.
 export const SCHEMA_VERSION = 4;
 export const DIVIDEND_TAX_RATE = 0.15;
+// 해외주식 양도소득세: 22%(지방세 포함), 연 250만원 기본공제(1인당, 달력 연도 기준).
+export const CAPITAL_GAINS_TAX_RATE = 0.22;
+export const CAPITAL_GAINS_DEDUCTION_KRW = 2_500_000;
 export const DEFAULT_USDKRW = 1380;
 // frankfurter는 api.frankfurter.app 도메인이 폐기되어 api.frankfurter.dev(/v1)로 이전됨.
 // 기존 .app URL은 CORS/네트워크 실패로 항상 폴백만 타던 문제가 있어 .dev로 교체.

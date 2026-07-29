@@ -13,10 +13,13 @@ import {
   cashBalanceKrw,
   cashBalanceUsd,
   computeAveragingPreview,
+  estimatedCapitalGainsTax,
   groupedByType,
   netCashflow,
   netCashflowKrw,
   netCashflowUsd,
+  realizedSummary,
+  realizedTrades,
   replayHoldings,
   summarize
 } from "../src/domain/portfolio.js";
@@ -294,4 +297,137 @@ test("물타기 미리보기: 입력이 비면 안내 문구만 돌려준다", (
   });
   assert.equal(preview.expectedProfit, undefined);
   assert.match(preview.text, /입력하면/);
+});
+
+test("realizedTrades: 매도 시점의 실현손익을 주가손익/환차손익으로 나눠 기록한다", () => {
+  useState({
+    trades: [
+      buy({ quantity: 100, price: 80, fx: 1300 }),
+      buy({ date: "2026-02-01", side: "sell", quantity: 40, price: 90, fx: 1400 })
+    ],
+    assetCatalog: SCHD_AT(90, 1400)
+  });
+
+  const realized = realizedTrades(OWNER);
+  assert.equal(realized.length, 1);
+  const [r] = realized;
+  assert.equal(r.quantity, 40);
+  assert.equal(r.avgPrice, 80);
+  assert.equal(r.avgFx, 1300);
+  assert.equal(r.proceedsForeign, 3600);
+  assert.equal(r.costForeign, 3200);
+  assert.equal(r.profitForeign, 400);
+  assert.equal(r.stockProfitKrw, 40 * (90 - 80) * 1400);
+  assert.equal(r.fxProfitKrw, 40 * 80 * (1400 - 1300));
+  assert.equal(r.profitKrw, r.stockProfitKrw + r.fxProfitKrw);
+  assert.equal(r.profitKrw, r.proceedsKrw - r.costKrw);
+});
+
+test("realizedTrades: 보유 물량을 넘는 매도는 없었던 것처럼 무시한다(매수 없이 매도)", () => {
+  useState({
+    trades: [buy({ date: "2026-02-01", side: "sell", quantity: 10, price: 90, fx: 1400 })]
+  });
+  assert.deepEqual(realizedTrades(OWNER), []);
+});
+
+test("realizedTrades: 여러 번 매도하면 매도 건별로 각각 기록된다", () => {
+  useState({
+    trades: [
+      buy({ quantity: 100, price: 80, fx: 1300 }),
+      buy({ date: "2026-02-01", side: "sell", quantity: 30, price: 90, fx: 1400 }),
+      buy({ date: "2026-03-01", side: "sell", quantity: 20, price: 100, fx: 1350 })
+    ],
+    assetCatalog: SCHD_AT(100, 1350)
+  });
+  const realized = realizedTrades(OWNER);
+  assert.equal(realized.length, 2);
+  assert.equal(realized[0].date, "2026-03-01"); // 최신순
+  assert.equal(realized[1].date, "2026-02-01");
+});
+
+test("realizedTrades: 원화 종목은 환차손익이 0이다", () => {
+  useState({
+    trades: [
+      buy({ ticker: "069500", currency: "KRW", quantity: 100, price: 9000, fx: 1 }),
+      buy({ date: "2026-02-01", ticker: "069500", currency: "KRW", side: "sell", quantity: 40, price: 9500, fx: 1 })
+    ],
+    assetCatalog: { "069500": { ticker: "069500", name: "KODEX 200", type: "ETF", currency: "KRW", currentPrice: 9500, currentFx: 1, annualDividend: 0 } }
+  });
+  const [r] = realizedTrades(OWNER);
+  assert.equal(r.fxProfitKrw, 0);
+  assert.equal(r.profitKrw, 40 * (9500 - 9000));
+  assert.equal(r.profitForeign, r.profitKrw); // 원화는 액면가 = 원화
+});
+
+test("realizedSummary: 기간으로 좁히고 원화 총계·외화 총계를 낸다", () => {
+  useState({
+    trades: [
+      buy({ quantity: 100, price: 80, fx: 1300 }),
+      buy({ date: "2026-02-01", side: "sell", quantity: 40, price: 90, fx: 1400 }),
+      buy({ date: "2026-06-01", side: "sell", quantity: 20, price: 100, fx: 1350 })
+    ],
+    assetCatalog: SCHD_AT(100, 1350)
+  });
+
+  const all = realizedSummary(OWNER);
+  assert.equal(all.count, 2);
+
+  const narrowed = realizedSummary(OWNER, { from: "2026-03-01" });
+  assert.equal(narrowed.count, 1);
+  assert.equal(narrowed.items[0].date, "2026-06-01");
+  assert.equal(narrowed.totalKrw, narrowed.items[0].profitKrw);
+  assert.equal(narrowed.totalUsd, narrowed.items[0].profitForeign);
+});
+
+test("estimatedCapitalGainsTax: 기본공제(250만원) 초과분에만 22% 과세, 국내 종목은 제외", () => {
+  useState({
+    trades: [
+      buy({ quantity: 100, price: 80, fx: 1300 }), // 원가 10,400,000
+      // 매도대금 40*200*1400=11,200,000, 원가 40*80*1300=4,160,000 -> 실현이익 7,040,000
+      buy({ date: "2026-03-01", side: "sell", quantity: 40, price: 200, fx: 1400 }),
+      // 원화 종목 매도손익은 해외주식 양도소득세 대상이 아니다
+      buy({ date: "2026-03-05", ticker: "069500", currency: "KRW", quantity: 100, price: 9000, fx: 1 }),
+      buy({ date: "2026-04-01", ticker: "069500", currency: "KRW", side: "sell", quantity: 100, price: 50000, fx: 1 })
+    ],
+    assetCatalog: { ...SCHD_AT(200, 1400), "069500": { ticker: "069500", name: "KODEX 200", type: "ETF", currency: "KRW", currentPrice: 50000, currentFx: 1, annualDividend: 0 } }
+  });
+
+  const { year, gain, tax } = estimatedCapitalGainsTax(OWNER, 2026);
+  assert.equal(year, 2026);
+  assert.equal(gain, 7_040_000);
+  assert.equal(tax, (7_040_000 - 2_500_000) * 0.22);
+});
+
+test("estimatedCapitalGainsTax: 순손실이면 세금 0 (환급 계산 안 함)", () => {
+  useState({
+    trades: [
+      buy({ quantity: 100, price: 100, fx: 1400 }),
+      buy({ date: "2026-03-01", side: "sell", quantity: 100, price: 50, fx: 1400 })
+    ],
+    assetCatalog: SCHD_AT(50, 1400)
+  });
+  const { tax } = estimatedCapitalGainsTax(OWNER, 2026);
+  assert.equal(tax, 0);
+});
+
+test("estimatedCapitalGainsTax: 전체 투자자 조회 시 1인당 기본공제를 각자 적용해 합산한다", () => {
+  useState({
+    investors: [
+      { id: OWNER, name: "가", initials: "가" },
+      { id: OTHER, name: "나", initials: "나" }
+    ],
+    trades: [
+      buy({ ownerId: OWNER, quantity: 100, price: 80, fx: 1300 }),
+      buy({ ownerId: OWNER, date: "2026-03-01", side: "sell", quantity: 40, price: 200, fx: 1400 }), // 이익 7,040,000
+      buy({ ownerId: OTHER, quantity: 100, price: 80, fx: 1300 }),
+      buy({ ownerId: OTHER, date: "2026-03-01", side: "sell", quantity: 40, price: 200, fx: 1400 }) // 이익 7,040,000
+    ],
+    assetCatalog: SCHD_AT(200, 1400)
+  });
+
+  const perOwner = estimatedCapitalGainsTax(OWNER, 2026);
+  const all = estimatedCapitalGainsTax(null, 2026);
+  assert.equal(all.gain, perOwner.gain * 2);
+  // 공제를 합쳐서 한 번만 적용했다면 이 값보다 커야 정상 — 각자 적용되면 정확히 2배
+  assert.equal(all.tax, perOwner.tax * 2);
 });

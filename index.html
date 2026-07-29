@@ -528,8 +528,15 @@
             <div class="panel-header">
               <div>
                 <p class="eyebrow">All Holdings</p>
-                <h2>통합 보유 종목</h2>
+                <h2 id="holdingsPanelTitle">통합 보유 종목</h2>
               </div>
+              <div class="holdings-view-tabs" id="holdingsViewTabs" role="tablist" aria-label="보유 종목 화면 전환">
+                <button type="button" class="tab-btn active" data-holdings-tab="holdings" role="tab" aria-selected="true">통합 보유종목</button>
+                <button type="button" class="tab-btn" data-holdings-tab="realized" role="tab" aria-selected="false">실현손익</button>
+              </div>
+            </div>
+
+            <div id="holdingsTabPanel">
               <div class="holdings-controls">
                 <select id="holdingsViewOwnerSelect" class="small-select">
                   <option value="">전체 투자자</option>
@@ -551,9 +558,24 @@
                 </select>
                 <button type="button" id="holdingsCurrencyToggle" class="ghost-button compact-toggle">KRW 기준</button>
               </div>
+              <div class="holdings-summary-strip" id="holdingsViewSummary"></div>
+              <div class="holdings-card-grid" id="holdingsViewGrid"></div>
             </div>
-            <div class="holdings-summary-strip" id="holdingsViewSummary"></div>
-            <div class="holdings-card-grid" id="holdingsViewGrid"></div>
+
+            <div id="realizedTabPanel" hidden>
+              <div class="holdings-controls">
+                <select id="realizedOwnerSelect" class="small-select">
+                  <option value="">전체 투자자</option>
+                </select>
+                <input type="date" id="realizedFrom" class="small-select" aria-label="조회 시작일" />
+                <span class="realized-range-sep">~</span>
+                <input type="date" id="realizedTo" class="small-select" aria-label="조회 종료일" />
+                <button type="button" id="realizedQueryButton" class="ghost-button compact-toggle">조회</button>
+              </div>
+              <div class="tax-estimate-box" id="realizedTaxBox"></div>
+              <div class="holdings-summary-strip" id="realizedSummaryStrip"></div>
+              <div class="realized-list" id="realizedList"></div>
+            </div>
           </section>
         </section>
 

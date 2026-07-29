@@ -1,4 +1,4 @@
-import { DIVIDEND_TAX_RATE } from "../config/constants.js";
+import { CAPITAL_GAINS_DEDUCTION_KRW, CAPITAL_GAINS_TAX_RATE, DIVIDEND_TAX_RATE } from "../config/constants.js";
 import { money, qty, signedMoney } from "../core/format.js";
 import { currentUsdKrw, state } from "../state/store.js";
 
@@ -170,6 +170,121 @@ export function replayHoldings(ownerId) {
       dividendForecast
     };
   });
+}
+
+// 매도가 일어날 때마다 그 매도 건의 실현손익(증권사의 "실현손익"과 동일한 개념)을
+// 기록한다. replayHoldings와 같은 방식으로 로트를 재생하되, 매도로 사라지는 원가를
+// 버리지 않고 "매도대금 - 그만큼 차감된 원가"로 남긴다. 세전 기준.
+export function realizedTrades(ownerId) {
+  const lots = new Map();
+  const trades = state.trades
+    .filter((trade) => !ownerId || trade.ownerId === ownerId)
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const realized = [];
+
+  for (const trade of trades) {
+    const key = `${trade.ownerId}:${trade.ticker}`;
+    const asset = getAsset(trade.ticker, trade);
+    const lot = lots.get(key) || {
+      ownerId: trade.ownerId,
+      ticker: trade.ticker,
+      name: trade.name || asset.name,
+      type: trade.type || asset.type,
+      currency: trade.currency || asset.currency,
+      quantity: 0,
+      costForeign: 0,
+      costKrw: 0
+    };
+
+    const tradeForeign = trade.quantity * trade.price;
+    const tradeKrw = tradeForeign * trade.fx;
+
+    if (trade.side === "buy") {
+      lot.quantity += trade.quantity;
+      lot.costForeign += tradeForeign;
+      lot.costKrw += tradeKrw;
+    } else if (trade.side === "sell" && lot.quantity > 0) {
+      const sellQty = Math.min(trade.quantity, lot.quantity);
+      const ratio = sellQty / lot.quantity;
+      const costForeignRemoved = lot.costForeign * ratio;
+      const costKrwRemoved = lot.costKrw * ratio;
+      const avgPrice = sellQty ? costForeignRemoved / sellQty : 0;
+      const avgFx = costForeignRemoved ? costKrwRemoved / costForeignRemoved : trade.fx;
+      const proceedsForeign = sellQty * trade.price;
+      const proceedsKrw = proceedsForeign * trade.fx;
+      // 평가손익과 같은 방식으로 주가손익/환차손익을 나눠서 보여준다(매도 시점 기준으로 확정).
+      const stockProfitKrw = sellQty * (trade.price - avgPrice) * trade.fx;
+      const fxProfitKrw = lot.currency === "KRW" ? 0 : sellQty * avgPrice * (trade.fx - avgFx);
+
+      realized.push({
+        tradeId: trade.id,
+        ownerId: trade.ownerId,
+        ticker: trade.ticker,
+        name: lot.name,
+        type: lot.type,
+        currency: lot.currency,
+        date: trade.date,
+        quantity: sellQty,
+        sellPrice: trade.price,
+        sellFx: trade.fx,
+        avgPrice,
+        avgFx,
+        proceedsForeign,
+        costForeign: costForeignRemoved,
+        profitForeign: proceedsForeign - costForeignRemoved,
+        proceedsKrw,
+        costKrw: costKrwRemoved,
+        profitKrw: stockProfitKrw + fxProfitKrw,
+        stockProfitKrw,
+        fxProfitKrw
+      });
+
+      lot.quantity -= sellQty;
+      lot.costForeign -= costForeignRemoved;
+      lot.costKrw -= costKrwRemoved;
+    }
+
+    if (lot.quantity > 0.00000001) lots.set(key, lot);
+    else lots.delete(key);
+  }
+
+  return realized.sort((a, b) => b.date.localeCompare(a.date));
+}
+
+// 실현손익 목록을 기간(from~to, YYYY-MM-DD, 포함)으로 좁히고 총계를 낸다.
+// 원화 총계는 통화 무관 전부 합산, 외화 총계는 USD 매도분만 액면가로 따로 낸다
+// (원화/외화 둘 다 표기해달라는 요청 — 예수금 분리와 같은 방식).
+export function realizedSummary(ownerId, { from, to } = {}) {
+  const items = realizedTrades(ownerId).filter(
+    (r) => (!from || r.date >= from) && (!to || r.date <= to)
+  );
+  const totalKrw = items.reduce((sum, r) => sum + r.profitKrw, 0);
+  const totalUsd = items
+    .filter((r) => r.currency === "USD")
+    .reduce((sum, r) => sum + r.profitForeign, 0);
+  return { items, totalKrw, totalUsd, count: items.length };
+}
+
+// 해외주식 양도소득세 예상치. 22%(지방세 포함), 1인당 연 250만원 기본공제,
+// 순손실이면 세금 0(이월공제는 계산하지 않는다 — 단순 예상치 목적).
+// ownerId가 없으면(전체) 투자자별로 각자 공제를 적용한 뒤 합산한다.
+export function estimatedCapitalGainsTax(ownerId, year) {
+  const yearStart = `${year}-01-01`;
+  const yearEnd = `${year}-12-31`;
+  const ownerIds = ownerId ? [ownerId] : state.investors.map((investor) => investor.id);
+
+  let totalGain = 0;
+  let totalTax = 0;
+  for (const id of ownerIds) {
+    const gain = realizedTrades(id)
+      .filter((r) => r.currency === "USD" && r.date >= yearStart && r.date <= yearEnd)
+      .reduce((sum, r) => sum + r.profitKrw, 0);
+    totalGain += gain;
+    totalTax += Math.max(0, gain - CAPITAL_GAINS_DEDUCTION_KRW) * CAPITAL_GAINS_TAX_RATE;
+  }
+  return { year, gain: totalGain, tax: totalTax };
 }
 
 // 입출금 기록엔 currency 필드가 없을 수 있다(과거 데이터, 또는 원화 입출금은

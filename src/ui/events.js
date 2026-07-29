@@ -9,6 +9,7 @@ import { canWithdraw, populateOwnerSelects, renderTradePreview, updateAssetField
 import { clearHoldingsFilter } from "./render/dashboard.js";
 import { renderDividendCalendar, renderDividendSimulation } from "./render/dividend.js";
 import { holdingsDisplayCurrency, renderHoldingsView } from "./render/holdings.js";
+import { renderRealizedView } from "./render/realized.js";
 import { openDialog, render } from "./render/index.js";
 import { renderDeleteConfirm, renderView } from "./render/layout.js";
 import { renderCashflows } from "./render/transactions.js";
@@ -420,3 +421,21 @@ document.querySelector("#holdingsCurrencyToggle").addEventListener("click", () =
   saveState({ snapshot: false });
   renderHoldingsView();
 });
+
+document.querySelector("#holdingsViewTabs").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-holdings-tab]");
+  if (!button) return;
+  const tab = button.dataset.holdingsTab;
+  document.querySelectorAll("#holdingsViewTabs [data-holdings-tab]").forEach((btn) => {
+    const active = btn === button;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", String(active));
+  });
+  document.querySelector("#holdingsTabPanel").hidden = tab !== "holdings";
+  document.querySelector("#realizedTabPanel").hidden = tab !== "realized";
+  document.querySelector("#holdingsPanelTitle").textContent = tab === "realized" ? "실현손익" : "통합 보유 종목";
+  if (tab === "realized") renderRealizedView();
+});
+
+document.querySelector("#realizedOwnerSelect").addEventListener("change", renderRealizedView);
+document.querySelector("#realizedQueryButton").addEventListener("click", renderRealizedView);
