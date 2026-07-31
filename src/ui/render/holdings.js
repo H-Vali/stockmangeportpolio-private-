@@ -1,4 +1,4 @@
-import { DIVIDEND_TAX_RATE } from "../../config/constants.js";
+import { DIVIDEND_TAX_RATE, ALLOCATION_ORDER } from "../../config/constants.js";
 import { assetTypeColor, investorColor } from "../../core/colors.js";
 import { fxFormatter, money, numberFormatter, pct, qty, signedMoney, usdFormatter } from "../../core/format.js";
 import { consolidatedHoldings, dividendFrequencyLabelForTicker } from "../../domain/dividend.js";
@@ -148,16 +148,30 @@ export function renderHoldingsView() {
     return b.valueKrw - a.valueKrw;
   });
 
-  if (!sorted.length) {
-    grid.className = "holdings-list";
-    grid.innerHTML = `<p class="empty-hint">보유 종목이 없습니다.</p>`;
-    return;
-  }
-
-  grid.className = "holdings-list";
-  grid.innerHTML = `
+  const typeOptions = ALLOCATION_ORDER.filter((t) => t !== "예수금").map((t) => `
+    <button type="button" class="hv-filter-chip-btn${typeFilter === t ? " active" : ""}" data-filter-type="${t}" style="--type-color:${assetTypeColor(t)}">${t}</button>
+  `).join("");
+  const ownerOptions = state.investors.map((inv) => `
+    <button type="button" class="hv-filter-chip-btn${ownerId === inv.id ? " active" : ""}" data-filter-owner="${inv.id}" style="--type-color:${investorColor(inv.id, state.investors)}">${inv.name}</button>
+  `).join("");
+  const headOpen = uiState.holdingsFilterHeadOpen;
+  const headHtml = `
     <div class="hv-list-head" role="row">
-      <span>분류 / 투자자</span>
+      <div class="hv-filter-head" id="hvFilterHead">
+        <button type="button" class="hv-filter-head-btn" data-hv-filter-toggle aria-expanded="${headOpen}">
+          분류 / 투자자<span class="hv-filter-caret">${headOpen ? "▲" : "▼"}</span>
+        </button>
+        <div class="hv-filter-dropdown"${headOpen ? "" : " hidden"}>
+          <div class="hv-filter-group">
+            <span>분류</span>
+            ${typeOptions}
+          </div>
+          <div class="hv-filter-group">
+            <span>투자자</span>
+            ${ownerOptions}
+          </div>
+        </div>
+      </div>
       <span>티커</span>
       <span>평가금액</span>
       <span>비중</span>
@@ -166,6 +180,17 @@ export function renderHoldingsView() {
       <span>평단 / 현재가</span>
       <span>배당</span>
     </div>
+  `;
+
+  if (!sorted.length) {
+    grid.className = "holdings-list";
+    grid.innerHTML = `${headHtml}<p class="empty-hint">해당 조건의 보유 종목이 없습니다.</p>`;
+    return;
+  }
+
+  grid.className = "holdings-list";
+  grid.innerHTML = `
+    ${headHtml}
     ${sorted.map((item) => {
     const owner = investorById(item.ownerId);
     const profitClass = item.profit >= 0 ? "positive" : "negative";

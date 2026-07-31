@@ -3511,6 +3511,84 @@ tbody tr:hover {
   gap: 6px;
 }
 
+/* 표 헤더의 "분류 / 투자자" 열 — 클릭하면 분류·투자자 필터를 바로 걸 수 있는 드롭다운. */
+.hv-filter-head {
+  position: relative;
+}
+
+.hv-filter-head-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.hv-filter-head-btn:hover {
+  color: var(--violet-3);
+}
+
+.hv-filter-caret {
+  font-size: 8px;
+}
+
+.hv-filter-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 220px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.hv-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hv-filter-group > span {
+  color: var(--faint);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.hv-filter-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  margin-right: 5px;
+  margin-bottom: 5px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--type-color) 45%, transparent);
+  background: color-mix(in srgb, var(--type-color) 16%, transparent);
+  color: var(--type-color);
+}
+
+.hv-filter-chip-btn.active {
+  background: var(--type-color);
+  color: #0b0b0f;
+}
+
 .hv-owner-type small {
   font-size: 11px;
   font-weight: 700;

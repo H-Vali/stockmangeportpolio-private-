@@ -421,14 +421,32 @@ document.querySelector("#holdingsCurrencyToggle").addEventListener("click", () =
 });
 
 document.querySelector("#holdingsViewGrid").addEventListener("click", (event) => {
+  // 아래에서 innerHTML을 다시 그리면 event.target이 트리에서 떨어져 나가
+  // document의 "바깥 클릭 감지" 리스너가 이 클릭을 "바깥 클릭"으로 오인해
+  // 드롭다운을 열자마자 도로 닫아버린다 — 그래서 여기서 전파를 끊는다.
+  if (event.target.closest("[data-hv-filter-toggle]")) {
+    event.stopPropagation();
+    uiState.holdingsFilterHeadOpen = !uiState.holdingsFilterHeadOpen;
+    renderHoldingsView();
+    return;
+  }
   const button = event.target.closest("[data-filter-type], [data-filter-owner]");
   if (!button) return;
+  if (button.closest("#hvFilterHead")) event.stopPropagation();
   const filter = uiState.holdingsViewFilter;
   if (button.dataset.filterType !== undefined) {
     filter.type = filter.type === button.dataset.filterType ? null : button.dataset.filterType;
   } else {
     filter.owner = filter.owner === button.dataset.filterOwner ? null : button.dataset.filterOwner;
   }
+  renderHoldingsView();
+});
+
+// 헤더 드롭다운 바깥을 클릭하면 닫는다.
+document.addEventListener("click", (event) => {
+  if (!uiState.holdingsFilterHeadOpen) return;
+  if (event.target.closest("#hvFilterHead")) return;
+  uiState.holdingsFilterHeadOpen = false;
   renderHoldingsView();
 });
 
