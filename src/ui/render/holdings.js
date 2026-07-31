@@ -1,4 +1,5 @@
 import { DIVIDEND_TAX_RATE } from "../../config/constants.js";
+import { assetTypeColor, investorColor } from "../../core/colors.js";
 import { fxFormatter, money, numberFormatter, pct, qty, signedMoney, usdFormatter } from "../../core/format.js";
 import { consolidatedHoldings, dividendFrequencyLabelForTicker } from "../../domain/dividend.js";
 import { investorById, replayHoldings } from "../../domain/portfolio.js";
@@ -75,23 +76,14 @@ export function renderHoldingsView() {
   const summaryEl = document.querySelector("#holdingsViewSummary");
   if (!grid) return;
 
-  const ownerSelect = document.querySelector("#holdingsViewOwnerSelect");
-  const typeSelect = document.querySelector("#holdingsViewTypeFilter");
   const sortSelect = document.querySelector("#holdingsViewSortSelect");
   const currencyToggle = document.querySelector("#holdingsCurrencyToggle");
-  const ownerId = ownerSelect?.value || null;
-  const typeFilter = typeSelect?.value || null;
+  const filterStatusEl = document.querySelector("#holdingsViewFilterStatus");
+  const filter = uiState.holdingsViewFilter;
+  const ownerId = filter.owner || null;
+  const typeFilter = filter.type || null;
   const displayCurrency = holdingsDisplayCurrency();
   const sortMode = sortSelect?.value || "value";
-
-  if (ownerSelect && ownerSelect.options.length <= 1) {
-    state.investors.forEach((inv) => {
-      const opt = document.createElement("option");
-      opt.value = inv.id;
-      opt.textContent = inv.name;
-      ownerSelect.appendChild(opt);
-    });
-  }
 
   const holdings = consolidatedHoldings(ownerId || null, typeFilter || null);
   const totalValue = holdings.reduce((s, h) => s + h.valueKrw, 0);
@@ -105,6 +97,15 @@ export function renderHoldingsView() {
   if (currencyToggle) {
     currencyToggle.textContent = `${displayCurrency} 기준`;
     currencyToggle.setAttribute("aria-label", `${displayCurrency === "KRW" ? "달러" : "원화"} 기준으로 전환`);
+  }
+
+  if (filterStatusEl) {
+    const chips = [];
+    if (typeFilter) chips.push(`<span class="filter-chip" style="--type-color:${assetTypeColor(typeFilter)}">분류 · ${typeFilter}</span>`);
+    if (ownerId) chips.push(`<span class="filter-chip" style="--type-color:${investorColor(ownerId, state.investors)}">투자자 · ${investorById(ownerId).name}</span>`);
+    filterStatusEl.innerHTML = chips.length
+      ? `${chips.join("")}<button type="button" id="holdingsViewFilterClear" class="ghost-button compact-toggle">필터 해제</button>`
+      : `<span class="filter-hint">표의 분류 뱃지·투자자 아이콘을 눌러 필터링하세요</span>`;
   }
 
   if (summaryEl) {
@@ -184,11 +185,13 @@ export function renderHoldingsView() {
       ? `<span class="hv-div-freq">${freqLabel}</span><b>${holdingMoney(item.dividendAfterTaxItem, displayCurrency)}/년</b><small>${pct(item.dividendYield)}</small>`
       : `<span class="hv-empty-cell">—</span>`;
 
+    const typeColor = assetTypeColor(item.type);
+    const ownerColor = investorColor(item.ownerId, state.investors);
     return `
       <div class="hv-row" data-type="${item.type}" role="row">
         <div class="hv-cell hv-owner-type">
-          <span class="pill">${item.type}</span>
-          <span class="hv-owner-chip">${owner.initials}</span>
+          <button type="button" class="pill hv-filter-btn" data-filter-type="${item.type}" style="--type-color:${typeColor}" title="'${item.type}' 분류로 필터">${item.type}</button>
+          <button type="button" class="hv-owner-chip hv-filter-btn" data-filter-owner="${item.ownerId}" style="--owner-color:${ownerColor}" title="'${owner.name}' 투자자로 필터">${owner.initials}</button>
           <small>${owner.name}</small>
         </div>
         <div class="hv-cell hv-ticker-cell">

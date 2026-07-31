@@ -413,12 +413,28 @@ document.querySelector("#dividendCalendar").addEventListener("click", (event) =>
   renderDividendCalendar();
 });
 
-document.querySelector("#holdingsViewOwnerSelect").addEventListener("change", renderHoldingsView);
-document.querySelector("#holdingsViewTypeFilter").addEventListener("change", renderHoldingsView);
 document.querySelector("#holdingsViewSortSelect").addEventListener("change", renderHoldingsView);
 document.querySelector("#holdingsCurrencyToggle").addEventListener("click", () => {
   state.displayCurrency = holdingsDisplayCurrency() === "KRW" ? "USD" : "KRW";
   saveState({ snapshot: false });
+  renderHoldingsView();
+});
+
+document.querySelector("#holdingsViewGrid").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-filter-type], [data-filter-owner]");
+  if (!button) return;
+  const filter = uiState.holdingsViewFilter;
+  if (button.dataset.filterType !== undefined) {
+    filter.type = filter.type === button.dataset.filterType ? null : button.dataset.filterType;
+  } else {
+    filter.owner = filter.owner === button.dataset.filterOwner ? null : button.dataset.filterOwner;
+  }
+  renderHoldingsView();
+});
+
+document.querySelector("#holdingsViewFilterStatus").addEventListener("click", (event) => {
+  if (!event.target.closest("#holdingsViewFilterClear")) return;
+  uiState.holdingsViewFilter = { type: null, owner: null };
   renderHoldingsView();
 });
 

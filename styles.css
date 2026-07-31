@@ -1496,6 +1496,59 @@ tbody tr:hover {
   font-weight: 800;
 }
 
+/* 분류/투자자 뱃지를 클릭해서 표를 필터링하는 버튼 — 색상은 각 항목의
+   --type-color / --owner-color 인라인 변수로 채운다 (assetTypeColor/investorColor). */
+.hv-filter-btn {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.hv-owner-chip.hv-filter-btn {
+  border: none;
+}
+
+.hv-filter-btn:hover {
+  transform: translateY(-1px);
+}
+
+.hv-owner-type .pill.hv-filter-btn {
+  border-color: color-mix(in srgb, var(--type-color) 45%, transparent);
+  background: color-mix(in srgb, var(--type-color) 16%, transparent);
+  color: var(--type-color);
+}
+
+.hv-owner-chip.hv-filter-btn {
+  background: var(--owner-color);
+}
+
+.holdings-filter-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 16px;
+}
+
+.holdings-filter-status .filter-hint {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.holdings-filter-status .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1px solid color-mix(in srgb, var(--type-color) 45%, transparent);
+  background: color-mix(in srgb, var(--type-color) 16%, transparent);
+  color: var(--type-color);
+}
+
 .owner-label {
   color: var(--ink);
   font-weight: 700;
