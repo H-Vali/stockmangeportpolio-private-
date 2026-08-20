@@ -170,22 +170,24 @@ export function renderHoldingsView() {
 
   // 정렬 select와 동일한 키를 쓰는 열만 헤더 클릭 정렬을 지원한다 (select가 단일 소스).
   // 방향 토글은 없다 — value/profit/weight/dividend는 항상 내림차순, type은 가나다순으로 select와 동일하게 동작한다.
-  const sortTh = (key, label, alignRight = true) => {
+  // 정렬 불가능한 열도 아이콘을 옅게 남겨서 "이 열은 클릭해도 안 바뀐다"가 아니라
+  // 자연스럽게 눈에 덜 띄도록 하고, 활성 열만 진하게 강조한다.
+  const sortTh = (key, label, small = "", alignRight = true) => {
     const active = sortMode === key;
-    const arrow = active ? `<span class="ih-sort-arrow">▼</span>` : "";
-    return `<th class="ih-sortable${alignRight ? " ih-num" : ""}${active ? " ih-sort-active" : ""}" data-hv-sort-key="${key}">${label}${arrow}</th>`;
+    const arrow = `<span class="ih-sort-arrow${active ? "" : " ih-sort-arrow-idle"}">▼</span>`;
+    return `<th class="ih-sortable${alignRight ? " ih-num" : ""}${active ? " ih-sort-active" : ""}" data-hv-sort-key="${key}">${label}${small}${arrow}</th>`;
   };
 
   const headHtml = `
     <thead>
       <tr role="row">
-        ${sortTh("type", "분류 / 투자자", false)}
+        ${sortTh("type", "분류 / 투자자", "", false)}
         <th>종목</th>
-        ${sortTh("value", "평가금액")}
+        ${sortTh("value", "평가금액", `<small>${displayCurrency}</small>`)}
         ${sortTh("weight", "비중")}
         ${sortTh("profit", "손익 / 수익률")}
         <th class="ih-num">수량</th>
-        <th class="ih-num">평단 / 현재가</th>
+        <th class="ih-num">현재가<small>평단</small></th>
         ${sortTh("dividend", "배당")}
       </tr>
     </thead>
@@ -255,8 +257,8 @@ export function renderHoldingsView() {
           <small>${item.currency}</small>
         </td>
         <td class="ih-num">
-          <strong>${holdingMoney(item.avgPrice * item.avgFx, displayCurrency)}</strong>
-          <small>현재 ${holdingMoney(item.currentPrice * item.currentFx, displayCurrency)}</small>
+          <strong>${holdingMoney(item.currentPrice * item.currentFx, displayCurrency)}</strong>
+          <small>평단 ${holdingMoney(item.avgPrice * item.avgFx, displayCurrency)}</small>
           <small class="hv-native-price">${nativePriceText(item, item.avgPrice)} → ${nativePriceText(item, item.currentPrice)}</small>
           ${item.currency === "KRW" ? "" : `<small class="hv-native-price">FX ${fxFormatter.format(item.avgFx)} → ${fxFormatter.format(item.currentFx)}</small>`}
         </td>

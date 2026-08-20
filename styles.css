@@ -4171,6 +4171,20 @@ menu {
   opacity: 0.85;
 }
 
+/* 정렬 불가/비활성 열에도 아이콘을 옅게 남겨 "정렬 가능한 열"임을 항상 알 수 있게 한다. */
+.ih-sort-arrow-idle {
+  opacity: 0.3;
+}
+
+.hv-table thead th {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+
+.hv-table tbody tr:hover td {
+  background: rgba(124, 92, 252, 0.05);
+}
+
 .ih-type-dot {
   display: inline-block;
   width: 6px;
