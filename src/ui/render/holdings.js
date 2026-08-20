@@ -162,29 +162,41 @@ export function renderHoldingsView() {
     return b.valueKrw - a.valueKrw;
   });
 
+  // 정렬 select와 동일한 키를 쓰는 열만 헤더 클릭 정렬을 지원한다 (select가 단일 소스).
+  // 방향 토글은 없다 — value/profit/weight/dividend는 항상 내림차순, type은 가나다순으로 select와 동일하게 동작한다.
+  const sortTh = (key, label, alignRight = true) => {
+    const active = sortMode === key;
+    const arrow = active ? `<span class="ih-sort-arrow">▼</span>` : "";
+    return `<th class="ih-sortable${alignRight ? " ih-num" : ""}${active ? " ih-sort-active" : ""}" data-hv-sort-key="${key}">${label}${arrow}</th>`;
+  };
+
   const headHtml = `
-    <div class="hv-list-head" role="row">
-      <span>분류 / 투자자</span>
-      <span>티커</span>
-      <span>평가금액</span>
-      <span>비중</span>
-      <span>손익 / 수익률</span>
-      <span>수량</span>
-      <span>평단 / 현재가</span>
-      <span>배당</span>
-    </div>
+    <thead>
+      <tr role="row">
+        ${sortTh("type", "분류 / 투자자", false)}
+        <th>종목</th>
+        ${sortTh("value", "평가금액")}
+        ${sortTh("weight", "비중")}
+        ${sortTh("profit", "손익 / 수익률")}
+        <th class="ih-num">수량</th>
+        <th class="ih-num">평단 / 현재가</th>
+        ${sortTh("dividend", "배당")}
+      </tr>
+    </thead>
   `;
 
   if (!sorted.length) {
-    grid.className = "holdings-list";
-    grid.innerHTML = `${headHtml}<p class="empty-hint">해당 조건의 보유 종목이 없습니다.</p>`;
+    grid.className = "table-wrap";
+    grid.innerHTML = `<table class="inv-holdings-table hv-table">${headHtml}</table><p class="empty-hint">해당 조건의 보유 종목이 없습니다.</p>`;
     return;
   }
 
-  grid.className = "holdings-list";
+  grid.className = "table-wrap";
   grid.innerHTML = `
-    ${headHtml}
-    ${sorted.map((item) => {
+    <table class="inv-holdings-table hv-table">
+      ${headHtml}
+      <tbody>
+        ${sorted.map((item) => {
     const owner = investorById(item.ownerId);
     const profitClass = item.profit >= 0 ? "positive" : "negative";
     const hasDividend = item.annualDividend > 0;
@@ -206,47 +218,49 @@ export function renderHoldingsView() {
     const typeColor = assetTypeColor(item.type);
     const ownerColor = investorColor(item.ownerId, state.investors);
     return `
-      <div class="hv-row" data-type="${item.type}" role="row">
-        <div class="hv-cell hv-owner-type">
-          <button type="button" class="pill hv-filter-btn" data-filter-type="${item.type}" style="--type-color:${typeColor}" title="'${item.type}' 분류로 필터">${item.type}</button>
-          <button type="button" class="hv-owner-chip hv-filter-btn" data-filter-owner="${item.ownerId}" style="--owner-color:${ownerColor}" title="'${owner.name}' 투자자로 필터">${owner.initials}</button>
-          <small>${owner.name}</small>
-        </div>
-        <div class="hv-cell hv-ticker-cell">
-          <div class="hv-card-title">
-            <strong>${item.ticker}</strong>
-            <small>${item.name}</small>
+      <tr data-type="${item.type}">
+        <td>
+          <div class="hv-cell hv-owner-type">
+            <button type="button" class="pill hv-filter-btn" data-filter-type="${item.type}" style="--type-color:${typeColor}" title="'${item.type}' 분류로 필터">${item.type}</button>
+            <button type="button" class="hv-owner-chip hv-filter-btn" data-filter-owner="${item.ownerId}" style="--owner-color:${ownerColor}" title="'${owner.name}' 투자자로 필터">${owner.initials}</button>
+            <small>${owner.name}</small>
           </div>
-        </div>
-        <div class="hv-cell hv-money-cell">
+        </td>
+        <td class="ih-name">
+          <strong>${item.ticker}</strong>
+          <small>${item.name}</small>
+        </td>
+        <td class="ih-num">
           <strong>${holdingMoney(item.valueKrw, displayCurrency)}</strong>
           <small>${displayCurrency === "USD" ? money(item.valueKrw) : usdFormatter.format(item.valueKrw / currentUsdKrw())}</small>
-        </div>
-        <div class="hv-cell hv-weight-cell">
+        </td>
+        <td class="ih-num">
           <strong>${pct(item.weight)}</strong>
           <span class="hv-card-bar"><i class="hv-card-bar-fill" style="width:${Math.max(2, item.weight)}%"></i></span>
-        </div>
-        <div class="hv-cell hv-profit-cell">
+        </td>
+        <td class="ih-num ${profitClass}">
           <strong class="${profitClass}">${signedHoldingMoney(item.profit, displayCurrency)}</strong>
           <small class="${profitClass}">${item.returnRate >= 0 ? "+" : ""}${pct(item.returnRate)}</small>
           ${profitSplit}
           ${breakeven}
-        </div>
-        <div class="hv-cell hv-qty-cell">
+        </td>
+        <td class="ih-num">
           <strong>${qty(item.quantity)}</strong>
           <small>${item.currency}</small>
-        </div>
-        <div class="hv-cell hv-price-cell">
+        </td>
+        <td class="ih-num">
           <strong>${holdingMoney(item.avgPrice * item.avgFx, displayCurrency)}</strong>
           <small>현재 ${holdingMoney(item.currentPrice * item.currentFx, displayCurrency)}</small>
           <small class="hv-native-price">${nativePriceText(item, item.avgPrice)} → ${nativePriceText(item, item.currentPrice)}</small>
           ${item.currency === "KRW" ? "" : `<small class="hv-native-price">FX ${fxFormatter.format(item.avgFx)} → ${fxFormatter.format(item.currentFx)}</small>`}
-        </div>
-        <div class="hv-cell hv-dividend-cell">
+        </td>
+        <td class="ih-num hv-dividend-cell">
           ${dividendText}
-        </div>
-      </div>
+        </td>
+      </tr>
     `;
-    }).join("")}
+  }).join("")}
+      </tbody>
+    </table>
   `;
 }

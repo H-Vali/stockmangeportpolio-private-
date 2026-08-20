@@ -3275,12 +3275,6 @@ tbody tr:hover {
   margin-top: 2px;
 }
 
-.holdings-card-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
 .hv-card {
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -3409,14 +3403,17 @@ tbody tr:hover {
 }
 
 .hv-card-bar {
-  height: 3px;
+  display: block;
+  width: 100%;
+  height: 4px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.04);
-  margin-top: 10px;
+  margin-top: 2px;
   overflow: hidden;
 }
 
 .hv-card-bar-fill {
+  display: block;
   height: 100%;
   border-radius: 2px;
   background: var(--violet);
@@ -3427,56 +3424,6 @@ tbody tr:hover {
 .compact-toggle {
   min-height: 44px;
   white-space: nowrap;
-}
-
-.holdings-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.hv-list-head,
-.hv-row {
-  display: grid;
-  grid-template-columns:
-    minmax(120px, 0.72fr)
-    minmax(142px, 1fr)
-    minmax(128px, 0.88fr)
-    minmax(82px, 0.54fr)
-    minmax(146px, 0.94fr)
-    minmax(78px, 0.48fr)
-    minmax(146px, 0.94fr)
-    minmax(118px, 0.72fr);
-  align-items: center;
-  gap: 12px;
-}
-
-.hv-list-head {
-  padding: 0 18px 4px;
-  color: var(--faint);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.hv-row {
-  min-height: 76px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 12px 18px;
-  background:
-    linear-gradient(135deg, rgba(124, 92, 252, 0.055), transparent 32%),
-    var(--surface-2);
-  transition: border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
-}
-
-.hv-row:hover {
-  border-color: rgba(157, 123, 255, 0.34);
-  background:
-    linear-gradient(135deg, rgba(124, 92, 252, 0.095), transparent 34%),
-    var(--surface-2);
-  box-shadow: 0 0 22px rgba(124, 92, 252, 0.08);
 }
 
 .hv-cell {
@@ -3516,30 +3463,14 @@ tbody tr:hover {
   font-weight: 700;
 }
 
-.hv-ticker-cell .hv-card-title strong,
-.hv-money-cell strong,
-.hv-profit-cell strong {
-  font-size: 15px;
-}
-
-.hv-weight-cell .hv-card-bar {
+.hv-breakeven {
   display: block;
-  width: 100%;
-  height: 4px;
-  margin-top: 2px;
-}
-
-.hv-weight-cell .hv-card-bar-fill {
-  display: block;
-}
-
-.hv-profit-cell .hv-breakeven {
   color: var(--warning);
   font-weight: 800;
 }
 
 /* 손익을 주가손익 / 환차손익으로 갈라 보여주는 줄 */
-.hv-profit-cell .hv-profit-split {
+.hv-profit-split {
   display: flex;
   flex-wrap: wrap;
   gap: 2px 8px;
@@ -3959,15 +3890,6 @@ menu {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .hv-list-head {
-    display: none;
-  }
-
-  .hv-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-  }
-
   .realized-list-head {
     display: none;
   }
@@ -4011,14 +3933,6 @@ menu {
 }
 
 @media (max-width: 640px) {
-  .hv-row {
-    grid-template-columns: 1fr;
-  }
-
-  .hv-owner-type {
-    grid-template-columns: auto auto minmax(0, 1fr);
-  }
-
   .realized-row {
     grid-template-columns: 1fr;
   }
@@ -4153,6 +4067,12 @@ menu {
 .inv-holdings-table th:first-child,
 .inv-holdings-table td.ih-name {
   width: 150px;
+}
+
+/* 통합 보유종목 표는 투자자 시트 표보다 열이 많아 좁은 화면에서 찌그러지는 대신
+   가로 스크롤로 넘기게 최소 너비를 둔다 (#holdingsViewGrid 래퍼가 overflow-x: auto). */
+.hv-table {
+  min-width: 960px;
 }
 
 #investorHoldingsPreview {

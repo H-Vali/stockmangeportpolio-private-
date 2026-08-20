@@ -429,6 +429,12 @@ document.querySelector("#holdingsCurrencyToggle").addEventListener("click", () =
 });
 
 document.querySelector("#holdingsViewGrid").addEventListener("click", (event) => {
+  const sortTh = event.target.closest("[data-hv-sort-key]");
+  if (sortTh) {
+    document.querySelector("#holdingsViewSortSelect").value = sortTh.dataset.hvSortKey;
+    renderHoldingsView();
+    return;
+  }
   const button = event.target.closest("[data-filter-type], [data-filter-owner]");
   if (!button) return;
   const filter = uiState.holdingsViewFilter;
