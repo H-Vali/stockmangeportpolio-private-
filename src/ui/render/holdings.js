@@ -84,6 +84,7 @@ export function renderHoldingsView() {
   const filter = uiState.holdingsViewFilter;
   const ownerId = filter.owner || null;
   const typeFilter = filter.type || null;
+  const currencyFilter = filter.currency || null;
   const displayCurrency = holdingsDisplayCurrency();
   const sortMode = sortSelect?.value || "value";
 
@@ -98,8 +99,13 @@ export function renderHoldingsView() {
   // 표 안 뱃지 클릭으로 건 필터와 상단 셀렉트가 항상 같은 값을 보여주도록 동기화한다.
   if (ownerSelect) ownerSelect.value = ownerId || "";
   if (typeSelect) typeSelect.value = typeFilter || "";
+  document.querySelectorAll("#holdingsCurrencyTabs [data-currency-tab]").forEach((btn) => {
+    const active = (btn.dataset.currencyTab || null) === currencyFilter;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", String(active));
+  });
 
-  const holdings = consolidatedHoldings(ownerId || null, typeFilter || null);
+  const holdings = consolidatedHoldings(ownerId || null, typeFilter || null, currencyFilter || null);
   const totalValue = holdings.reduce((s, h) => s + h.valueKrw, 0);
   const totalProfit = holdings.reduce((s, h) => s + h.profit, 0);
   const totalDividend = holdings.reduce((s, h) => s + h.annualDividend, 0);

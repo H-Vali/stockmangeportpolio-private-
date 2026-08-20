@@ -543,6 +543,11 @@
             </div>
 
             <div id="holdingsTabPanel">
+              <div class="holdings-currency-tabs" id="holdingsCurrencyTabs" role="tablist" aria-label="통화별 보기 전환">
+                <button type="button" class="tab-btn active" data-currency-tab="" role="tab" aria-selected="true">전체</button>
+                <button type="button" class="tab-btn" data-currency-tab="KRW" role="tab" aria-selected="false">원화자산</button>
+                <button type="button" class="tab-btn" data-currency-tab="USD" role="tab" aria-selected="false">외화자산</button>
+              </div>
               <div class="holdings-controls">
                 <select id="holdingsViewOwnerSelect" class="small-select">
                   <option value="">전체 투자자</option>

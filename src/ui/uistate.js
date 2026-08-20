@@ -37,8 +37,8 @@ export const uiState = {
   // 투자자 시트 입출금 내역: 조회 버튼을 눌러야만 목록이 뜬다 (기본은 접힘).
   // 우측 거래입력 패널과 하단 라인을 맞추기 위해 평소엔 목록을 비워둔다.
   cashflowQuery: { open: false, from: "", to: "" },
-  // "통합 보유 종목" 화면: 상단 드롭다운 또는 표 안의 분류 뱃지/투자자 칩 클릭으로 거는 필터.
-  holdingsViewFilter: { type: null, owner: null }
+  // "통합 보유 종목" 화면: 상단 드롭다운/통화 탭 또는 표 안의 분류 뱃지·투자자 칩 클릭으로 거는 필터.
+  holdingsViewFilter: { type: null, owner: null, currency: null }
 };
 
 export function loadAllocationRatios() {

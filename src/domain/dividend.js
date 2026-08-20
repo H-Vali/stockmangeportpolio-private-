@@ -36,10 +36,11 @@ export function dividendMonthsForTicker(ticker) {
   return DIVIDEND_MONTHS[ticker] || [3, 6, 9, 12];
 }
 
-export function consolidatedHoldings(ownerId, typeFilter) {
-  const all = replayHoldings(ownerId).filter((h) => h.quantity > 0.00000001);
-  if (typeFilter) return all.filter((h) => h.type === typeFilter);
-  return all;
+export function consolidatedHoldings(ownerId, typeFilter, currencyFilter) {
+  let holdings = replayHoldings(ownerId).filter((h) => h.quantity > 0.00000001);
+  if (typeFilter) holdings = holdings.filter((h) => h.type === typeFilter);
+  if (currencyFilter) holdings = holdings.filter((h) => h.currency === currencyFilter);
+  return holdings;
 }
 
 // Finnhub 이력 기반 예측(dividendForecast)이 있는 종목은 그 값으로,

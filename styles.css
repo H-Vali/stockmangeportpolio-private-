@@ -3508,6 +3508,20 @@ tbody tr:hover {
   padding: 0 14px;
 }
 
+.holdings-currency-tabs {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  width: fit-content;
+  margin-bottom: 12px;
+}
+
+.holdings-currency-tabs .tab-btn {
+  min-width: 84px;
+  padding: 0 14px;
+}
+
 .realized-range-sep {
   display: flex;
   align-items: center;

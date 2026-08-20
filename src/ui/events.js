@@ -428,6 +428,13 @@ document.querySelector("#holdingsCurrencyToggle").addEventListener("click", () =
   renderHoldingsView();
 });
 
+document.querySelector("#holdingsCurrencyTabs").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-currency-tab]");
+  if (!button) return;
+  uiState.holdingsViewFilter.currency = button.dataset.currencyTab || null;
+  renderHoldingsView();
+});
+
 document.querySelector("#holdingsViewGrid").addEventListener("click", (event) => {
   const sortTh = event.target.closest("[data-hv-sort-key]");
   if (sortTh) {
@@ -448,7 +455,7 @@ document.querySelector("#holdingsViewGrid").addEventListener("click", (event) =>
 
 document.querySelector("#holdingsViewFilterStatus").addEventListener("click", (event) => {
   if (!event.target.closest("#holdingsViewFilterClear")) return;
-  uiState.holdingsViewFilter = { type: null, owner: null };
+  uiState.holdingsViewFilter = { type: null, owner: null, currency: uiState.holdingsViewFilter.currency };
   renderHoldingsView();
 });
 
